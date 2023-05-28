@@ -1,0 +1,380 @@
+<% layout('/layouts/default.html', {title: 'maoche_alimama_union_product管理', libs: ['dataGrid']}){ %>
+<div class="main-content">
+	<div class="box box-main">
+		<div class="box-header">
+			<div class="box-title">
+				<i class="fa icon-notebook"></i> ${text('maoche_alimama_union_product管理')}
+			</div>
+			<div class="box-tools pull-right">
+				<a href="#" class="btn btn-default" id="btnSearch" title="${text('查询')}"><i class="fa fa-filter"></i> ${text('查询')}</a>
+				<% if(hasPermi('cat:maocheAlimamaUnionProductDO:edit')){ %>
+					<a href="${ctx}/cat/maocheAlimamaUnionProductDO/form" class="btn btn-default btnTool" title="${text('新增maoche_alimama_union_product')}"><i class="fa fa-plus"></i> ${text('新增')}</a>
+				<% } %>
+				<a href="#" class="btn btn-default" id="btnSetting" title="${text('设置')}"><i class="fa fa-navicon"></i></a>
+			</div>
+		</div>
+		<div class="box-body">
+			<#form:form id="searchForm" model="${maocheAlimamaUnionProductDO}" action="${ctx}/cat/maocheAlimamaUnionProductDO/listData" method="post" class="form-inline hide"
+					data-page-no="${parameter.pageNo}" data-page-size="${parameter.pageSize}" data-order-by="${parameter.orderBy}">
+				<div class="form-group">
+					<label class="control-label">${text('原始JSON数据')}：</label>
+					<div class="control-inline">
+						<#form:input path="origContent" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('category_id')}：</label>
+					<div class="control-inline">
+						<#form:input path="categoryId" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('category_name')}：</label>
+					<div class="control-inline">
+						<#form:input path="categoryName" maxlength="255" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('commission_rate')}：</label>
+					<div class="control-inline">
+						<#form:input path="commissionRate" maxlength="255" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('commission_type')}：</label>
+					<div class="control-inline">
+						<#form:input path="commissionType" maxlength="255" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('coupon_amount')}：</label>
+					<div class="control-inline">
+						<#form:input path="couponAmount" maxlength="8" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('coupon_end_time')}：</label>
+					<div class="control-inline">
+						<#form:input path="couponEndTime" readonly="true" maxlength="20" class="form-control laydate width-datetime"
+							dataFormat="datetime" data-type="datetime" data-format="yyyy-MM-dd HH:mm"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('coupon_id')}：</label>
+					<div class="control-inline">
+						<#form:input path="couponId" maxlength="255" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('coupon_info')}：</label>
+					<div class="control-inline">
+						<#form:input path="couponInfo" maxlength="255" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('coupon_remain_count')}：</label>
+					<div class="control-inline">
+						<#form:input path="couponRemainCount" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('coupon_share_url')}：</label>
+					<div class="control-inline">
+						<#form:input path="couponShareUrl" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('coupon_start_fee')}：</label>
+					<div class="control-inline">
+						<#form:input path="couponStartFee" maxlength="8" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('coupon_start_time')}：</label>
+					<div class="control-inline">
+						<#form:input path="couponStartTime" readonly="true" maxlength="20" class="form-control laydate width-datetime"
+							dataFormat="datetime" data-type="datetime" data-format="yyyy-MM-dd HH:mm"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('coupon_total_count')}：</label>
+					<div class="control-inline">
+						<#form:input path="couponTotalCount" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('include_dxjh')}：</label>
+					<div class="control-inline">
+						<#form:input path="includeDxjh" maxlength="255" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('include_mkt')}：</label>
+					<div class="control-inline">
+						<#form:input path="includeMkt" maxlength="255" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('info_dxjh')}：</label>
+					<div class="control-inline">
+						<#form:input path="infoDxjh" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('item_description')}：</label>
+					<div class="control-inline">
+						<#form:input path="itemDescription" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('item_id')}：</label>
+					<div class="control-inline">
+						<#form:input path="itemId" maxlength="255" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('item_url')}：</label>
+					<div class="control-inline">
+						<#form:input path="itemUrl" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('level_one_category_id')}：</label>
+					<div class="control-inline">
+						<#form:input path="levelOneCategoryId" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('level_one_category_name')}：</label>
+					<div class="control-inline">
+						<#form:input path="levelOneCategoryName" maxlength="255" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('nick')}：</label>
+					<div class="control-inline">
+						<#form:input path="nick" maxlength="255" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('num_iid')}：</label>
+					<div class="control-inline">
+						<#form:input path="numIid" maxlength="255" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('pict_url')}：</label>
+					<div class="control-inline">
+						<#form:input path="pictUrl" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('presale_deposit')}：</label>
+					<div class="control-inline">
+						<#form:input path="presaleDeposit" maxlength="255" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('provcity')}：</label>
+					<div class="control-inline">
+						<#form:input path="provcity" maxlength="255" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('real_post_fee')}：</label>
+					<div class="control-inline">
+						<#form:input path="realPostFee" maxlength="8" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('reserve_price')}：</label>
+					<div class="control-inline">
+						<#form:input path="reservePrice" maxlength="8" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('seller_id')}：</label>
+					<div class="control-inline">
+						<#form:input path="sellerId" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('shop_dsr')}：</label>
+					<div class="control-inline">
+						<#form:input path="shopDsr" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('shop_title')}：</label>
+					<div class="control-inline">
+						<#form:input path="shopTitle" maxlength="255" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('short_title')}：</label>
+					<div class="control-inline">
+						<#form:input path="shortTitle" maxlength="255" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('small_images')}：</label>
+					<div class="control-inline">
+						<#form:input path="smallImages" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('superior_brand')}：</label>
+					<div class="control-inline">
+						<#form:input path="superiorBrand" maxlength="255" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('title')}：</label>
+					<div class="control-inline">
+						<#form:input path="title" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('tk_total_commi')}：</label>
+					<div class="control-inline">
+						<#form:input path="tkTotalCommi" maxlength="255" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('tk_total_sales')}：</label>
+					<div class="control-inline">
+						<#form:input path="tkTotalSales" maxlength="255" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('url')}：</label>
+					<div class="control-inline">
+						<#form:input path="url" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('user_type')}：</label>
+					<div class="control-inline">
+						<#form:input path="userType" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('volume')}：</label>
+					<div class="control-inline">
+						<#form:input path="volume" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('white_image')}：</label>
+					<div class="control-inline">
+						<#form:input path="whiteImage" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('x_id')}：</label>
+					<div class="control-inline">
+						<#form:input path="xid" maxlength="255" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('zk_final_price')}：</label>
+					<div class="control-inline">
+						<#form:input path="zkFinalPrice" maxlength="8" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('coupon')}：</label>
+					<div class="control-inline">
+						<#form:input path="coupon" maxlength="8" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<button type="submit" class="btn btn-primary btn-sm">${text('查询')}</button>
+					<button type="reset" class="btn btn-default btn-sm isQuick">${text('重置')}</button>
+				</div>
+			</#form:form>
+			<table id="dataGrid"></table>
+			<div id="dataGridPage"></div>
+		</div>
+	</div>
+</div>
+<% } %>
+<script>
+// 初始化DataGrid对象
+$('#dataGrid').dataGrid({
+	searchForm: $("#searchForm"),
+	columnModel: [
+		{header:'${text("原始JSON数据")}', name:'origContent', index:'a.orig_content', width:150, align:"left", frozen:true, formatter: function(val, obj, row, act){
+			return '<a href="${ctx}/cat/maocheAlimamaUnionProductDO/form?id='+row.id+'" class="btnList" data-title="${text("编辑maoche_alimama_union_product")}">'+(val||row.id)+'</a>';
+		}},
+		{header:'${text("category_id")}', name:'categoryId', index:'a.category_id', width:150, align:"center"},
+		{header:'${text("category_name")}', name:'categoryName', index:'a.category_name', width:150, align:"left"},
+		{header:'${text("commission_rate")}', name:'commissionRate', index:'a.commission_rate', width:150, align:"left"},
+		{header:'${text("commission_type")}', name:'commissionType', index:'a.commission_type', width:150, align:"left"},
+		{header:'${text("coupon_amount")}', name:'couponAmount', index:'a.coupon_amount', width:150, align:"right", formatter: function(val, obj, row, act){
+			return js.formatNumber(val, 2, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}},
+		{header:'${text("coupon_end_time")}', name:'couponEndTime', index:'a.coupon_end_time', width:150, align:"center"},
+		{header:'${text("coupon_id")}', name:'couponId', index:'a.coupon_id', width:150, align:"left"},
+		{header:'${text("coupon_info")}', name:'couponInfo', index:'a.coupon_info', width:150, align:"left"},
+		{header:'${text("coupon_remain_count")}', name:'couponRemainCount', index:'a.coupon_remain_count', width:150, align:"center"},
+		{header:'${text("coupon_share_url")}', name:'couponShareUrl', index:'a.coupon_share_url', width:150, align:"left"},
+		{header:'${text("coupon_start_fee")}', name:'couponStartFee', index:'a.coupon_start_fee', width:150, align:"right", formatter: function(val, obj, row, act){
+			return js.formatNumber(val, 2, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}},
+		{header:'${text("coupon_start_time")}', name:'couponStartTime', index:'a.coupon_start_time', width:150, align:"center"},
+		{header:'${text("coupon_total_count")}', name:'couponTotalCount', index:'a.coupon_total_count', width:150, align:"center"},
+		{header:'${text("include_dxjh")}', name:'includeDxjh', index:'a.include_dxjh', width:150, align:"left"},
+		{header:'${text("include_mkt")}', name:'includeMkt', index:'a.include_mkt', width:150, align:"left"},
+		{header:'${text("info_dxjh")}', name:'infoDxjh', index:'a.info_dxjh', width:150, align:"left"},
+		{header:'${text("item_description")}', name:'itemDescription', index:'a.item_description', width:150, align:"left"},
+		{header:'${text("item_id")}', name:'itemId', index:'a.item_id', width:150, align:"left"},
+		{header:'${text("item_url")}', name:'itemUrl', index:'a.item_url', width:150, align:"left"},
+		{header:'${text("level_one_category_id")}', name:'levelOneCategoryId', index:'a.level_one_category_id', width:150, align:"center"},
+		{header:'${text("level_one_category_name")}', name:'levelOneCategoryName', index:'a.level_one_category_name', width:150, align:"left"},
+		{header:'${text("nick")}', name:'nick', index:'a.nick', width:150, align:"left"},
+		{header:'${text("num_iid")}', name:'numIid', index:'a.num_iid', width:150, align:"left"},
+		{header:'${text("pict_url")}', name:'pictUrl', index:'a.pict_url', width:150, align:"left"},
+		{header:'${text("presale_deposit")}', name:'presaleDeposit', index:'a.presale_deposit', width:150, align:"left"},
+		{header:'${text("provcity")}', name:'provcity', index:'a.provcity', width:150, align:"left"},
+		{header:'${text("real_post_fee")}', name:'realPostFee', index:'a.real_post_fee', width:150, align:"right", formatter: function(val, obj, row, act){
+			return js.formatNumber(val, 2, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}},
+		{header:'${text("reserve_price")}', name:'reservePrice', index:'a.reserve_price', width:150, align:"right", formatter: function(val, obj, row, act){
+			return js.formatNumber(val, 2, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}},
+		{header:'${text("seller_id")}', name:'sellerId', index:'a.seller_id', width:150, align:"center"},
+		{header:'${text("shop_dsr")}', name:'shopDsr', index:'a.shop_dsr', width:150, align:"center"},
+		{header:'${text("shop_title")}', name:'shopTitle', index:'a.shop_title', width:150, align:"left"},
+		{header:'${text("short_title")}', name:'shortTitle', index:'a.short_title', width:150, align:"left"},
+		{header:'${text("small_images")}', name:'smallImages', index:'a.small_images', width:150, align:"left"},
+		{header:'${text("superior_brand")}', name:'superiorBrand', index:'a.superior_brand', width:150, align:"left"},
+		{header:'${text("title")}', name:'title', index:'a.title', width:150, align:"left"},
+		{header:'${text("tk_total_commi")}', name:'tkTotalCommi', index:'a.tk_total_commi', width:150, align:"left"},
+		{header:'${text("tk_total_sales")}', name:'tkTotalSales', index:'a.tk_total_sales', width:150, align:"left"},
+		{header:'${text("url")}', name:'url', index:'a.url', width:150, align:"left"},
+		{header:'${text("user_type")}', name:'userType', index:'a.user_type', width:150, align:"center"},
+		{header:'${text("volume")}', name:'volume', index:'a.volume', width:150, align:"center"},
+		{header:'${text("white_image")}', name:'whiteImage', index:'a.white_image', width:150, align:"left"},
+		{header:'${text("x_id")}', name:'xid', index:'a.x_id', width:150, align:"left"},
+		{header:'${text("zk_final_price")}', name:'zkFinalPrice', index:'a.zk_final_price', width:150, align:"right", formatter: function(val, obj, row, act){
+			return js.formatNumber(val, 2, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}},
+		{header:'${text("coupon")}', name:'coupon', index:'a.coupon', width:150, align:"right", formatter: function(val, obj, row, act){
+			return js.formatNumber(val, 2, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}},
+		{header:'${text("操作")}', name:'actions', width:120, formatter: function(val, obj, row, act){
+			var actions = [];
+			//<% if(hasPermi('cat:maocheAlimamaUnionProductDO:edit')){ %>
+				actions.push('<a href="${ctx}/cat/maocheAlimamaUnionProductDO/form?id='+row.id+'" class="btnList" title="${text("编辑maoche_alimama_union_product")}"><i class="fa fa-pencil"></i></a>&nbsp;');
+				actions.push('<a href="${ctx}/cat/maocheAlimamaUnionProductDO/delete?id='+row.id+'" class="btnList" title="${text("删除maoche_alimama_union_product")}" data-confirm="${text("确认要删除该maoche_alimama_union_product吗？")}"><i class="fa fa-trash-o"></i></a>&nbsp;');
+			//<% } %>
+			return actions.join('');
+		}}
+	],
+	// 加载成功后执行事件
+	ajaxSuccess: function(data){
+		
+	}
+});
+</script>

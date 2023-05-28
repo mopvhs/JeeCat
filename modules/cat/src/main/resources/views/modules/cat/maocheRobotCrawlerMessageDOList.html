@@ -1,0 +1,130 @@
+<% layout('/layouts/default.html', {title: '信息采集表管理', libs: ['dataGrid']}){ %>
+<div class="main-content">
+	<div class="box box-main">
+		<div class="box-header">
+			<div class="box-title">
+				<i class="fa icon-notebook"></i> ${text('信息采集表管理')}
+			</div>
+			<div class="box-tools pull-right">
+				<a href="#" class="btn btn-default" id="btnSearch" title="${text('查询')}"><i class="fa fa-filter"></i> ${text('查询')}</a>
+				<% if(hasPermi('cat:maocheRobotCrawlerMessageDO:edit')){ %>
+					<a href="${ctx}/cat/maocheRobotCrawlerMessageDO/form" class="btn btn-default btnTool" title="${text('新增信息采集表')}"><i class="fa fa-plus"></i> ${text('新增')}</a>
+				<% } %>
+				<a href="#" class="btn btn-default" id="btnSetting" title="${text('设置')}"><i class="fa fa-navicon"></i></a>
+			</div>
+		</div>
+		<div class="box-body">
+			<#form:form id="searchForm" model="${maocheRobotCrawlerMessageDO}" action="${ctx}/cat/maocheRobotCrawlerMessageDO/listData" method="post" class="form-inline hide"
+					data-page-no="${parameter.pageNo}" data-page-size="${parameter.pageSize}" data-order-by="${parameter.orderBy}">
+				<div class="form-group">
+					<label class="control-label">${text('发消息的群标识')}：</label>
+					<div class="control-inline">
+						<#form:input path="fromgid" maxlength="256" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('发消息的用户标识')}：</label>
+					<div class="control-inline">
+						<#form:input path="fromid" maxlength="256" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('收消息的用户标识')}：</label>
+					<div class="control-inline">
+						<#form:input path="toid" maxlength="256" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('消息内容 口令信息采集 不会很长')}：</label>
+					<div class="control-inline">
+						<#form:input path="msg" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('微信消息id')}：</label>
+					<div class="control-inline">
+						<#form:input path="msgsvrid" maxlength="256" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('微信fromtype')}：</label>
+					<div class="control-inline">
+						<#form:input path="fromtype" maxlength="256" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('微信msgtype')}：</label>
+					<div class="control-inline">
+						<#form:input path="msgtype" maxlength="256" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('微信time')}：</label>
+					<div class="control-inline">
+						<#form:input path="time" maxlength="256" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('备用字段')}：</label>
+					<div class="control-inline">
+						<#form:input path="remark" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('create_time')}：</label>
+					<div class="control-inline">
+						<#form:input path="createTime" readonly="true" maxlength="20" class="form-control laydate width-datetime"
+							dataFormat="datetime" data-type="datetime" data-format="yyyy-MM-dd HH:mm"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('update_time')}：</label>
+					<div class="control-inline">
+						<#form:input path="updateTime" readonly="true" maxlength="20" class="form-control laydate width-datetime"
+							dataFormat="datetime" data-type="datetime" data-format="yyyy-MM-dd HH:mm"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<button type="submit" class="btn btn-primary btn-sm">${text('查询')}</button>
+					<button type="reset" class="btn btn-default btn-sm isQuick">${text('重置')}</button>
+				</div>
+			</#form:form>
+			<table id="dataGrid"></table>
+			<div id="dataGridPage"></div>
+		</div>
+	</div>
+</div>
+<% } %>
+<script>
+// 初始化DataGrid对象
+$('#dataGrid').dataGrid({
+	searchForm: $("#searchForm"),
+	columnModel: [
+		{header:'${text("发消息的群标识")}', name:'fromgid', index:'a.fromgid', width:150, align:"left", frozen:true, formatter: function(val, obj, row, act){
+			return '<a href="${ctx}/cat/maocheRobotCrawlerMessageDO/form?id='+row.id+'" class="btnList" data-title="${text("编辑信息采集表")}">'+(val||row.id)+'</a>';
+		}},
+		{header:'${text("发消息的用户标识")}', name:'fromid', index:'a.fromid', width:150, align:"left"},
+		{header:'${text("收消息的用户标识")}', name:'toid', index:'a.toid', width:150, align:"left"},
+		{header:'${text("消息内容 口令信息采集 不会很长")}', name:'msg', index:'a.msg', width:150, align:"left"},
+		{header:'${text("微信消息id")}', name:'msgsvrid', index:'a.msgsvrid', width:150, align:"left"},
+		{header:'${text("微信fromtype")}', name:'fromtype', index:'a.fromtype', width:150, align:"left"},
+		{header:'${text("微信msgtype")}', name:'msgtype', index:'a.msgtype', width:150, align:"left"},
+		{header:'${text("微信time")}', name:'time', index:'a.time', width:150, align:"left"},
+		{header:'${text("备用字段")}', name:'remark', index:'a.remark', width:150, align:"left"},
+		{header:'${text("create_time")}', name:'createTime', index:'a.create_time', width:150, align:"center"},
+		{header:'${text("update_time")}', name:'updateTime', index:'a.update_time', width:150, align:"center"},
+		{header:'${text("操作")}', name:'actions', width:120, formatter: function(val, obj, row, act){
+			var actions = [];
+			//<% if(hasPermi('cat:maocheRobotCrawlerMessageDO:edit')){ %>
+				actions.push('<a href="${ctx}/cat/maocheRobotCrawlerMessageDO/form?id='+row.id+'" class="btnList" title="${text("编辑信息采集表")}"><i class="fa fa-pencil"></i></a>&nbsp;');
+				actions.push('<a href="${ctx}/cat/maocheRobotCrawlerMessageDO/delete?id='+row.id+'" class="btnList" title="${text("删除信息采集表")}" data-confirm="${text("确认要删除该信息采集表吗？")}"><i class="fa fa-trash-o"></i></a>&nbsp;');
+			//<% } %>
+			return actions.join('');
+		}}
+	],
+	// 加载成功后执行事件
+	ajaxSuccess: function(data){
+		
+	}
+});
+</script>

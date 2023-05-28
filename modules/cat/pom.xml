@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	
+	<parent>
+		<groupId>com.jeesite</groupId>
+		<artifactId>jeesite-parent</artifactId>
+		<version>5.3.1-SNAPSHOT</version>
+		<relativePath>../../parent/pom.xml</relativePath>
+	</parent>
+	
+	<artifactId>jeesite-module-cat</artifactId>
+	<packaging>jar</packaging>
+	
+	<name>JeeSite Module cat</name>
+	<url>http://jeesite.com</url>
+	<inceptionYear>2013-Now</inceptionYear>
+	
+	<dependencies>
+			
+		<dependency>
+			<groupId>com.jeesite</groupId>
+			<artifactId>jeesite-module-core</artifactId>
+			<version>${project.parent.version}</version>
+			<exclusions>
+				<exclusion>
+					<artifactId>jakarta.transaction-api</artifactId>
+					<groupId>jakarta.transaction</groupId>
+				</exclusion>
+				<exclusion>
+					<artifactId>jakarta.annotation-api</artifactId>
+					<groupId>jakarta.annotation</groupId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+
+		<dependency>
+			<groupId>org.elasticsearch.client</groupId>
+			<artifactId>elasticsearch-rest-high-level-client</artifactId>
+			<version>7.10.1</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.elasticsearch</groupId>
+			<artifactId>elasticsearch</artifactId>
+			<version>7.10.1</version>
+		</dependency>
+
+<!--		<dependency>-->
+<!--			<groupId>co.elastic.clients</groupId>-->
+<!--			<artifactId>elasticsearch-java</artifactId>-->
+<!--			<version>8.7.0</version>-->
+<!--			<exclusions>-->
+<!--				<exclusion>-->
+<!--					<artifactId>jakarta.json-api</artifactId>-->
+<!--					<groupId>jakarta.json</groupId>-->
+<!--				</exclusion>-->
+<!--			</exclusions>-->
+<!--		</dependency>-->
+		<dependency>
+			<artifactId>jakarta.json-api</artifactId>
+			<groupId>jakarta.json</groupId>
+			<version>2.1.1</version>
+		</dependency>
+
+		<dependency>
+			<groupId>redis.clients</groupId>
+			<artifactId>jedis</artifactId>
+			<version>${jedis.version}</version>
+		</dependency>
+
+
+	</dependencies>
+	
+	<developers>  
+		<developer>
+			<id>thinkgem</id>
+			<name>WangZhen</name>
+			<email>thinkgem at 163.com</email>
+			<roles><role>Project lead</role></roles>
+			<timezone>+8</timezone>  
+		</developer>
+	</developers>
+	
+	<organization>
+		<name>JeeSite</name>
+		<url>http://jeesite.com</url>
+	</organization>
+	
+</project>
