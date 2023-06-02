@@ -10,6 +10,7 @@ import com.jeesite.common.web.Result;
 import com.jeesite.modules.cat.cache.CacheService;
 import com.jeesite.modules.cat.dao.MaocheAlimamaUnionProductDao;
 import com.jeesite.modules.cat.enums.AuditStatusEnum;
+import com.jeesite.modules.cat.enums.ElasticSearchIndexEnum;
 import com.jeesite.modules.cat.enums.SaleStatusEnum;
 import com.jeesite.modules.cat.es.config.es7.ElasticSearch7Service;
 import com.jeesite.modules.cat.es.config.model.ElasticSearchData;
@@ -28,6 +29,7 @@ import com.jeesite.modules.cgcat.dto.HistorySearchKeywordVO;
 import com.jeesite.modules.cgcat.dto.ProductCategoryVO;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
+import org.elasticsearch.client.indices.GetMappingsResponse;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -93,8 +95,10 @@ public class CgProductPushController {
 //            page.setCount(0);
 //            return page;
 //        }
-        int from = (page.getPageNo() - 1) * page.getPageSize();
-        int size = page.getPageSize();
+        int pageNo = Optional.ofNullable(messagePushTO.getPageNo()).orElse(1);
+        Integer pageSize = Optional.ofNullable(messagePushTO.getPageSize()).orElse(20);
+        int from = (pageNo - 1) * pageSize;
+        int size = pageSize;
 
         // 猫车分倒排
         List<String> sorts = new ArrayList<>();
@@ -112,8 +116,8 @@ public class CgProductPushController {
         CatUnionProductCondition condition = new CatUnionProductCondition();
         condition.setTitle(keyword);
         // todo yhq 先注释测试
-//        condition.setSaleStatus(SaleStatusEnum.ON_SHELF.getStatus());
-//        condition.setAuditStatus(AuditStatusEnum.PASS.getStatus());
+        condition.setSaleStatus(SaleStatusEnum.ON_SHELF.getStatus());
+        condition.setAuditStatus(AuditStatusEnum.PASS.getStatus());
 
         condition.setSorts(sorts);
 
@@ -216,7 +220,9 @@ public class CgProductPushController {
     @ResponseBody
     public Result<?> statistics() {
 
-        cgUnionProductStatisticsService.statistics();
+        GetMappingsResponse indexMapping = elasticSearch7Service.getIndexMapping(ElasticSearchIndexEnum.CAT_PRODUCT_INDEX);
+
+//        cgUnionProductStatisticsService.runJob();
 
         return Result.OK();
     }
@@ -294,7 +300,7 @@ public class CgProductPushController {
         CatProductBucketTO allItem = new CatProductBucketTO();
         allItem.setKey("0");
         allItem.setName("全部");
-        categories.set(0, allItem);
+        categories.add(0, allItem);
 
         response.setCategories(categories);
 

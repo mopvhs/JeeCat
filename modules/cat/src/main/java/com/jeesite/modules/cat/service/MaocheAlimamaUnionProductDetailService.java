@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.Lists;
+import com.jeesite.common.lang.StringUtils;
 import com.jeesite.modules.cat.entity.MaocheCategoryProductRelDO;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.stereotype.Service;
@@ -104,5 +105,16 @@ public class MaocheAlimamaUnionProductDetailService extends CrudService<MaocheAl
 		}
 
 		return words;
+	}
+
+	public MaocheAlimamaUnionProductDetailDO getByItemIdSuffix(String itemIdSuffix) {
+		if (StringUtils.isBlank(itemIdSuffix)) {
+			return null;
+		}
+
+		MaocheAlimamaUnionProductDetailDO query = new MaocheAlimamaUnionProductDetailDO();
+		query.setItemIdSuffix(itemIdSuffix);
+
+		return dao.getByEntity(query);
 	}
 }

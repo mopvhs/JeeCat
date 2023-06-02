@@ -32,6 +32,9 @@ public class CatRobotMessageCondition implements Serializable {
     @EsItemAspect
     private String msgType;
 
+    @EsItemAspect
+    private Long processed;
+
     // range查询
     @EsItemAspect(queryType = "rangeQuery", field = "createTime", rangeOp = "gte")
     private Long startCreateTime;

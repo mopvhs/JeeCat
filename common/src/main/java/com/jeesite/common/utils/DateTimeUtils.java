@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.text.SimpleDateFormat;
+import java.time.LocalTime;
 import java.util.Calendar;
 import java.util.Date;
 
@@ -280,6 +281,11 @@ public class DateTimeUtils {
 			logger.error("getDate 解析日期失败 date {}", date, e);
 		}
 		return null;
+	}
+
+	public static void main(String[] args) {
+		int currentHour = LocalTime.now().getHour();
+		System.out.println(currentHour);
 	}
 
 

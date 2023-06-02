@@ -98,5 +98,16 @@ public class MaocheAlimamaUnionProductService extends CrudService<MaocheAlimamaU
 
 		return i > 0;
 	}
+
+	/**
+	 * @param ids
+	 * @return
+	 */
+	public boolean updateProductStatus(List<Long> ids, String status) {
+
+		int i = dao.updateProductStatus(ids, status);
+
+		return i > 0;
+	}
 	
 }

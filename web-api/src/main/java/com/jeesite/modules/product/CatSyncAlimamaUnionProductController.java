@@ -145,11 +145,7 @@ public class CatSyncAlimamaUnionProductController {
                     if (CollectionUtils.isEmpty(products)) {
                         continue;
                     }
-                    MaocheAlimamaUnionProductDO update = new MaocheAlimamaUnionProductDO();
-                    update.setId_in(ids.toArray(new Long[0]));
-                    update.setStatus("DELETE");
-                    // 需改状态
-                    maocheAlimamaUnionProductService.updateStatus(update);
+                    maocheAlimamaUnionProductService.updateProductStatus(p, "DELETE");
 
                     List<Long> ids = products.stream().map(MaocheAlimamaUnionProductDO::getIid).distinct().collect(Collectors.toList());
                     cgUnionProductService.delIndex(ids);
@@ -183,7 +179,6 @@ public class CatSyncAlimamaUnionProductController {
                     if (CollectionUtils.isEmpty(list)) {
                         break;
                     }
-
                     cgUnionProductService.indexEs(list, 1);
 
                     id = list.get(list.size() - 1).getIid();

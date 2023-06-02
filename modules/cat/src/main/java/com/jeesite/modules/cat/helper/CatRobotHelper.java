@@ -142,6 +142,9 @@ public class CatRobotHelper {
                 case "matchQuery":
                     boolBuilder.must(QueryBuilders.matchQuery(name, value));
                     break;
+                case "matchPhraseQuery":
+                    boolBuilder.must(QueryBuilders.matchPhraseQuery(name, value).slop(100));
+                    break;
                 case "itemsQuery":
                     boolBuilder.must(QueryBuilders.termsQuery(name, (Collection) value));
                     break;

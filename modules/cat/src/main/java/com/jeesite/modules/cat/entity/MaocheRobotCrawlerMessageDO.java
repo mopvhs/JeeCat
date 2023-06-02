@@ -30,6 +30,7 @@ import java.util.Date;
 		@Column(name="fromtype", attrName="fromtype", label="微信fromtype"),
 		@Column(name="msgtype", attrName="msgtype", label="微信msgtype"),
 		@Column(name="time", attrName="time", label="微信time"),
+		@Column(name="processed", attrName="processed", label="processed"),
 		@Column(name="remark", attrName="remark", label="备用字段"),
 		@Column(name="create_time", attrName="createTime", label="create_time"),
 		@Column(name="update_time", attrName="updateTime", label="update_time"),
@@ -55,6 +56,7 @@ public class MaocheRobotCrawlerMessageDO extends DataEntity<MaocheRobotCrawlerMe
 	private String remark;		// 备用字段
 	private Date createTime;		// create_time
 	private Date updateTime;		// update_time
+	private Long processed;
 
 	/**
 	 * 重载默认方法，主键类型互转，方便操作
@@ -211,5 +213,13 @@ public class MaocheRobotCrawlerMessageDO extends DataEntity<MaocheRobotCrawlerMe
 
 	public void setImageUrl(String imageUrl) {
 		this.imageUrl = imageUrl;
+	}
+
+	public Long getProcessed() {
+		return processed;
+	}
+
+	public void setProcessed(Long processed) {
+		this.processed = processed;
 	}
 }

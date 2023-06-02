@@ -11,5 +11,17 @@
 		</where>
 		ORDER BY ${sqlMap.order.toSql()}
 	</select> -->
+
+
+	<update id="updateContentById">
+		update
+		maoche_sender_task
+		<set>
+			content_json = #{content}
+		</set>
+		<where>
+			id = #{id}
+		</where>
+	</update>
 	
 </mapper>

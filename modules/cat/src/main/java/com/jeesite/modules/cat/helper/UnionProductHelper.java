@@ -9,6 +9,7 @@ import com.jeesite.modules.cat.entity.MaocheAlimamaUnionGoodPriceDO;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductDO;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductDetailDO;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionTitleKeywordDO;
+import com.jeesite.modules.cat.entity.MaocheCategoryDO;
 import com.jeesite.modules.cat.model.CarAlimamaUnionProductIndex;
 import com.jeesite.modules.cat.model.PromotionTagTO;
 import com.jeesite.modules.cat.model.RateDetailTO;
@@ -35,7 +36,8 @@ public class UnionProductHelper {
                                                            List<MaocheAlimamaUnionProductDO> productDOs,
                                                            List<MaocheAlimamaUnionTitleKeywordDO> keywordDOs,
                                                            List<MaocheAlimamaUnionGoodPriceDO> unionGoodPriceDOs,
-                                                           List<MaocheAlimamaUnionProductDetailDO> productDetailDOs) {
+                                                           List<MaocheAlimamaUnionProductDetailDO> productDetailDOs,
+                                                           List<MaocheCategoryDO> categoryDOs) {
 
         if (CollectionUtils.isEmpty(indexList) || CollectionUtils.isEmpty(productDOs)) {
             return new ArrayList<>();
@@ -52,6 +54,7 @@ public class UnionProductHelper {
         Map<String, MaocheAlimamaUnionTitleKeywordDO> keywordMap = keywordDOs.stream().collect(Collectors.toMap(MaocheAlimamaUnionTitleKeywordDO::getItemIdSuffix, Function.identity(), (o1, o2) -> o1));
         Map<String, MaocheAlimamaUnionGoodPriceDO> unionGoodPriceMap = unionGoodPriceDOs.stream().collect(Collectors.toMap(MaocheAlimamaUnionGoodPriceDO::getItemIdSuffix, Function.identity(), (o1, o2) -> o1));
         Map<String, MaocheAlimamaUnionProductDetailDO> productDetailMap = productDetailDOs.stream().collect(Collectors.toMap(MaocheAlimamaUnionProductDetailDO::getItemIdSuffix, Function.identity(), (o1, o2) -> o1));
+        Map<Long, MaocheCategoryDO> customCategoryMap = categoryDOs.stream().collect(Collectors.toMap(MaocheCategoryDO::getIid, Function.identity(), (o1, o2) -> o1));
 
         /**
          *      {
@@ -108,12 +111,11 @@ public class UnionProductHelper {
 
             long commission = -999999999L;
             if (index.getCommissionRate() != null && index.getCommissionRate() > 0) {
-                commission = new BigDecimal(String.valueOf(index.getCommissionRate())).multiply(new BigDecimal(String.valueOf(index.getReservePrice()))).divide(new BigDecimal("1000000"), 2, RoundingMode.HALF_UP).longValue();
+                commission = new BigDecimal(String.valueOf(index.getCommissionRate())).multiply(new BigDecimal(String.valueOf(index.getReservePrice()))).divide(new BigDecimal("10000"), 2, RoundingMode.HALF_UP).longValue();
             }
             product.setCommission(commission);
             product.setVolume(index.getVolume());
             product.setAuditStatus(productDO.getAuditStatus());
-            // todo
             product.setGoodRate(-1L);
 
             // 上架状态
@@ -131,7 +133,20 @@ public class UnionProductHelper {
                 product.setBelongTo(Collections.singletonList("超搜"));
             }
 
-            product.setImgUrl(getSmallImage(jsonObject.get("small_images")));
+            List<String> cidOneNames = new ArrayList<>();
+            // 获取自定义类目
+            if (CollectionUtils.isNotEmpty(index.getCidOnes())) {
+                for (Long cid : index.getCidOnes()) {
+                    MaocheCategoryDO maocheCategoryDO = customCategoryMap.get(cid);
+                    if (maocheCategoryDO == null) {
+                        continue;
+                    }
+                    cidOneNames.add(maocheCategoryDO.getName());
+                }
+            }
+            product.setCidOneNames(cidOneNames);
+
+            product.setImgUrl(getProductImage(jsonObject));
 
             UnionProductTagTO unionProductTagTO = convert2TagTO(keywordMap.get(productDO.getItemIdSuffix()));
             product.setTag(unionProductTagTO);
@@ -141,6 +156,22 @@ public class UnionProductHelper {
 
 
         return products;
+    }
+
+    private static String getProductImage(JSONObject jsonObject) {
+        if (jsonObject == null) {
+            return null;
+        }
+        String smallImage = getSmallImage(jsonObject.get("small_images"));
+        if (StringUtils.isNotBlank(smallImage)) {
+            return smallImage;
+        }
+        smallImage = jsonObject.getString("pict_url");
+        if (StringUtils.isNotBlank(smallImage)) {
+            return smallImage;
+        }
+
+        return jsonObject.getString("white_image");
     }
 
     private static String getSmallImage(Object object) {
@@ -293,4 +324,12 @@ public class UnionProductHelper {
         return productDOs.stream().map(MaocheAlimamaUnionProductDO::getItemIdSuffix).distinct().collect(Collectors.toList());
     }
 
+
+    public static void main(String[] args) {
+
+        int rate = 602;
+        int price = 1900;
+        long commission = new BigDecimal(String.valueOf(rate)).multiply(new BigDecimal(String.valueOf(price))).divide(new BigDecimal("10000"), 2, RoundingMode.HALF_UP).longValue();
+        System.out.println(commission);
+    }
 }

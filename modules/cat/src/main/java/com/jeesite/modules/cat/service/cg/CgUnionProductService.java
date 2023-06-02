@@ -13,6 +13,7 @@ import com.jeesite.modules.cat.entity.MaocheAlimamaUnionGoodPriceDO;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductDO;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductDetailDO;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionTitleKeywordDO;
+import com.jeesite.modules.cat.entity.MaocheCategoryDO;
 import com.jeesite.modules.cat.entity.MaocheCategoryProductRelDO;
 import com.jeesite.modules.cat.enums.ElasticSearchIndexEnum;
 import com.jeesite.modules.cat.es.config.es7.ElasticSearch7Service;
@@ -203,6 +204,12 @@ public class CgUnionProductService {
         List<Map<String, Object>> list = new ArrayList<>();
         for (MaocheAlimamaUnionProductDO item : items) {
             try {
+
+                if ("DELETE".equals(item.getStatus())) {
+                    elasticSearch7Service.delIndex(Collections.singletonList(item.getIid()), ElasticSearchIndexEnum.CAT_PRODUCT_INDEX);
+                    continue;
+                }
+
                 MaocheAlimamaUnionTitleKeywordDO titleKeywordDO = keywordMap.get(item.getItemIdSuffix());
                 MaocheAlimamaUnionGoodPriceDO goodPriceDO = unionGoodPriceMap.get(item.getItemIdSuffix());
                 MaocheAlimamaUnionProductDetailDO productDetailDO = productDetailMap.get(item.getItemIdSuffix());
@@ -274,8 +281,6 @@ public class CgUnionProductService {
     }
 
 
-
-
     public List<UnionProductTO> listProductInfo(ElasticSearchData<CarAlimamaUnionProductIndex, CatProductBucketTO> searchData) {
         if (searchData == null) {
             return new ArrayList<>();
@@ -301,11 +306,25 @@ public class CgUnionProductService {
         // 获取sku 详情
         List<MaocheAlimamaUnionProductDetailDO> productDetailDOs = maocheAlimamaUnionProductDetailService.listByItemIdSuffixs(itemIds);
 
+        List<Long> cidOnes = new ArrayList<>();
+        // 一级类目
+        for (CarAlimamaUnionProductIndex item : documents) {
+            if (CollectionUtils.isEmpty(item.getCidOnes())) {
+                continue;
+            }
+            cidOnes.addAll(item.getCidOnes());
+        }
+        List<MaocheCategoryDO> categoryDOs = maocheCategoryService.listByIds(cidOnes);
+        // 商品自定义类目
+//        List<MaocheCategoryProductRelDO> maocheCategoryProductRelDOs = maocheCategoryProductRelService.listByItemIdSuffixs(itemIds);
+
+
         List<UnionProductTO> unionProducts = UnionProductHelper.convertUnionProduct(documents,
                 productDOs,
                 keywordDOs,
                 unionGoodPriceDOs,
-                productDetailDOs);
+                productDetailDOs,
+                categoryDOs);
 
         return unionProducts;
     }
@@ -317,6 +336,17 @@ public class CgUnionProductService {
         return AggregationBuilders
                 .terms("by_category")
                 .field("categoryName")
+                .order(bucketOrder)
+                .size(10);
+    }
+
+    public AggregationBuilder buildLevelOneCategoryAgg(CatUnionProductCondition condition) {
+
+        BucketOrder bucketOrder = BucketOrder.count(false);
+
+        return AggregationBuilders
+                .terms("by_level_one_category")
+                .field("levelOneCategoryName")
                 .order(bucketOrder)
                 .size(10);
     }

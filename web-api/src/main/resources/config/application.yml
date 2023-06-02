@@ -934,9 +934,9 @@ msg:
 #  passwd:
 #
 elasticsearch:
-  ip: es-7vp6wsmb.public.tencentelasticsearch.com
+  ip: es-4uienven.public.tencentelasticsearch.com
   #  ip: 106.55.69.77
   port: 9200
   scheme: https
   user: elastic
-  passwd: zY4oaYgX5uu$kPEY
+  passwd: ZRu8UqZG

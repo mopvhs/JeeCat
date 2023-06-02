@@ -42,6 +42,7 @@ public class CatEsHelper {
         index.setImageUrl(item.getImageUrl());
         index.setCreateTime(item.getCreateTime());
         index.setUpdateTime(item.getUpdateTime());
+        index.setProcessed(item.getProcessed());
 
         return index;
     }
@@ -99,6 +100,7 @@ public class CatEsHelper {
         Long shopDsr = NumberUtils.toLong(jsonObject.getString("shop_dsr"));
         Long auditStatus = Optional.ofNullable(item.getAuditStatus()).orElse(0L);
         String categoryName = Optional.ofNullable(jsonObject.getString("category_name")).orElse("");
+        String levelOneCategoryName = Optional.ofNullable(jsonObject.getString("level_one_category_name")).orElse("");
         Long tkTotalSales = NumberUtils.toLong(jsonObject.getString("tk_total_sales"));
         Long couponRemainCount = NumberUtils.toLong(jsonObject.getString("coupon_remain_count"));
 
@@ -138,6 +140,7 @@ public class CatEsHelper {
         index.setShopDsr(shopDsr);
         index.setAuditStatus(auditStatus);
         index.setCategoryName(categoryName);
+        index.setLevelOneCategoryName(levelOneCategoryName);
         index.setActivity(activity);
         index.setTkTotalSales(tkTotalSales);
         index.setCouponRemainCount(couponRemainCount);

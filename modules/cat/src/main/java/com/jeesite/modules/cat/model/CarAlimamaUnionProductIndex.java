@@ -37,7 +37,7 @@ public class CarAlimamaUnionProductIndex implements Serializable {
 //    private String itemId;
 //    private String itemUrl;
 //    private Integer levelOneCategoryId;
-//    private String levelOneCategoryName;
+    private String levelOneCategoryName;
 //    private String nick;
 //    private String numIid;
 //    private String pictUrl;

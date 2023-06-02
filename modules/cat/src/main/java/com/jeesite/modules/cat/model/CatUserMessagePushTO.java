@@ -19,4 +19,8 @@ public class CatUserMessagePushTO implements Serializable {
      * 自定义一级类目id
      */
     private String cidOne;
+
+    private Integer pageNo;
+
+    private Integer pageSize;
 }

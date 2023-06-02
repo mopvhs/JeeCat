@@ -67,6 +67,9 @@ public class UnionProductTO implements Serializable {
     // 类目名称
     private String categoryName;
 
+    // 自定义类目名称
+    private List<String> cidOneNames;
+
     // 优惠券数量
     private Long couponRemainCount;
     // 优惠券总量

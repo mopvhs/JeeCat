@@ -2,6 +2,7 @@ package com.jeesite.modules.cat.service.cg;
 
 import com.jeesite.common.lang.StringUtils;
 import com.jeesite.common.utils.DateTimeUtils;
+import com.jeesite.common.utils.JsonUtils;
 import com.jeesite.modules.cat.dao.MaocheSenderTaskDao;
 import com.jeesite.modules.cat.entity.MaocheSenderTaskDO;
 import com.jeesite.modules.cat.enums.AuditStatusEnum;
@@ -13,6 +14,7 @@ import com.jeesite.modules.cat.model.CarAlimamaUnionProductIndex;
 import com.jeesite.modules.cat.model.CatProductBucketTO;
 import com.jeesite.modules.cat.model.CatUnionProductCondition;
 import com.jeesite.modules.cat.model.UnionProductTO;
+import com.jeesite.modules.cat.service.MaocheSenderTaskService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -20,9 +22,12 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
+import java.time.LocalTime;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @EnableScheduling
@@ -36,17 +41,34 @@ public class CgUnionProductStatisticsService {
     private CgUnionProductService cgUnionProductService;
 
     @Resource
-    private MaocheSenderTaskDao maocheSenderTaskDao;
+    private MaocheSenderTaskService maocheSenderTaskService;
 
-    // todo 任务间隔60秒
-    @Scheduled(fixedDelay = 60 * 60 * 1000)
+    // todo 任务间隔30分钟
+    @Scheduled(cron = "0 50 7,10,18 * * ?")
     public void runJob() {
-        // 判断是否
+        // 判断是否执行，以及更新的内容
+        // 获取当前时间
+        int hour = LocalTime.now().getHour();
 
+        // TODO
+        Map<Integer, Long> idMap = new HashMap<>();
+        idMap.put(7, 1L);
+        idMap.put(10, 1L);
+        idMap.put(18, 1L);
+        if (!idMap.containsKey(hour)) {
+            return;
+        }
+        Long id = idMap.get(hour);
+        String msg = statistics();
+        Map<String, String> content = new HashMap<>();
+        content.put("msg", msg);
+
+        // update
+        maocheSenderTaskService.updateContentById(id, JsonUtils.toJSONString(content));
     }
 
     // 每日统计
-    public void statistics() {
+    public String statistics() {
         // 时间，选品库，
         // 时间，选品库，有好价 + top2 catDsr
 
@@ -110,27 +132,6 @@ public class CgUnionProductStatisticsService {
         }
         builder.append("更多今日好价，欢迎浏览：\n");
 
-
-        record(builder.toString());
-
-//        System.out.println(builder.toString());
-    }
-
-    public void record(String msg) {
-        if (StringUtils.isBlank(msg)) {
-            return;
-        }
-        MaocheSenderTaskDO taskDO = new MaocheSenderTaskDO();
-        taskDO.setRobotId(2L);
-        taskDO.setChatroomId(12L);
-        taskDO.setContentType(1L);
-        taskDO.setContentJson(msg);
-//        taskDO.setStatus("1");
-        taskDO.setNextExecuteTime(System.currentTimeMillis() / 1000);
-        taskDO.setInterval(1L);
-        taskDO.setCreateTime(new Date());
-        taskDO.setUpdateTime(new Date());
-
-        maocheSenderTaskDao.insert(taskDO);
+        return builder.toString();
     }
 }

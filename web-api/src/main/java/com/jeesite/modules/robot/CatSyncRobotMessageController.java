@@ -2,7 +2,9 @@ package com.jeesite.modules.robot;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.jeesite.common.lang.StringUtils;
+import com.jeesite.common.utils.JsonUtils;
 import com.jeesite.common.web.Result;
 import com.jeesite.modules.cat.dao.MaocheRobotCrawlerMessageDao;
 import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageDO;
@@ -22,6 +24,7 @@ import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Slf4j
 @Controller
@@ -50,6 +53,8 @@ public class CatSyncRobotMessageController {
 
         CarRobotCrawlerMessageIndex catIndex = CatEsHelper.buildCatIndex(message);
         Map<String, Object> data = JSONObject.parseObject(JSON.toJSONString(catIndex), Map.class);
+        // 特殊字段(避免为int，写不进索引)
+        data.put("processed", Optional.ofNullable(catIndex.getProcessed()).orElse(0L));
         elasticSearch7Service.index(data, ElasticSearchIndexEnum.CAT_ROBOT_CRAWLER_MESSAGE_INDEX, String.valueOf(catIndex.getId()));
 
         return Result.OK("同步完成");
@@ -67,27 +72,43 @@ public class CatSyncRobotMessageController {
 
         long id = 0L;
         int limit = 1000;
-        List<MaocheRobotCrawlerMessageDO> all = new ArrayList<>();
         while (true) {
             List<MaocheRobotCrawlerMessageDO> list = maocheRobotCrawlerMessageDao.findAll(id, limit);
             if (CollectionUtils.isEmpty(list)) {
                 break;
             }
-            all.addAll(list);
+
+            for (MaocheRobotCrawlerMessageDO item : list) {
+                try {
+                    CarRobotCrawlerMessageIndex catIndex = CatEsHelper.buildCatIndex(item);
+                    Map<String, Object> data = JsonUtils.toReferenceType(JSON.toJSONString(catIndex), new TypeReference<Map<String, Object>>() {
+                    });
+                    if (data == null) {
+                        continue;
+                    }
+                    // 特殊字段(避免为int，写不进索引)
+                    data.put("processed", Optional.ofNullable(catIndex.getProcessed()).orElse(0L));
+
+                    elasticSearch7Service.index(data, ElasticSearchIndexEnum.CAT_ROBOT_CRAWLER_MESSAGE_INDEX, String.valueOf(catIndex.getId()));
+                } catch (Exception e) {
+                    log.error("index error item:{} ", JSON.toJSONString(item), e);
+                }
+            }
+
             id = list.get(list.size() - 1).getIid();
             if (list.size() < limit) {
                 break;
             }
         }
-        for (MaocheRobotCrawlerMessageDO item : all) {
-            try {
-                CarRobotCrawlerMessageIndex catIndex = CatEsHelper.buildCatIndex(item);
-                Map<String, Object> data = JSONObject.parseObject(JSON.toJSONString(catIndex), Map.class);
-                elasticSearch7Service.index(data, ElasticSearchIndexEnum.CAT_ROBOT_CRAWLER_MESSAGE_INDEX, String.valueOf(catIndex.getId()));
-            } catch (Exception e) {
-                log.error("index error item:{} ", JSON.toJSONString(item), e);
-            }
-        }
+//        for (MaocheRobotCrawlerMessageDO item : all) {
+//            try {
+//                CarRobotCrawlerMessageIndex catIndex = CatEsHelper.buildCatIndex(item);
+//                Map<String, Object> data = JSONObject.parseObject(JSON.toJSONString(catIndex), Map.class);
+//                elasticSearch7Service.index(data, ElasticSearchIndexEnum.CAT_ROBOT_CRAWLER_MESSAGE_INDEX, String.valueOf(catIndex.getId()));
+//            } catch (Exception e) {
+//                log.error("index error item:{} ", JSON.toJSONString(item), e);
+//            }
+//        }
         return Result.OK("完成");
     }
 }

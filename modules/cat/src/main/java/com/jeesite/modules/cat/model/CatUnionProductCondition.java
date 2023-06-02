@@ -46,8 +46,8 @@ public class CatUnionProductCondition implements Serializable {
 //    private String itemId;
 //    private String itemUrl;
 //    private Integer levelOneCategoryId;
-//    @EsItemAspect(queryType = "matchQuery")
-//    private String levelOneCategoryName;
+    @EsItemAspect
+    private String levelOneCategoryName;
 //    private String nick;
 //    private String numIid;
 //    private String pictUrl;
@@ -80,7 +80,8 @@ public class CatUnionProductCondition implements Serializable {
 //    private List<String> smallImages;
 //    private String superiorBrand;
     // 商品标题
-    @EsItemAspect(queryType = "matchQuery")
+//    @EsItemAspect(queryType = "matchQuery")
+    @EsItemAspect(queryType = "matchPhraseQuery")
     private String title;
 //    private Float tkTotalCommi;
     // 月推广量

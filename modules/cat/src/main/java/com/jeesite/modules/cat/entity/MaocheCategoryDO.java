@@ -89,6 +89,10 @@ public class MaocheCategoryDO extends DataEntity<MaocheCategoryDO> {
 		this.level = level;
 	}
 
+	public void setIid_in(Long[] ids) {
+		this.sqlMap.getWhere().and("id", QueryType.IN, ids);
+	}
+
 	public void setItemIdSuffix_in(String[] ids) {
 		this.sqlMap.getWhere().and("item_id_suffix", QueryType.IN, ids);
 	}

@@ -8,6 +8,7 @@ import com.jeesite.common.web.Result;
 import com.jeesite.modules.cat.dao.MaocheAlimamaUnionProductDao;
 import com.jeesite.modules.cat.dao.MaocheAlimamaUnionTitleKeywordDao;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductDO;
+import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductDetailDO;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionTitleKeywordDO;
 import com.jeesite.modules.cat.entity.MaocheCategoryProductRelDO;
 import com.jeesite.modules.cat.enums.AuditStatusEnum;
@@ -25,6 +26,7 @@ import com.jeesite.modules.cat.model.ProductAuditRequest;
 import com.jeesite.modules.cat.model.ProductCategoryModel;
 import com.jeesite.modules.cat.model.UnionProductTO;
 import com.jeesite.modules.cat.model.keytitle.UnionProductTagModel;
+import com.jeesite.modules.cat.service.MaocheAlimamaUnionProductDetailService;
 import com.jeesite.modules.cat.service.MaocheAlimamaUnionProductService;
 import com.jeesite.modules.cat.service.MaocheCategoryProductRelService;
 import com.jeesite.modules.cat.service.MaocheCategoryService;
@@ -46,9 +48,11 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -77,6 +81,9 @@ public class CgProductController {
     @Resource
     private MaocheCategoryProductRelService maocheCategoryProductRelService;
 
+    @Resource
+    private MaocheAlimamaUnionProductDetailService maocheAlimamaUnionProductDetailService;
+
 
     // 商品库
     @RequestMapping(value = "/product/warehouse/detail")
@@ -91,6 +98,7 @@ public class CgProductController {
         List<String> sorts = Optional.ofNullable(condition.getSorts()).orElse(new ArrayList<>());
         if (CollectionUtils.isEmpty(sorts)) {
             sorts.add("volume desc");
+            condition.setSorts(sorts);
         }
 
         int from = (page.getPageNo() - 1) * page.getPageSize();
@@ -119,6 +127,7 @@ public class CgProductController {
         List<String> sorts = Optional.ofNullable(condition.getSorts()).orElse(new ArrayList<>());
         if (CollectionUtils.isEmpty(sorts)) {
             sorts.add("catDsr desc");
+            condition.setSorts(sorts);
         }
 
         // 选品库都是审核通过的商品
@@ -215,6 +224,7 @@ public class CgProductController {
         List<String> sorts = Optional.ofNullable(condition.getSorts()).orElse(new ArrayList<>());
         if (CollectionUtils.isEmpty(sorts)) {
             sorts.add("volume desc");
+            condition.setSorts(sorts);
         }
 
         int from = (page.getPageNo() - 1) * page.getPageSize();
@@ -239,8 +249,8 @@ public class CgProductController {
             return Result.ERROR(500, "参数错误");
         }
 
-        condition.setCategoryName(null);
-        ElasticSearchData<CarAlimamaUnionProductIndex, CatProductBucketTO> searchData = cgUnionProductService.searchProduct(condition, cgUnionProductService::buildWarehouseAgg, 0, 0);
+        condition.setLevelOneCategoryName(null);
+        ElasticSearchData<CarAlimamaUnionProductIndex, CatProductBucketTO> searchData = cgUnionProductService.searchProduct(condition, cgUnionProductService::buildLevelOneCategoryAgg, 0, 0);
         if (searchData == null) {
             return Result.ERROR(500, "查询异常");
         }
@@ -248,13 +258,48 @@ public class CgProductController {
         List<CatProductBucketTO> carProductBucketTOs = new ArrayList<>();
         Map<String, List<CatProductBucketTO>> bucketMap = searchData.getBucketMap();
         for (Map.Entry<String, List<CatProductBucketTO>> entry : bucketMap.entrySet()) {
-            carProductBucketTOs.addAll(entry.getValue());
+            for (CatProductBucketTO bucket : entry.getValue()) {
+                if (StringUtils.isBlank(bucket.getName())) {
+                    continue;
+                }
+                carProductBucketTOs.add(bucket);
+            }
         }
         ProductCategoryVO categoryVO = new ProductCategoryVO();
         categoryVO.setCategories(carProductBucketTOs);
         categoryVO.setTotal(searchData.getTotal());
         return Result.OK(categoryVO);
     }
+
+//
+//    // 商品topN类目
+//    @RequestMapping(value = "/product/top/level/one/category")
+//    @ResponseBody
+//    public Result<ProductCategoryVO> topLevelOneCategory(CatUnionProductCondition condition, HttpServletRequest request, HttpServletResponse response) {
+//
+//        if (condition == null) {
+//            return Result.ERROR(500, "参数错误");
+//        }
+//
+//        condition.setLevelOneCategoryName(null);
+//        ElasticSearchData<CarAlimamaUnionProductIndex, CatProductBucketTO> searchData = cgUnionProductService.searchProduct(condition, cgUnionProductService::buildLevelOneCategoryAgg, 0, 0);
+//        if (searchData == null) {
+//            return Result.ERROR(500, "查询异常");
+//        }
+//
+//        List<CatProductBucketTO> carProductBucketTOs = new ArrayList<>();
+//        Map<String, List<CatProductBucketTO>> bucketMap = searchData.getBucketMap();
+//        for (Map.Entry<String, List<CatProductBucketTO>> entry : bucketMap.entrySet()) {
+//            if (StringUtils.isBlank(entry.getKey())) {
+//                continue;
+//            }
+//            carProductBucketTOs.addAll(entry.getValue());
+//        }
+//        ProductCategoryVO categoryVO = new ProductCategoryVO();
+//        categoryVO.setCategories(carProductBucketTOs);
+//        categoryVO.setTotal(searchData.getTotal());
+//        return Result.OK(categoryVO);
+//    }
 
     // 审核状态变更
     @RequestMapping(value = "/product/audit/status/change")
@@ -288,7 +333,7 @@ public class CgProductController {
     public Result<Object> changeSaleStatus(@RequestBody ProductAuditRequest request) {
 
         if (request == null || CollectionUtils.isEmpty(request.getIds()) || request.getSaleStatus() == null) {
-            return Result.ERROR(404, "参数错误");
+            return Result.ERROR(500, "参数错误");
         }
 
         // 批量更新
@@ -299,15 +344,32 @@ public class CgProductController {
             onShelfDate = new Timestamp(System.currentTimeMillis());
         }
 
+        // 更新索引
+        List<MaocheAlimamaUnionProductDO> productDOs = maocheAlimamaUnionProductDao.listByIds(ids);
+        if (CollectionUtils.isEmpty(productDOs)) {
+            return Result.ERROR(404, "资源不存在");
+        }
+
+        List<String> itemIds = productDOs.stream().map(MaocheAlimamaUnionProductDO::getItemIdSuffix).toList();
+        // 如果是上架操作，判断是否已经爬取了评价信息
+        if (request.getSaleStatus().equals(SaleStatusEnum.ON_SHELF.getStatus())) {
+            List<Long> updateIds = new ArrayList<>();
+            List<MaocheAlimamaUnionProductDetailDO> detailDOS = maocheAlimamaUnionProductDetailService.listByItemIdSuffixs(itemIds);
+            Map<String, MaocheAlimamaUnionProductDetailDO> detailMap = detailDOS.stream().collect(Collectors.toMap(MaocheAlimamaUnionProductDetailDO::getId, Function.identity(), (o1, o2) -> o1));
+            for (Long id : ids) {
+                if (detailMap.containsKey(String.valueOf(id))) {
+                    updateIds.add(id);
+                }
+            }
+            ids = updateIds;
+        }
+
         String time = onShelfDate != null ? onShelfDate.toString() : null;
         int auditStatus = maocheAlimamaUnionProductDao.updateSaleStatus(ids, request.getSaleStatus(), time);
 
         if (auditStatus <= 0) {
             return Result.ERROR(500, "更新失败");
         }
-
-        // 更新索引
-        List<MaocheAlimamaUnionProductDO> productDOs = maocheAlimamaUnionProductDao.listByIds(ids);
 
         cgUnionProductService.indexEs(productDOs, 10);
 

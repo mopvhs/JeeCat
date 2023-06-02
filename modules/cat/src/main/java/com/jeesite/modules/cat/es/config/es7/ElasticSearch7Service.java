@@ -23,6 +23,8 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.client.core.CountResponse;
+import org.elasticsearch.client.indices.GetMappingsRequest;
+import org.elasticsearch.client.indices.GetMappingsResponse;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
@@ -269,5 +271,22 @@ public class ElasticSearch7Service {
             }
         }
 
+    /**
+     * 删除索引
+     * @param indexEnum
+     */
+    public GetMappingsResponse getIndexMapping(ElasticSearchIndexEnum indexEnum) {
+        try {
+            GetMappingsRequest request = new GetMappingsRequest();
+            request.indices(indexEnum.getIndex());
+            GetMappingsResponse mapping = restHighLevelClient.indices().getMapping(request, RequestOptions.DEFAULT);
+
+            return mapping;
+        } catch (Exception e) {
+            log.error("", e);
+        }
+
+        return null;
+    }
 
 }

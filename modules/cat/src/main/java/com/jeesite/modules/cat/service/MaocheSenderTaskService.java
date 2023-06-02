@@ -77,5 +77,13 @@ public class MaocheSenderTaskService extends CrudService<MaocheSenderTaskDao, Ma
 	public void delete(MaocheSenderTaskDO maocheSenderTaskDO) {
 		super.delete(maocheSenderTaskDO);
 	}
+
+	public int updateContentById(Long id, String content) {
+		if (id == null || id <= 0) {
+			return 0;
+		}
+
+		return dao.updateContentById(id, content);
+	}
 	
 }

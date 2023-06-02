@@ -49,6 +49,20 @@
 		</where>
 	</update>
 
+	<update id="updateProductStatus">
+		update
+		maoche_alimama_union_product
+		<set>
+			status = #{status}
+		</set>
+		<where>
+			id in
+			<foreach collection="ids" item="id" close=")" open="(" separator=",">
+				#{id}
+			</foreach>
+		</where>
+	</update>
+
 	<update id="updateSaleStatus">
 		update
 		maoche_alimama_union_product

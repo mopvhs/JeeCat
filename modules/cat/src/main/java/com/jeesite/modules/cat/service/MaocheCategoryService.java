@@ -119,6 +119,28 @@ public class MaocheCategoryService extends CrudService<MaocheCategoryDao, Maoche
 		return words;
 	}
 
+	public List<MaocheCategoryDO> listByIds(List<Long> ids) {
+		if (CollectionUtils.isEmpty(ids)) {
+			return new ArrayList<>();
+		}
+		ids = ids.stream().distinct().collect(Collectors.toList());
+
+		List<MaocheCategoryDO> words = new ArrayList<>();
+		// 循环拿
+		List<List<Long>> partition = Lists.partition(ids, 20);
+		for (List<Long> p : partition) {
+			MaocheCategoryDO query = new MaocheCategoryDO();
+			query.setIid_in(p.toArray(new Long[0]));
+			List<MaocheCategoryDO> list = dao.findList(query);
+			if (CollectionUtils.isEmpty(list)) {
+				continue;
+			}
+			words.addAll(list);
+		}
+
+		return words;
+	}
+
 	/**
 	 * 获取所有的类目
 	 * @return

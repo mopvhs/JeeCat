@@ -21,7 +21,9 @@ public interface MaocheAlimamaUnionProductDao extends CrudDao<MaocheAlimamaUnion
 
     List<MaocheAlimamaUnionProductDO> listByIds(@Param("ids") List<Long> ids);
 
-    int updateAuditStatus(@Param("ids") List<Long> ids, Integer auditStatus, Integer syncMark);
+    int updateAuditStatus(@Param("ids") List<Long> ids, @Param("auditStatus") Integer auditStatus, @Param("syncMark") Integer syncMark);
+
+    int updateProductStatus(@Param("ids") List<Long> ids, @Param("status") String status);
 
     /**
      *
