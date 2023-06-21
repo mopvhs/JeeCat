@@ -34,6 +34,7 @@ import java.util.Date;
 		@Column(name="remark", attrName="remark", label="备用字段"),
 		@Column(name="create_time", attrName="createTime", label="create_time"),
 		@Column(name="update_time", attrName="updateTime", label="update_time"),
+		@Column(name="aff_type", attrName="affType", label="aff_type"),
 	}, orderBy="a.id DESC"
 )
 public class MaocheRobotCrawlerMessageDO extends DataEntity<MaocheRobotCrawlerMessageDO> {
@@ -57,6 +58,7 @@ public class MaocheRobotCrawlerMessageDO extends DataEntity<MaocheRobotCrawlerMe
 	private Date createTime;		// create_time
 	private Date updateTime;		// update_time
 	private Long processed;
+	private String affType;
 
 	/**
 	 * 重载默认方法，主键类型互转，方便操作
@@ -221,5 +223,13 @@ public class MaocheRobotCrawlerMessageDO extends DataEntity<MaocheRobotCrawlerMe
 
 	public void setProcessed(Long processed) {
 		this.processed = processed;
+	}
+
+	public String getAffType() {
+		return affType;
+	}
+
+	public void setAffType(String affType) {
+		this.affType = affType;
 	}
 }

@@ -17,9 +17,11 @@ import java.util.List;
 @MyBatisDao
 public interface MaocheAlimamaUnionProductDao extends CrudDao<MaocheAlimamaUnionProductDO> {
 
-    List<MaocheAlimamaUnionProductDO> findAll(@Param("id") Long id, @Param("limit") Integer limit);
+    List<MaocheAlimamaUnionProductDO> findAll(@Param("id") Long id, @Param("status") String status, @Param("limit") Integer limit);
 
     List<MaocheAlimamaUnionProductDO> listByIds(@Param("ids") List<Long> ids);
+
+    List<MaocheAlimamaUnionProductDO> listSimpleByIds(@Param("ids") List<Long> ids);
 
     int updateAuditStatus(@Param("ids") List<Long> ids, @Param("auditStatus") Integer auditStatus, @Param("syncMark") Integer syncMark);
 

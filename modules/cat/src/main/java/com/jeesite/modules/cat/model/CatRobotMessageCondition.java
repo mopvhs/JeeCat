@@ -14,9 +14,9 @@ public class CatRobotMessageCondition implements Serializable {
 
     @EsItemAspect
     private Long id;
-    @EsItemAspect(queryType = "matchQuery")
+    @EsItemAspect(queryType = "matchPhraseQuery")
     private String msg;
-    @EsItemAspect(queryType = "matchQuery")
+    @EsItemAspect(queryType = "matchPhraseQuery")
     private String msgNew;
     @EsItemAspect
     private String fromGid;
@@ -34,6 +34,12 @@ public class CatRobotMessageCondition implements Serializable {
 
     @EsItemAspect
     private Long processed;
+
+    @EsItemAspect
+    private String affType;
+
+    @EsItemAspect(queryType = "existsQuery", field = "affType")
+    private Boolean hadAffType;
 
     // range查询
     @EsItemAspect(queryType = "rangeQuery", field = "createTime", rangeOp = "gte")

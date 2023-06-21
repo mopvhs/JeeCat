@@ -6,10 +6,14 @@ import com.jeesite.modules.cat.aop.EsItemAspect;
 import com.jeesite.modules.cat.model.CarAlimamaUnionProductIndex;
 import com.jeesite.modules.cat.model.CatProductBucketTO;
 import com.jeesite.modules.cat.model.CarRobotCrawlerMessageIndex;
+import com.jeesite.modules.cat.model.MaocheProductIndex;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.ExistsQueryBuilder;
+import org.elasticsearch.index.query.MultiMatchQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.search.aggregations.Aggregation;
@@ -29,6 +33,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 @Slf4j
 public class CatRobotHelper {
@@ -41,6 +47,11 @@ public class CatRobotHelper {
     public static CarAlimamaUnionProductIndex convertUnionProduct(String index) {
 
         return JSON.parseObject(index, CarAlimamaUnionProductIndex.class);
+    }
+
+    public static MaocheProductIndex convertMaocheProduct(String index) {
+
+        return JSON.parseObject(index, MaocheProductIndex.class);
     }
 
     public static Map<String, List<CatProductBucketTO>> convertUnionProductAggregationMap(Aggregations aggregations) {
@@ -107,6 +118,29 @@ public class CatRobotHelper {
         return boolBuilder;
     }
 
+    public static <T> BoolQueryBuilder buildQuery(T condition, BiFunction<T, BoolQueryBuilder, BoolQueryBuilder> biFunction, Class clazz) {
+        BoolQueryBuilder boolBuilder = new BoolQueryBuilder();
+
+        try {
+            buildConvert(boolBuilder, condition, clazz);
+//            if (shouldFunction != null) {
+//                List<QueryBuilder> apply = shouldFunction.apply(condition);
+//                if (CollectionUtils.isNotEmpty(apply)) {
+//                    for (QueryBuilder item : apply) {
+//                        boolBuilder.should(item);
+//                    }
+//                }
+//            }
+            if (biFunction != null) {
+                boolBuilder = biFunction.apply(condition, boolBuilder);
+            }
+        } catch (Exception e) {
+            log.error("解析参数异常, condition:{}", JSON.toJSONString(condition), e);
+        }
+
+        return boolBuilder;
+    }
+
 
     public static <T> void buildConvert(BoolQueryBuilder boolBuilder, T condition, Class clazz) throws IllegalAccessException {
 //        Class<CatRobotMessageCondition> clazz = CatRobotMessageCondition.class;
@@ -150,6 +184,16 @@ public class CatRobotHelper {
                     break;
                 case "mustNotItemQuery":
                     boolBuilder.mustNot(QueryBuilders.termQuery(name, value));
+                    break;
+                case "existsQuery":
+                    if (value instanceof Boolean b) {
+                        if (b) {
+                            boolBuilder.must(new ExistsQueryBuilder(name));
+                        } else {
+                            boolBuilder.mustNot(new ExistsQueryBuilder(name));
+                        }
+                    }
+
                     break;
                 case "rangeQuery":
                     List<Field> fieldList = rangMap.get(name);

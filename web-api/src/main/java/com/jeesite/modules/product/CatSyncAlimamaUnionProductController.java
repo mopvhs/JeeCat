@@ -20,14 +20,19 @@ import com.jeesite.modules.cat.model.CatRobotMessageCondition;
 import com.jeesite.modules.cat.model.UnionProductSyncRequest;
 import com.jeesite.modules.cat.service.MaocheAlimamaUnionProductService;
 import com.jeesite.modules.cat.service.cg.CgUnionProductService;
+import com.jeesite.modules.cat.service.cg.DtkConsumer;
+import com.jeesite.modules.cat.service.dingding.DingDingService;
 import io.netty.util.concurrent.DefaultThreadFactory;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.elasticsearch.tasks.Task;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
@@ -57,6 +62,9 @@ public class CatSyncAlimamaUnionProductController {
     @Resource
     private CgUnionProductService cgUnionProductService;
 
+    @Resource
+    private DingDingService dingDingService;
+
     private static ExecutorService executor = null;
 
     @PostConstruct
@@ -74,13 +82,15 @@ public class CatSyncAlimamaUnionProductController {
         }
         MaocheAlimamaUnionProductDO query = new MaocheAlimamaUnionProductDO();
         query.setId(String.valueOf(request.getId()));
-        MaocheAlimamaUnionProductDO message = maocheAlimamaUnionProductDao.getByEntity(query);
+//        MaocheAlimamaUnionProductDO message = maocheAlimamaUnionProductDao.getByEntity(query);
 
-        if (message == null) {
+        MaocheAlimamaUnionProductDO unionProductDO = maocheAlimamaUnionProductService.get(query);
+
+        if (unionProductDO == null) {
             return Result.ERROR(404, "资源不存在");
         }
 
-        cgUnionProductService.indexEs(List.of(message), 1);
+        cgUnionProductService.indexEs(List.of(unionProductDO), 1);
 
         return Result.OK("同步完成");
     }
@@ -92,11 +102,9 @@ public class CatSyncAlimamaUnionProductController {
             return Result.ERROR(500, "参数错误");
         }
 
-
         List<Long> ids = request.getIds().stream().distinct().toList();
 
-
-        int corePoolSize = 10;
+        int corePoolSize = 20;
         Runnable runnable = new Runnable() {
             @Override
             public void run() {
@@ -104,7 +112,7 @@ public class CatSyncAlimamaUnionProductController {
                 List<List<Long>> partition = Lists.partition(ids, corePoolSize);
                 for (List<Long> p : partition) {
                     MaocheAlimamaUnionProductDO query = new MaocheAlimamaUnionProductDO();
-                    query.setId_in(p.toArray(new Long[0]));
+                    query.setIid_in(p.toArray(new Long[0]));
                     List<MaocheAlimamaUnionProductDO> messages = maocheAlimamaUnionProductDao.findList(query);
 
                     if (CollectionUtils.isEmpty(messages)) {
@@ -139,7 +147,7 @@ public class CatSyncAlimamaUnionProductController {
                 List<List<Long>> partition = Lists.partition(ids, corePoolSize);
                 for (List<Long> p : partition) {
                     MaocheAlimamaUnionProductDO query = new MaocheAlimamaUnionProductDO();
-                    query.setId_in(p.toArray(new Long[0]));
+                    query.setIid_in(p.toArray(new Long[0]));
                     List<MaocheAlimamaUnionProductDO> products = maocheAlimamaUnionProductDao.findList(query);
 
                     if (CollectionUtils.isEmpty(products)) {
@@ -160,7 +168,7 @@ public class CatSyncAlimamaUnionProductController {
     }
 
     @RequestMapping(value = "cat/alimama/union/product/all/sync", method = RequestMethod.POST)
-    public Result<String> syncAllProduct(String token) {
+    public Result<String> syncAllProduct(String token, @RequestParam(value = "fast", required = false, defaultValue = "no") String fast) {
 
         if (StringUtils.isBlank(token)) {
             return Result.ERROR(500, "参数错误");
@@ -168,29 +176,63 @@ public class CatSyncAlimamaUnionProductController {
         if (!token.equals("catcar")) {
             return Result.ERROR(500, "参数错误");
         }
+        dingDingService.sendDingDingMsg("全量同步执行开始");
+
+
+        long startTime = System.currentTimeMillis();
+        int step = 5000;
+
+        Inc inc = new Inc();
 
         Runnable runnable = new Runnable() {
             @Override
             public void run() {
                 long id = 0L;
                 int limit = 20;
+                StopWatch stopWatch = new StopWatch();
+                stopWatch.start();
                 while (true) {
-                    List<MaocheAlimamaUnionProductDO> list = maocheAlimamaUnionProductDao.findAll(id, limit);
+                    String status = null;
+                    if ("fast".equals(fast)) {
+                        status = "NORMAL";
+                    }
+
+                    List<MaocheAlimamaUnionProductDO> list = maocheAlimamaUnionProductDao.findAll(id, status, limit);
                     if (CollectionUtils.isEmpty(list)) {
                         break;
                     }
+                    inc.incNum(list.size());
                     cgUnionProductService.indexEs(list, 1);
+
+                    // 每20000条打一次日志
+                    if (inc.getNum() % step == 0) {
+                        long t = System.currentTimeMillis() - startTime;
+                        dingDingService.sendParseDingDingMsg("全量同步执行当前数量为:{}, 已耗时：{} 毫秒", inc.getNum(), t);
+                    }
 
                     id = list.get(list.size() - 1).getIid();
                     if (list.size() < limit) {
                         break;
                     }
                 }
+                stopWatch.stop();
+                String msg = "全量猫车商品索引执行完成，总时间:{}";
+                dingDingService.sendParseDingDingMsg(msg, stopWatch.toString());
             }
         };
 
         executor.submit(runnable);
 
         return Result.OK("完成");
+    }
+
+    @Data
+    private class Inc {
+
+        public int num;
+
+        public void incNum(int count) {
+            this.num += count;
+        }
     }
 }

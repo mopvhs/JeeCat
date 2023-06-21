@@ -19,7 +19,7 @@ public class CategoryHelper {
      * @param categories 这个场景下，不是树结构，是全部的内容
      * @return
      */
-    public static ProductCategoryModel getProductCategory(List<MaocheCategoryProductRelDO> rels, List<CategoryTree> categories) {
+    public static ProductCategoryModel getRelProductCategory(List<MaocheCategoryProductRelDO> rels, List<CategoryTree> categories) {
 
         if (CollectionUtils.isEmpty(categories) || CollectionUtils.isEmpty(rels)) {
             return new ProductCategoryModel();

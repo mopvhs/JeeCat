@@ -102,6 +102,15 @@
 			<version>2.1.1</version>
 		</dependency>
 
+		<!-- 本地jar包 -->
+		<dependency>
+			<groupId>com.dtk.open.platform</groupId>
+			<artifactId>open.platform.fetch</artifactId>
+			<version>1.0.0</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/libs/open-platform-fetch-1.0.0.jar</systemPath>
+		</dependency>
+
 	</dependencies>
 	
 	<build>
@@ -114,6 +123,7 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 				<configuration>
+					<fork>true</fork>
 					<includeSystemScope>true</includeSystemScope>
 				</configuration>
 			</plugin>
@@ -139,7 +149,13 @@
 					<jeeversion>6.0</jeeversion>
 				</configuration>
 			</plugin>
-			
+
+			<!-- 加载本地jar包 -->
+<!--			<plugin>-->
+<!--				<artifactId/>-->
+<!--				-->
+<!--			</plugin>-->
+<!--			-->
 		</plugins>
 	</build>
 	

@@ -3,7 +3,6 @@ package com.jeesite.modules.cat.es.config.es7;
 import com.alibaba.fastjson.JSON;
 import com.google.common.collect.Lists;
 import com.jeesite.common.lang.StringUtils;
-import com.jeesite.common.utils.JsonUtils;
 import com.jeesite.modules.cat.enums.ElasticSearchIndexEnum;
 import com.jeesite.modules.cat.es.config.model.ElasticSearchData;
 import io.netty.util.concurrent.DefaultThreadFactory;
@@ -91,7 +90,7 @@ public class ElasticSearch7Service {
         }
 
         try {
-            log.info("es search source :{}", searchSourceBuilder.toString());
+            log.info("es search indexEnum {}, source :{}", indexEnum.getIndex(), searchSourceBuilder.toString());
             SearchResponse searchResponse = restHighLevelClient.search(searchRequest, RequestOptions.DEFAULT);
             if (searchResponse == null) {
                 return null;
@@ -169,7 +168,7 @@ public class ElasticSearch7Service {
             IndexResponse response = restHighLevelClient.index(indexRequest, RequestOptions.DEFAULT);
 
             DocWriteResponse.Result result = response.getResult();
-            log.info("indexEs resourceId {}, indexEnum {}, result {}",resourceId, indexEnum.name(), JSON.toJSONString(result));
+//            log.info("indexEs resourceId {}, indexEnum {}, result {}",resourceId, indexEnum.name(), JSON.toJSONString(result));
         } catch (Exception e) {
             log.error("indexEs error data {}, resourceId {}", JSON.toJSONString(data), resourceId, e);
         }
@@ -206,7 +205,7 @@ public class ElasticSearch7Service {
                         try {
                             IndexResponse response = restHighLevelClient.index(indexRequest, RequestOptions.DEFAULT);
                             DocWriteResponse.Result result = response.getResult();
-                            log.info("indexEs resourceId {}, indexEnum {}, result {}", id, indexEnum.getIndex(), JSON.toJSONString(result));
+//                            log.info("indexEs resourceId {}, indexEnum {}, result {}", id, indexEnum.getIndex(), JSON.toJSONString(result));
                         } catch (Exception e) {
                             log.error("indexEs error data {}, resourceId {}", JSON.toJSONString(data), id, e);
 
@@ -250,7 +249,7 @@ public class ElasticSearch7Service {
                             DeleteRequest deleteRequest = new DeleteRequest(indexEnum.getIndex());
                             deleteRequest.id(String.valueOf(id));
                             DeleteResponse delete = restHighLevelClient.delete(deleteRequest, RequestOptions.DEFAULT);
-                            log.info("del index resourceId {}, indexEnum {}, result {}", id, indexEnum.getIndex(), JSON.toJSONString(delete));
+//                            log.info("del index resourceId {}, indexEnum {}, result {}", id, indexEnum.getIndex(), JSON.toJSONString(delete));
                         } catch (Exception e) {
                             log.error("del index error resourceId {}", id, e);
                             return false;

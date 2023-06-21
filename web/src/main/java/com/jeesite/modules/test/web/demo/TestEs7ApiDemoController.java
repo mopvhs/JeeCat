@@ -87,7 +87,7 @@ public class TestEs7ApiDemoController {
 				null);
 
 
-        log.info("maocheSearch response {}", JSON.toJSONString(searchData));
+//        log.info("maocheSearch response {}", JSON.toJSONString(searchData));
 	}
 
 }

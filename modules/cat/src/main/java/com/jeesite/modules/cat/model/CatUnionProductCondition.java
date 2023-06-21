@@ -30,6 +30,9 @@ public class CatUnionProductCondition implements Serializable {
 //    @EsItemAspect(queryType = "matchQuery")
 //    private String couponInfo;
 
+    @EsItemAspect(queryType = "itemsQuery", field = "categoryName")
+    private List<String> categoryNames;
+
     // 优惠券数量
     @EsItemAspect(queryType = "rangeQuery", field = "couponRemainCount", rangeOp = "gte")
     private Long gteCouponRemainCount;
@@ -139,6 +142,10 @@ public class CatUnionProductCondition implements Serializable {
     @EsItemAspect(queryType = "rangeQuery", field = "createTime", rangeOp = "gte")
     private Long gteCreateTime;
 
+    // 入库时间
+    @EsItemAspect(queryType = "rangeQuery", field = "updateTime", rangeOp = "gte")
+    private Long gteUpdateTime;
+
     @EsItemAspect(queryType = "itemsQuery")
     private List<Long> cidOnes;
 
@@ -146,5 +153,8 @@ public class CatUnionProductCondition implements Serializable {
     // updateTime desc
     // updateTime asc
     private List<String> sorts;
+
+    @EsItemAspect
+    private String dataSource;
 
 }

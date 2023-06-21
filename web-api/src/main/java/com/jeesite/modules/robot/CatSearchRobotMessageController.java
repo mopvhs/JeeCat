@@ -76,7 +76,7 @@ public class CatSearchRobotMessageController {
                 null);
 
 
-        log.info("maocheSearch response {}", JSON.toJSONString(searchData));
+//        log.info("maocheSearch response {}", JSON.toJSONString(searchData));
 
         return Result.OK(searchData);
     }

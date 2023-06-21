@@ -11,6 +11,7 @@ import com.jeesite.common.mybatis.annotation.Column;
 import com.jeesite.common.mybatis.annotation.Table;
 import com.jeesite.common.mybatis.mapper.query.QueryType;
 import com.jeesite.modules.cat.enums.AuditStatusEnum;
+import com.jeesite.modules.cat.enums.ProductDataSource;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
@@ -71,10 +72,14 @@ import org.apache.commons.lang3.math.NumberUtils;
 		@Column(name="zk_final_price", attrName="zkFinalPrice", label="zk_final_price", isUpdateForce=true),
 		@Column(name="coupon", attrName="coupon", label="coupon", isUpdateForce=true),
 		@Column(name="sync_mark", attrName="syncMark", label="sync_mark", isUpdateForce=true),
+		@Column(name="data_source", attrName="dataSource", label="data_source", isUpdateForce=true),
+		@Column(name="maoche_inner_id", attrName="maocheInnerId", label="maoche_inner_id", isUpdateForce=true),
 		@Column(name="create_time", attrName="createTime", label="create_time", isUpdateForce=true),
 		@Column(name="update_time", attrName="updateTime", label="update_time", isUpdateForce=true),
+		@Column(name="sync_time", attrName="syncTime", label="sync_time", isUpdateForce=true),
 		@Column(name="sale_status_date", attrName="saleStatusDate", label="sale_status_date", isUpdateForce=true),
-	}, orderBy="a.id DESC"
+		@Column(name="status", attrName="status", label="status", isUpdateForce=true),
+	}
 )
 public class MaocheAlimamaUnionProductDO extends DataEntity<MaocheAlimamaUnionProductDO> {
 	
@@ -142,6 +147,15 @@ public class MaocheAlimamaUnionProductDO extends DataEntity<MaocheAlimamaUnionPr
 	private Date updateTime;
 	// 更新标记
 	private Long syncMark;
+	private Date syncTime;
+	// 数据来源
+	/**
+	 * {@link ProductDataSource}
+	 */
+	private String dataSource;
+
+	// 内部id
+	private String maocheInnerId;
 
 	/**
 	 * 重载默认方法，主键类型互转，方便操作
@@ -616,7 +630,35 @@ public class MaocheAlimamaUnionProductDO extends DataEntity<MaocheAlimamaUnionPr
 		this.syncMark = syncMark;
 	}
 
-	public void setId_in(Long[] ids) {
+	public Date getSyncTime() {
+		return syncTime;
+	}
+
+	public void setSyncTime(Date syncTime) {
+		this.syncTime = syncTime;
+	}
+
+	public String getDataSource() {
+		return dataSource;
+	}
+
+	public void setDataSource(String dataSource) {
+		this.dataSource = dataSource;
+	}
+
+	public String getMaocheInnerId() {
+		return maocheInnerId;
+	}
+
+	public void setMaocheInnerId(String maocheInnerId) {
+		this.maocheInnerId = maocheInnerId;
+	}
+
+	public void setIid_in(Long[] ids) {
 		this.sqlMap.getWhere().and("id", QueryType.IN, ids);
+	}
+
+	public void setMaocheInnerId_in(String[] ids) {
+		this.sqlMap.getWhere().and("maoche_inner_id", QueryType.IN, ids);
 	}
 }

@@ -27,5 +27,6 @@ public class CarRobotCrawlerMessageIndex implements Serializable {
     private Date createTime;
     private Date updateTime;
     private Long processed;
+    private String affType;
 
 }

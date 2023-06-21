@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jeesite.modules.cat.dao.MaocheDataokeProductDao">
+	
+	<!-- 查询数据
+	<select id="findList" resultType="MaocheDataokeProductDO">
+		SELECT ${sqlMap.column.toSql()}
+		FROM ${sqlMap.table.toSql()}
+		<where>
+			${sqlMap.where.toSql()}
+		</where>
+		ORDER BY ${sqlMap.order.toSql()}
+	</select> -->
+
+	<update id="updateProduct">
+		update
+		maoche_dataoke_product
+		<set>
+			update_by = #{updateBy}
+			<if test="originalPrice != null">
+				,original_price = #{originalPrice}
+			</if>
+			<if test="actualPrice != null">
+				,actual_price = #{actualPrice}
+			</if>
+			<if test="couponPrice != null">
+				,coupon_price = #{couponPrice}
+			</if>
+			<if test="commissionRate != null">
+				,commission_rate = #{commissionRate}
+			</if>
+			<if test="monthSales != null">
+				,month_sales = #{monthSales}
+			</if>
+			<if test="specialText != null">
+				,special_text = #{specialText}
+			</if>
+			<if test="couponRemainCount != null">
+				,coupon_remain_count = #{couponRemainCount}
+			</if>
+			<if test="couponReceiveNum != null">
+				,coupon_receive_num = #{couponReceiveNum}
+			</if>
+		</set>
+		<where>
+			id = #{id}
+		</where>
+	</update>
+
+	<update id="updateStatus">
+		update
+		maoche_dataoke_product
+		<set>
+			status = #{status}
+		</set>
+		<where>
+			dtk_id in
+			<foreach collection="dtkIds" item="dtkId" close=")" open="(" separator=",">
+				#{dtkId}
+			</foreach>
+		</where>
+	</update>
+</mapper>

@@ -1,19 +1,18 @@
 package com.jeesite.modules.cgcat;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.jeesite.common.entity.Page;
 import com.jeesite.common.lang.NumberUtils;
 import com.jeesite.common.lang.StringUtils;
 import com.jeesite.common.utils.JsonUtils;
 import com.jeesite.common.utils.PatternUtils;
 import com.jeesite.common.web.Result;
-import com.jeesite.modules.cat.cache.CacheService;
 import com.jeesite.modules.cat.dao.MaocheAlimamaUnionProductDao;
+import com.jeesite.modules.cat.entity.MaocheCategoryMappingDO;
 import com.jeesite.modules.cat.enums.AuditStatusEnum;
-import com.jeesite.modules.cat.enums.ElasticSearchIndexEnum;
 import com.jeesite.modules.cat.enums.SaleStatusEnum;
 import com.jeesite.modules.cat.es.config.es7.ElasticSearch7Service;
 import com.jeesite.modules.cat.es.config.model.ElasticSearchData;
+import com.jeesite.modules.cat.helper.dataoke.DaTaoKeResponseHelper;
 import com.jeesite.modules.cat.model.CarAlimamaUnionProductIndex;
 import com.jeesite.modules.cat.model.CatProductBucketTO;
 import com.jeesite.modules.cat.model.CatUnionProductCondition;
@@ -21,15 +20,18 @@ import com.jeesite.modules.cat.model.CatUserMessagePushTO;
 import com.jeesite.modules.cat.model.CategoryTree;
 import com.jeesite.modules.cat.model.ProductAuditRequest;
 import com.jeesite.modules.cat.model.UnionProductTO;
+import com.jeesite.modules.cat.model.dataoke.DaTaoKeResponse;
+import com.jeesite.modules.cat.service.MaocheCategoryMappingService;
 import com.jeesite.modules.cat.service.MaocheCategoryService;
 import com.jeesite.modules.cat.service.cg.CgUnionProductService;
 import com.jeesite.modules.cat.service.cg.CgUnionProductStatisticsService;
 import com.jeesite.modules.cat.service.cg.CgUserRcmdService;
+import com.jeesite.modules.cat.service.cg.DaTaoKeApiService;
+import com.jeesite.modules.cat.service.dingding.DingDingService;
 import com.jeesite.modules.cgcat.dto.HistorySearchKeywordVO;
 import com.jeesite.modules.cgcat.dto.ProductCategoryVO;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
-import org.elasticsearch.client.indices.GetMappingsResponse;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -46,8 +48,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.Random;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Controller
@@ -72,6 +75,11 @@ public class CgProductPushController {
     @Resource
     private MaocheCategoryService maocheCategoryService;
 
+    @Resource
+    private DingDingService dingDingService;
+
+    @Resource
+    private MaocheCategoryMappingService maocheCategoryMappingService;
 
     // 微信企业 @推送商品
     @RequestMapping(value = "/product/push/detail")
@@ -83,18 +91,15 @@ public class CgProductPushController {
             return page;
         }
 
+        log.info("messagePushTO {}", JsonUtils.toJSONString(messagePushTO));
+
         Map<String, Object> otherData = new HashMap<>();
         String res = "亲爱的小主您好，根据你的要求，共找到%d个商品，券后最低【%s】,已按猫宝分计算完毕，自动排序供您筛选，欢迎浏览以下页面：";
 
         String tips = null;
         // 是否命中@逻辑
         List<String> list = PatternUtils.matchMention(messagePushTO.getKeyword());
-//        if (CollectionUtils.isEmpty(list)) {
-//            otherData.put("tips", String.format("亲爱的小主您好，根据你的要求，共找到%d个【关键词】", 0));
-//            page.setList(new ArrayList<>());
-//            page.setCount(0);
-//            return page;
-//        }
+
         int pageNo = Optional.ofNullable(messagePushTO.getPageNo()).orElse(1);
         Integer pageSize = Optional.ofNullable(messagePushTO.getPageSize()).orElse(20);
         int from = (pageNo - 1) * pageSize;
@@ -115,15 +120,22 @@ public class CgProductPushController {
 
         CatUnionProductCondition condition = new CatUnionProductCondition();
         condition.setTitle(keyword);
-        // todo yhq 先注释测试
         condition.setSaleStatus(SaleStatusEnum.ON_SHELF.getStatus());
         condition.setAuditStatus(AuditStatusEnum.PASS.getStatus());
 
         condition.setSorts(sorts);
 
         long cidOne = NumberUtils.toLong(messagePushTO.getCidOne());
+        List<String> categoryNames = new ArrayList<>();
         if (cidOne > 0) {
-            condition.setCidOnes(Collections.singletonList(cidOne));
+//            condition.setCidOnes(Collections.singletonList(cidOne));
+            // 获取到类目映射
+            List<MaocheCategoryMappingDO> categories = maocheCategoryMappingService.listByParentId(cidOne);
+            if (CollectionUtils.isNotEmpty(categories)) {
+                categoryNames.addAll(categories.stream().map(MaocheCategoryMappingDO::getName).toList());
+            }
+
+            condition.setCategoryNames(categoryNames);
         }
 
         // 聚合，获取券后价格最低的一个商品金额
@@ -185,33 +197,41 @@ public class CgProductPushController {
         int from = 0;
         int size = 4;
 
-        // 猫车分倒排
-        List<String> sorts = new ArrayList<>();
-        sorts.add("catDsr desc");
+        try {
+            // 猫车分倒排
+            List<String> sorts = new ArrayList<>();
+            sorts.add("catDsr desc");
 
-        // 随机关键词
-//        List<String> keywords = new ArrayList<>();
-//        keywords.add("猫粮");
-//        keywords.add("猫零食");
+            // 随机关键词
+            List<String> keywords = new ArrayList<>();
+            keywords.add("猫粮");
+            keywords.add("猫零食");
+            Random random = new Random();
 
-        CatUnionProductCondition condition = new CatUnionProductCondition();
-        condition.setTitle("猫粮 猫零食");
-        condition.setSaleStatus(SaleStatusEnum.ON_SHELF.getStatus());
-        condition.setAuditStatus(AuditStatusEnum.PASS.getStatus());
-        condition.setSorts(sorts);
+            CatUnionProductCondition condition = new CatUnionProductCondition();
+            condition.setTitle(keywords.get(random.nextInt(2)));
+            condition.setSaleStatus(SaleStatusEnum.ON_SHELF.getStatus());
+            condition.setAuditStatus(AuditStatusEnum.PASS.getStatus());
+            condition.setSorts(sorts);
 
-        // 聚合，获取券后价格最低的一个商品金额
-        ElasticSearchData<CarAlimamaUnionProductIndex, CatProductBucketTO> searchData = cgUnionProductService.searchProduct(condition,
-                cgUnionProductService::buildCatMessagePushAgg,
-                from,
-                size);
-        if (searchData == null || searchData.getTotal() == 0) {
-            return Result.OK(new ArrayList<>());
+            // 聚合，获取券后价格最低的一个商品金额
+            ElasticSearchData<CarAlimamaUnionProductIndex, CatProductBucketTO> searchData = cgUnionProductService.searchProduct(condition,
+                    cgUnionProductService::buildCatMessagePushAgg,
+                    from,
+                    size);
+            if (searchData == null || searchData.getTotal() == 0) {
+                return Result.OK(new ArrayList<>());
+            }
+
+            List<UnionProductTO> productTOs = cgUnionProductService.listProductInfo(searchData);
+
+            return Result.OK(productTOs);
+        } catch (Exception e) {
+            dingDingService.sendParseDingDingMsg("H5 推荐商品异常，{}", e.getMessage());
+            log.error("rcmdProductWarehouseDetail exception ", e);
         }
 
-        List<UnionProductTO> productTOs = cgUnionProductService.listProductInfo(searchData);
-
-        return Result.OK(productTOs);
+        return Result.ERROR(500, "服务器错误");
     }
 
 
@@ -220,22 +240,27 @@ public class CgProductPushController {
     @ResponseBody
     public Result<?> statistics() {
 
-        GetMappingsResponse indexMapping = elasticSearch7Service.getIndexMapping(ElasticSearchIndexEnum.CAT_PRODUCT_INDEX);
+//        GetMappingsResponse indexMapping = elasticSearch7Service.getIndexMapping(ElasticSearchIndexEnum.CAT_PRODUCT_INDEX);
 
-//        cgUnionProductStatisticsService.runJob();
+        String s = cgUnionProductStatisticsService.runJob();
 
-        return Result.OK();
+        return Result.OK(s);
     }
 
     public static void main(String[] args) {
-        String input = "这是一条@猫车 的测试消息。";
+//        String input = "这是一条@猫车 的测试消息。";
+//
+//        String regex = "@[\\u4e00-\\u9fa5A-Za-z]+\\s";
+//        Pattern pattern = Pattern.compile(regex);
+//        Matcher matcher = pattern.matcher(input);
+//
+//        while (matcher.find()) {
+//            System.out.println(matcher.group());
+//        }
 
-        String regex = "@[\\u4e00-\\u9fa5A-Za-z]+\\s";
-        Pattern pattern = Pattern.compile(regex);
-        Matcher matcher = pattern.matcher(input);
-
-        while (matcher.find()) {
-            System.out.println(matcher.group());
+        Random random = new Random();
+        for (int i = 0; i < 10; i++) {
+            System.out.println(random.nextInt(2));
         }
     }
 
@@ -279,33 +304,61 @@ public class CgProductPushController {
 
         List<CategoryTree> categoryTreeFromCache = maocheCategoryService.getCategoryTreeFromCache();
 
-        List<Long> rootCids = new ArrayList<>();
-        rootCids.add(6L);
-        rootCids.add(1L);
-        rootCids.add(7L);
-        rootCids.add(8L);
+
 
         ProductCategoryVO response = new ProductCategoryVO();
         List<CatProductBucketTO> categories = new ArrayList<>();
-        // 先后台写死顺序
-        for (CategoryTree cat : categoryTreeFromCache) {
-            if (rootCids.contains(cat.getId())) {
-                CatProductBucketTO item = new CatProductBucketTO();
-                item.setKey(String.valueOf(cat.getId()));
-                item.setName(cat.getName());
-                categories.add(item);
-            }
-        }
+
+
 
         CatProductBucketTO allItem = new CatProductBucketTO();
         allItem.setKey("0");
         allItem.setName("全部");
         categories.add(0, allItem);
 
-        response.setCategories(categories);
+        List<Long> rootCids = new ArrayList<>();
+        rootCids.add(50L);
+        rootCids.add(23L);
+        rootCids.add(25L);
+        rootCids.add(1L);
+        // 先后台写死顺序
+        List<MaocheCategoryMappingDO> categoryMappingDOs = maocheCategoryMappingService.listByParentId(0L);
+        if (CollectionUtils.isNotEmpty(categoryMappingDOs)) {
+            Map<Long, MaocheCategoryMappingDO> doMap = categoryMappingDOs.stream().collect(Collectors.toMap(MaocheCategoryMappingDO::getIid, Function.identity(), (o1, o2) -> o1));
+            for (Long id : rootCids) {
+                MaocheCategoryMappingDO maocheCategoryMappingDO = doMap.get(id);
+                if (maocheCategoryMappingDO == null) {
+                    continue;
+                }
+                CatProductBucketTO item = new CatProductBucketTO();
+                item.setKey(maocheCategoryMappingDO.getId());
+                item.setName(maocheCategoryMappingDO.getName());
+                categories.add(item);
+            }
+        }
 
+        response.setCategories(categories);
         return Result.OK(response);
     }
 
+    @Resource
+    private DaTaoKeApiService daTaoKeApiService;
 
+    @RequestMapping(value = "/product/custom/getHistoryLowPriceList")
+    @ResponseBody
+    public Result<?> getHistoryLowPriceList(int pageId, int pageSize, String cids) {
+
+        DaTaoKeResponse<Object> historyLowPriceList = daTaoKeApiService.getHistoryLowPriceList(
+                "647802ed3a2b4",
+                "v1.0.0",
+                pageSize,
+                pageId,
+                cids,
+                "0"
+        );
+
+        List<Long> historyLowPriceIds = DaTaoKeResponseHelper.getHistoryLowPriceIds(JsonUtils.toJSONString(historyLowPriceList.getData()));
+
+        return Result.OK(historyLowPriceIds);
+    }
 }

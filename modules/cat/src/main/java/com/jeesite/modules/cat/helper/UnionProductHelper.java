@@ -10,6 +10,7 @@ import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductDO;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductDetailDO;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionTitleKeywordDO;
 import com.jeesite.modules.cat.entity.MaocheCategoryDO;
+import com.jeesite.modules.cat.entity.MaocheDataokeProductDO;
 import com.jeesite.modules.cat.model.CarAlimamaUnionProductIndex;
 import com.jeesite.modules.cat.model.PromotionTagTO;
 import com.jeesite.modules.cat.model.RateDetailTO;
@@ -17,6 +18,7 @@ import com.jeesite.modules.cat.model.RateTO;
 import com.jeesite.modules.cat.model.UnionProductTO;
 import com.jeesite.modules.cat.model.UnionProductTagTO;
 import com.jeesite.modules.cat.model.keytitle.UnionProductTagModel;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 
 import java.math.BigDecimal;
@@ -29,6 +31,7 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+@Slf4j
 public class UnionProductHelper {
 
 
@@ -122,6 +125,9 @@ public class UnionProductHelper {
             product.setSaleStatus(productDO.getSaleStatus());
             product.setOnShelfDate(productDO.getSaleStatusDate());
 
+            product.setDataSource(Optional.ofNullable(productDO.getDataSource()).orElse(""));
+            product.setBenefitDesc(Optional.ofNullable(index.getBenefitDesc()).orElse(""));
+            product.setItemDescription(Optional.ofNullable(jsonObject.getString("item_description")).orElse(""));
             // 评论信息
             fillItemRateDetail(product, productDetailMap.get(productDO.getItemIdSuffix()));
 
@@ -162,11 +168,15 @@ public class UnionProductHelper {
         if (jsonObject == null) {
             return null;
         }
-        String smallImage = getSmallImage(jsonObject.get("small_images"));
+        String smallImage = jsonObject.getString("pict_url");
         if (StringUtils.isNotBlank(smallImage)) {
             return smallImage;
         }
-        smallImage = jsonObject.getString("pict_url");
+        smallImage = getSmallImage(jsonObject.get("small_images"));
+        if (StringUtils.isNotBlank(smallImage)) {
+            return smallImage;
+        }
+        smallImage = getSmallImage(jsonObject.get("smallImages"));
         if (StringUtils.isNotBlank(smallImage)) {
             return smallImage;
         }
@@ -211,17 +221,21 @@ public class UnionProductHelper {
         RateTO rateTO = new RateTO();
         product.setRate(rateTO);
         List<RateDetailTO> details = new ArrayList<>();
-        JSONArray keywords = rate.getJSONArray("keywords");
-        for (int i = 0; i < keywords.size(); i++) {
-            Object o = keywords.get(i);
-            if (o instanceof JSONObject item) {
-                RateDetailTO rateDetailTO = JsonUtils.toReferenceType(item.toJSONString(), new TypeReference<RateDetailTO>() {
-                });
-                if (rateDetailTO == null) {
-                    continue;
+        try {
+            JSONArray keywords = rate.getJSONArray("keywords");
+            for (int i = 0; i < keywords.size(); i++) {
+                Object o = keywords.get(i);
+                if (o instanceof JSONObject item) {
+                    RateDetailTO rateDetailTO = JsonUtils.toReferenceType(item.toJSONString(), new TypeReference<RateDetailTO>() {
+                    });
+                    if (rateDetailTO == null) {
+                        continue;
+                    }
+                    details.add(rateDetailTO);
                 }
-                details.add(rateDetailTO);
             }
+        } catch (Exception e) {
+            log.error("fillItemRateDetail error productDetailId:{}", productDetailDO.getId());
         }
 
         rateTO.setDetails(details);

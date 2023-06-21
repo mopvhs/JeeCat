@@ -88,6 +88,8 @@ public class CarAlimamaUnionProductIndex implements Serializable {
     private Long tkTotalSales;
     // 上架状态
     private Long saleStatus;
+    // 数据来源
+    private String dataSource;
 
     // 入库时间
     private Long createTime;
@@ -96,4 +98,10 @@ public class CarAlimamaUnionProductIndex implements Serializable {
     private List<Long> cidOnes;
     private List<Long> cidTwos;
     private List<Long> cidThirds;
+
+    // 利益点
+    private String benefitDesc;
+
+    private Long syncTime;
+    private Long updateTime;
 }

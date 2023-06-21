@@ -351,29 +351,42 @@ public class CgProductController {
         }
 
         List<String> itemIds = productDOs.stream().map(MaocheAlimamaUnionProductDO::getItemIdSuffix).toList();
+        List<Long> noUpdateIds = new ArrayList<>();
         // 如果是上架操作，判断是否已经爬取了评价信息
         if (request.getSaleStatus().equals(SaleStatusEnum.ON_SHELF.getStatus())) {
             List<Long> updateIds = new ArrayList<>();
             List<MaocheAlimamaUnionProductDetailDO> detailDOS = maocheAlimamaUnionProductDetailService.listByItemIdSuffixs(itemIds);
-            Map<String, MaocheAlimamaUnionProductDetailDO> detailMap = detailDOS.stream().collect(Collectors.toMap(MaocheAlimamaUnionProductDetailDO::getId, Function.identity(), (o1, o2) -> o1));
-            for (Long id : ids) {
-                if (detailMap.containsKey(String.valueOf(id))) {
-                    updateIds.add(id);
+            Map<String, MaocheAlimamaUnionProductDetailDO> detailMap = detailDOS.stream().collect(Collectors.toMap(MaocheAlimamaUnionProductDetailDO::getItemIdSuffix, Function.identity(), (o1, o2) -> o1));
+            for (MaocheAlimamaUnionProductDO productDO : productDOs) {
+                Long iid = productDO.getIid();
+                if (detailMap.containsKey(String.valueOf(productDO.getItemIdSuffix()))) {
+                    updateIds.add(iid);
+                } else {
+                    noUpdateIds.add(iid);
                 }
             }
             ids = updateIds;
         }
 
         String time = onShelfDate != null ? onShelfDate.toString() : null;
-        int auditStatus = maocheAlimamaUnionProductDao.updateSaleStatus(ids, request.getSaleStatus(), time);
+
+        int auditStatus = 1;
+        if (CollectionUtils.isNotEmpty(ids)) {
+            auditStatus = maocheAlimamaUnionProductDao.updateSaleStatus(ids, request.getSaleStatus(), time);
+        }
+
+        if (CollectionUtils.isEmpty(ids)) {
+            return Result.ERROR(404, "上架失败，原因是：详情数据为空，失败商品id为：" + JsonUtils.toJSONString(noUpdateIds));
+        }
 
         if (auditStatus <= 0) {
             return Result.ERROR(500, "更新失败");
         }
-
+        // 重新查一次数据库
+        productDOs = maocheAlimamaUnionProductDao.listByIds(ids);
         cgUnionProductService.indexEs(productDOs, 10);
 
-        return Result.OK("入库完成");
+        return Result.OK("入库完成，但存在上架失败商品，原因是：详情数据为空 失败商品id为：" + JsonUtils.toJSONString(noUpdateIds));
     }
 
 
@@ -426,7 +439,7 @@ public class CgProductController {
 
         List<String> itemIds = Collections.singletonList("ejQK2wSGoORnm67h93");
         List<MaocheCategoryProductRelDO> maocheCategoryProductRelDOS = maocheCategoryProductRelService.listByItemIdSuffixs(itemIds);
-        ProductCategoryModel productCategory = CategoryHelper.getProductCategory(maocheCategoryProductRelDOS, categoryTrees);
+        ProductCategoryModel productCategory = CategoryHelper.getRelProductCategory(maocheCategoryProductRelDOS, categoryTrees);
 
         return Result.OK(JsonUtils.toJSONString(productCategory));
     }

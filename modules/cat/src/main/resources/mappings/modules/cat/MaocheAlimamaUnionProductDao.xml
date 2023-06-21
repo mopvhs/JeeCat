@@ -12,17 +12,66 @@
 		ORDER BY ${sqlMap.order.toSql()}
 	</select> -->
 
+<!--	<resultMap type="com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductDO"-->
+<!--			   id="simpleDO">-->
+<!--		<result property="id" column="id"/>-->
+<!--		<result property="iid" column="iid"/>-->
+<!--		<result property="origContent" column="orig_content"/>-->
+<!--		<result property="itemIdSuffix" column="item_id_suffix"/>-->
+<!--		<result property="auditStatus" column="audit_status"/>-->
+<!--		<result property="saleStatus" column="sale_status"/>-->
+<!--		<result property="createTime" column="create_time"/>-->
+<!--		<result property="updateTime" column="update_time"/>-->
+<!--		<result property="syncTime" column="sync_time"/>-->
+<!--		<result property="saleStatusDate" column="sale_status_date"/>-->
+<!--		<result property="status" column="status"/>-->
+<!--	</resultMap>-->
+
+	<sql id="Simple_Column_List">
+		id,
+		orig_content,
+		item_id,
+		item_id_suffix,
+		audit_status,
+		sale_status,
+		sync_mark,
+		data_source,
+		maoche_inner_id,
+		create_time,
+		update_time,
+		sync_time,
+		status,
+		sale_status_date,
+		status
+	</sql>
+
 	<select id="findAll" resultType="MaocheAlimamaUnionProductDO">
-		SELECT *
+		SELECT
+		<include refid="Simple_Column_List"/>
 		FROM maoche_alimama_union_product
 		<where>
 			id > #{id}
+			<if test="status != null">
+				and status = #{status}
+			</if>
 		</where>
 		ORDER BY id asc limit #{limit}
 	</select>
 
 	<select id="listByIds" resultType="MaocheAlimamaUnionProductDO">
 		SELECT *
+		FROM maoche_alimama_union_product
+		<where>
+			id in
+			<foreach collection="ids" item="id" close=")" open="(" separator=",">
+				#{id}
+			</foreach>
+		</where>
+	</select>
+
+	<select id="listSimpleByIds" resultType="MaocheAlimamaUnionProductDO">
+		SELECT
+		<include refid="Simple_Column_List"/>
 		FROM maoche_alimama_union_product
 		<where>
 			id in

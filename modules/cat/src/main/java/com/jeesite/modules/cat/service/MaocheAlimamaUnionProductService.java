@@ -1,9 +1,13 @@
 package com.jeesite.modules.cat.service;
 
+import java.util.ArrayList;
 import java.util.List;
 
+import com.google.common.collect.Lists;
 import com.jeesite.modules.cat.enums.AuditStatusEnum;
+import com.jeesite.modules.cat.enums.ProductDataSource;
 import com.jeesite.modules.cat.enums.SyncMarkEnum;
+import org.apache.commons.collections.CollectionUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,7 +23,7 @@ import com.jeesite.modules.cat.dao.MaocheAlimamaUnionProductDao;
  */
 @Service
 public class MaocheAlimamaUnionProductService extends CrudService<MaocheAlimamaUnionProductDao, MaocheAlimamaUnionProductDO> {
-	
+
 	/**
 	 * 获取单条数据
 	 * @param maocheAlimamaUnionProductDO
@@ -29,7 +33,7 @@ public class MaocheAlimamaUnionProductService extends CrudService<MaocheAlimamaU
 	public MaocheAlimamaUnionProductDO get(MaocheAlimamaUnionProductDO maocheAlimamaUnionProductDO) {
 		return super.get(maocheAlimamaUnionProductDO);
 	}
-	
+
 	/**
 	 * 查询分页数据
 	 * @param maocheAlimamaUnionProductDO 查询条件
@@ -40,7 +44,7 @@ public class MaocheAlimamaUnionProductService extends CrudService<MaocheAlimamaU
 	public Page<MaocheAlimamaUnionProductDO> findPage(MaocheAlimamaUnionProductDO maocheAlimamaUnionProductDO) {
 		return super.findPage(maocheAlimamaUnionProductDO);
 	}
-	
+
 	/**
 	 * 查询列表数据
 	 * @param maocheAlimamaUnionProductDO
@@ -50,7 +54,7 @@ public class MaocheAlimamaUnionProductService extends CrudService<MaocheAlimamaU
 	public List<MaocheAlimamaUnionProductDO> findList(MaocheAlimamaUnionProductDO maocheAlimamaUnionProductDO) {
 		return super.findList(maocheAlimamaUnionProductDO);
 	}
-	
+
 	/**
 	 * 保存数据（插入或更新）
 	 * @param maocheAlimamaUnionProductDO
@@ -60,7 +64,7 @@ public class MaocheAlimamaUnionProductService extends CrudService<MaocheAlimamaU
 	public void save(MaocheAlimamaUnionProductDO maocheAlimamaUnionProductDO) {
 		super.save(maocheAlimamaUnionProductDO);
 	}
-	
+
 	/**
 	 * 更新状态
 	 * @param maocheAlimamaUnionProductDO
@@ -70,7 +74,7 @@ public class MaocheAlimamaUnionProductService extends CrudService<MaocheAlimamaU
 	public void updateStatus(MaocheAlimamaUnionProductDO maocheAlimamaUnionProductDO) {
 		super.updateStatus(maocheAlimamaUnionProductDO);
 	}
-	
+
 	/**
 	 * 删除数据
 	 * @param maocheAlimamaUnionProductDO
@@ -99,6 +103,51 @@ public class MaocheAlimamaUnionProductService extends CrudService<MaocheAlimamaU
 		return i > 0;
 	}
 
+	public List<MaocheAlimamaUnionProductDO> listByMaocheInnerIds(List<String> innerIds, ProductDataSource source) {
+		if (CollectionUtils.isEmpty(innerIds) || source == null) {
+			return new ArrayList<>();
+		}
+
+		List<MaocheAlimamaUnionProductDO> productDOs = new ArrayList<>();
+		List<List<String>> partition = Lists.partition(innerIds, 20);
+		for (List<String> p : partition) {
+			MaocheAlimamaUnionProductDO query = new MaocheAlimamaUnionProductDO();
+			query.setMaocheInnerId_in(p.toArray(new String[0]));
+			query.setDataSource(source.getSource());
+			List<MaocheAlimamaUnionProductDO> items = dao.findList(query);
+			if (CollectionUtils.isNotEmpty(items)) {
+				productDOs.addAll(items);
+			}
+		}
+
+		return productDOs;
+	}
+
+	public List<MaocheAlimamaUnionProductDO> listByMaocheInnerIds(List<String> innerIds,
+																  ProductDataSource source,
+																  String levelOneCategoryName,
+																  String status) {
+		if (CollectionUtils.isEmpty(innerIds) || source == null) {
+			return new ArrayList<>();
+		}
+
+		List<MaocheAlimamaUnionProductDO> productDOs = new ArrayList<>();
+		List<List<String>> partition = Lists.partition(innerIds, 20);
+		for (List<String> p : partition) {
+			MaocheAlimamaUnionProductDO query = new MaocheAlimamaUnionProductDO();
+			query.setMaocheInnerId_in(p.toArray(new String[0]));
+			query.setDataSource(source.getSource());
+			query.setLevelOneCategoryName(levelOneCategoryName);
+			query.setStatus(status);
+			List<MaocheAlimamaUnionProductDO> items = dao.findList(query);
+			if (CollectionUtils.isNotEmpty(items)) {
+				productDOs.addAll(items);
+			}
+		}
+
+		return productDOs;
+	}
+
 	/**
 	 * @param ids
 	 * @return
@@ -109,5 +158,5 @@ public class MaocheAlimamaUnionProductService extends CrudService<MaocheAlimamaU
 
 		return i > 0;
 	}
-	
+
 }

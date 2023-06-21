@@ -18,4 +18,8 @@ public class ProductCategoryModel implements Serializable {
     private List<Long> cid2s = new ArrayList<>();
 
     private List<Long> cid3s = new ArrayList<>();
+
+    private String categoryName;
+
+    private String levelOneCategoryName;
 }

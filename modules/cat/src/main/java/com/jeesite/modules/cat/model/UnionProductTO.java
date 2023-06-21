@@ -82,6 +82,9 @@ public class UnionProductTO implements Serializable {
     // 店铺名
     private String shopName;
 
+    // 商品描述
+    private String itemDescription;
+
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm")
     // 入库时间
     private Date createDate;
@@ -106,4 +109,10 @@ public class UnionProductTO implements Serializable {
 
     // 评论
     private RateTO rate;
+
+    // 利益点
+    private String benefitDesc;
+
+    // 数据来源
+    private String dataSource;
 }

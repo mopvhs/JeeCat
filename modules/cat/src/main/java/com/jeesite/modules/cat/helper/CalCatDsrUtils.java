@@ -11,6 +11,12 @@ import java.math.BigDecimal;
 public class CalCatDsrUtils {
 
 
+    public static void main(String[] args) {
+        long l = calCarRate(48984L, 40000L, 18L,"19.9万", 46L);
+
+        System.out.println(l);
+    }
+
     public static long calCarRate(Long shopDsr, Long volume, Long creditLevel, String fans, Long commissionRate) {
         int shopDsrFactor = getShopDsrFactor(shopDsr);
         int volumeFactor = getProductVolumeFactor(volume);
@@ -58,15 +64,15 @@ public class CalCatDsrUtils {
         if (shopDsr >= 50000) {
             return 50000;
         } else if (shopDsr >= 49500) {
-            return 48000;
+            return 49000;
         } else if (shopDsr >= 49000) {
-            return 46000;
+            return 47000;
         } else if (shopDsr >= 48500) {
-            return 44000;
+            return 45000;
         } else if (shopDsr >= 48200) {
             return 42000;
         } else if (shopDsr >= 48000) {
-            return 44000;
+            return 40000;
         } else {
             return 30000;
         }

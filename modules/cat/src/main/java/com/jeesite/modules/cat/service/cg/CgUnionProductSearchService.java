@@ -101,7 +101,7 @@ public class CgUnionProductSearchService {
                 CatRobotHelper::convertUnionProductAggregationMap
         );
 
-        log.info("maocheSearch response {}", JSON.toJSONString(searchData));
+//        log.info("maocheSearch response {}", JSON.toJSONString(searchData));
 
         return searchData;
     }

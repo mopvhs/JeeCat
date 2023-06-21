@@ -1,0 +1,162 @@
+<% layout('/layouts/default.html', {title: 'maoche_product管理', libs: ['dataGrid']}){ %>
+<div class="main-content">
+	<div class="box box-main">
+		<div class="box-header">
+			<div class="box-title">
+				<i class="fa icon-notebook"></i> ${text('maoche_product管理')}
+			</div>
+			<div class="box-tools pull-right">
+				<a href="#" class="btn btn-default" id="btnSearch" title="${text('查询')}"><i class="fa fa-filter"></i> ${text('查询')}</a>
+				<% if(hasPermi('cat:maocheProductDO:edit')){ %>
+					<a href="${ctx}/cat/maocheProductDO/form" class="btn btn-default btnTool" title="${text('新增maoche_product')}"><i class="fa fa-plus"></i> ${text('新增')}</a>
+				<% } %>
+				<a href="#" class="btn btn-default" id="btnSetting" title="${text('设置')}"><i class="fa fa-navicon"></i></a>
+			</div>
+		</div>
+		<div class="box-body">
+			<#form:form id="searchForm" model="${maocheProductDO}" action="${ctx}/cat/maocheProductDO/listData" method="post" class="form-inline hide"
+					data-page-no="${parameter.pageNo}" data-page-size="${parameter.pageSize}" data-order-by="${parameter.orderBy}">
+				<div class="form-group">
+					<label class="control-label">${text('原始信息')}：</label>
+					<div class="control-inline">
+						<#form:input path="content" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('item_id')}：</label>
+					<div class="control-inline">
+						<#form:input path="itemId" maxlength="128" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('item_id_suffix')}：</label>
+					<div class="control-inline">
+						<#form:input path="itemIdSuffix" maxlength="128" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('unique_hash')}：</label>
+					<div class="control-inline">
+						<#form:input path="uniqueHash" maxlength="128" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('订单侠原始信息')}：</label>
+					<div class="control-inline">
+						<#form:input path="contentTk" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('转链后的信息')}：</label>
+					<div class="control-inline">
+						<#form:input path="contentNew" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('create_time')}：</label>
+					<div class="control-inline">
+						<#form:input path="createTime" readonly="true" maxlength="20" class="form-control laydate width-datetime"
+							dataFormat="datetime" data-type="datetime" data-format="yyyy-MM-dd HH:mm"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('update_time')}：</label>
+					<div class="control-inline">
+						<#form:input path="updateTime" readonly="true" maxlength="20" class="form-control laydate width-datetime"
+							dataFormat="datetime" data-type="datetime" data-format="yyyy-MM-dd HH:mm"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('sync_time')}：</label>
+					<div class="control-inline">
+						<#form:input path="syncTime" readonly="true" maxlength="20" class="form-control laydate width-datetime"
+							dataFormat="datetime" data-type="datetime" data-format="yyyy-MM-dd HH:mm"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('转链时间')}：</label>
+					<div class="control-inline">
+						<#form:input path="affLinkConvTime" readonly="true" maxlength="20" class="form-control laydate width-datetime"
+							dataFormat="datetime" data-type="datetime" data-format="yyyy-MM-dd HH:mm"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('tb / jd')}：</label>
+					<div class="control-inline">
+						<#form:input path="affType" maxlength="128" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('NORMAL / DELETE')}：</label>
+					<div class="control-inline width-120">
+						<#form:select path="status" dictType="sys_search_status" blankOption="true" class="form-control isQuick"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('商品标题')}：</label>
+					<div class="control-inline">
+						<#form:input path="title" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('图片地址')}：</label>
+					<div class="control-inline">
+						<#form:input path="imageUrl" maxlength="1000" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('0 未处理 / 1 已处理')}：</label>
+					<div class="control-inline">
+						<#form:input path="processed" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<button type="submit" class="btn btn-primary btn-sm">${text('查询')}</button>
+					<button type="reset" class="btn btn-default btn-sm isQuick">${text('重置')}</button>
+				</div>
+			</#form:form>
+			<table id="dataGrid"></table>
+			<div id="dataGridPage"></div>
+		</div>
+	</div>
+</div>
+<% } %>
+<script>
+// 初始化DataGrid对象
+$('#dataGrid').dataGrid({
+	searchForm: $("#searchForm"),
+	columnModel: [
+		{header:'${text("原始信息")}', name:'content', index:'a.content', width:150, align:"left", frozen:true, formatter: function(val, obj, row, act){
+			return '<a href="${ctx}/cat/maocheProductDO/form?id='+row.id+'" class="btnList" data-title="${text("编辑maoche_product")}">'+(val||row.id)+'</a>';
+		}},
+		{header:'${text("item_id")}', name:'itemId', index:'a.item_id', width:150, align:"left"},
+		{header:'${text("item_id_suffix")}', name:'itemIdSuffix', index:'a.item_id_suffix', width:150, align:"left"},
+		{header:'${text("unique_hash")}', name:'uniqueHash', index:'a.unique_hash', width:150, align:"left"},
+		{header:'${text("订单侠原始信息")}', name:'contentTk', index:'a.content_tk', width:150, align:"left"},
+		{header:'${text("转链后的信息")}', name:'contentNew', index:'a.content_new', width:150, align:"left"},
+		{header:'${text("create_time")}', name:'createTime', index:'a.create_time', width:150, align:"center"},
+		{header:'${text("update_time")}', name:'updateTime', index:'a.update_time', width:150, align:"center"},
+		{header:'${text("sync_time")}', name:'syncTime', index:'a.sync_time', width:150, align:"center"},
+		{header:'${text("转链时间")}', name:'affLinkConvTime', index:'a.aff_link_conv_time', width:150, align:"center"},
+		{header:'${text("tb / jd")}', name:'affType', index:'a.aff_type', width:150, align:"left"},
+		{header:'${text("NORMAL / DELETE")}', name:'status', index:'a.status', width:150, align:"center", formatter: function(val, obj, row, act){
+			return js.getDictLabel(${@DictUtils.getDictListJson('sys_search_status')}, val, '${text("未知")}', true);
+		}},
+		{header:'${text("商品标题")}', name:'title', index:'a.title', width:150, align:"left"},
+		{header:'${text("图片地址")}', name:'imageUrl', index:'a.image_url', width:150, align:"left"},
+		{header:'${text("0 未处理 / 1 已处理")}', name:'processed', index:'a.processed', width:150, align:"center"},
+		{header:'${text("操作")}', name:'actions', width:120, formatter: function(val, obj, row, act){
+			var actions = [];
+			//<% if(hasPermi('cat:maocheProductDO:edit')){ %>
+				actions.push('<a href="${ctx}/cat/maocheProductDO/form?id='+row.id+'" class="btnList" title="${text("编辑maoche_product")}"><i class="fa fa-pencil"></i></a>&nbsp;');
+				actions.push('<a href="${ctx}/cat/maocheProductDO/delete?id='+row.id+'" class="btnList" title="${text("删除maoche_product")}" data-confirm="${text("确认要删除该maoche_product吗？")}"><i class="fa fa-trash-o"></i></a>&nbsp;');
+			//<% } %>
+			return actions.join('');
+		}}
+	],
+	// 加载成功后执行事件
+	ajaxSuccess: function(data){
+		
+	}
+});
+</script>

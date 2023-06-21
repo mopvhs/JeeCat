@@ -12,7 +12,7 @@ import java.util.List;
  * @author YHQ
  * @version 2023-04-30
  */
-@MyBatisDao
+@MyBatisDao(dataSourceName = "ds2")
 public interface MaocheRobotCrawlerMessageDao extends CrudDao<MaocheRobotCrawlerMessageDO> {
 
 

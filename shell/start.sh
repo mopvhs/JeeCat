@@ -1,6 +1,7 @@
 #!/bin/sh
 
 JAVA=/opt/jdk-17/bin/java
+#JAVA=java
 APPLICATION_JAR=cat.jar
 APPLICATION_DIR=/data/cat
 APPLICATION_LOG_DIR="$APPLICATION_DIR/logs"
@@ -9,7 +10,7 @@ APPLICATION_PID_FILE="$APPLICATION_DIR/run/application.pid"
 HERA_OPTS="-Djeecg.xxljob.ip=${EXTRANET} -Dspring.profiles.active=prod -Dfile.encoding=UTF-8 -Dsun.jnu.encoding=UTF-8"
 
 export JAVA_OPTS="${JAVA_OPTS} \
--server -Xmx2g -Xms2g -Xmn1g -XX:MaxTenuringThreshold=15 -XX:MetaspaceSize=256m -XX:MaxMetaspaceSize=256m -Xss256k -XX:SurvivorRatio=8 \
+-server -Xmx2g -Xms2g -Xmn1g -XX:MaxTenuringThreshold=15 -XX:MetaspaceSize=128m -XX:MaxMetaspaceSize=128m -Xss512k -XX:SurvivorRatio=8 \
 -XX:ConcGCThreads=2 -XX:+UseG1GC -XX:G1HeapRegionSize=4m -XX:MaxGCPauseMillis=200 \
 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=${APPLICATION_LOG_DIR} \
 "
