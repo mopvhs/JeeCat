@@ -27,6 +27,7 @@ import org.springframework.stereotype.Component;
 import java.io.Serial;
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -219,11 +220,15 @@ public class DktProductEsStageService extends AbstractProductEsStage<ProductEsCo
         UnionProductModel model = innerContext.getModel();
         MaocheAlimamaUnionProductDO item = context.getItem();
         List<MaocheCategoryProductRelDO> categoryRelList = context.getCategoryRelList();
-        List<CategoryTree> categoryTrees = context.getCategoryTrees();
+//        List<CategoryTree> categoryTrees = context.getCategoryTrees();
 
-        ProductCategoryModel productCategory = CategoryHelper.getRelProductCategory(categoryRelList, categoryTrees);
-        productCategory.setCategoryName(item.getCategoryName());
-        productCategory.setLevelOneCategoryName(item.getLevelOneCategoryName());
+        ProductCategoryModel productCategory = CategoryHelper.getRelProductCategory(categoryRelList, new ArrayList<>());
+
+        String categoryName = ProductValueHelper.getCategoryName(innerContext.getUnionProductContent());
+        String levelOneCategoryName = ProductValueHelper.getLevelOneCategoryName(innerContext.unionProductContent);
+
+        productCategory.setCategoryName(categoryName);
+        productCategory.setLevelOneCategoryName(levelOneCategoryName);
 
         model.setCategory(productCategory);
 

@@ -1,6 +1,8 @@
 package com.jeesite.modules.cat.service;
 
 import java.util.List;
+
+import com.jeesite.common.lang.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -76,6 +78,16 @@ public class QwConfigInfoService extends CrudService<QwConfigInfoDao, QwConfigIn
 	@Transactional
 	public void delete(QwConfigInfoDO qwConfigInfoDO) {
 		super.delete(qwConfigInfoDO);
+	}
+
+	public QwConfigInfoDO getByUniqueId(String uniqueId) {
+		if (StringUtils.isBlank(uniqueId)) {
+			return null;
+		}
+
+		QwConfigInfoDO query = new QwConfigInfoDO();
+		query.setUniqueId(uniqueId);
+		return dao.getByEntity(query);
 	}
 	
 }

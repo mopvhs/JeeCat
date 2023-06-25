@@ -1,17 +1,12 @@
-package com.jeesite.modules.cat.service.dingding;
+package com.jeesite.modules.cat.service.message;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.gson.JsonObject;
 import com.jeesite.common.lang.StringUtils;
-import com.jeesite.common.utils.JsonUtils;
-import com.jeesite.common.web.http.HttpClientUtils;
-import com.jeesite.modules.cat.common.MtxHttpClientUtils;
 import com.jeesite.modules.cat.service.FlameHttpService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
-import java.util.Map;
 
 @Slf4j
 @Component

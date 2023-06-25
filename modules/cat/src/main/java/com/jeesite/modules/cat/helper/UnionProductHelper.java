@@ -59,21 +59,6 @@ public class UnionProductHelper {
         Map<String, MaocheAlimamaUnionProductDetailDO> productDetailMap = productDetailDOs.stream().collect(Collectors.toMap(MaocheAlimamaUnionProductDetailDO::getItemIdSuffix, Function.identity(), (o1, o2) -> o1));
         Map<Long, MaocheCategoryDO> customCategoryMap = categoryDOs.stream().collect(Collectors.toMap(MaocheCategoryDO::getIid, Function.identity(), (o1, o2) -> o1));
 
-        /**
-         *      {
-         *             "shareCommand":"分享口令",
-         *             "title":"商品标题",
-         *             "price": 10000, // "售价，单位分  展示除以100"
-         *             "activity":"活动 有好价",
-         *             "commissionRate": 975, // 佣金率 展示除以100,
-         *             "commission": 1131, // "佣金，单位分  展示除以100",
-         *             "volume":231, // 销量
-         *             "priceAdvantage":"价格优势",
-         *             "goodRate": 123, // 好评率
-         *             "productAdvantage":"价格优势"
-         *         }
-         */
-
         List<UnionProductTO> products = new ArrayList<>();
         for (CarAlimamaUnionProductIndex index : indexList) {
             MaocheAlimamaUnionProductDO productDO = productDOMap.get(index.getId());
@@ -214,12 +199,10 @@ public class UnionProductHelper {
         }
         JSONObject data = jsonObject.getJSONObject("data");
         JSONObject rate = data.getJSONObject("rate");
-        if (rate == null || rate.get("keywords") == null) {
+        if (rate == null || rate.get("keywords") == null || !(rate.get("keywords") instanceof JSONArray)) {
             return;
         }
 
-        RateTO rateTO = new RateTO();
-        product.setRate(rateTO);
         List<RateDetailTO> details = new ArrayList<>();
         try {
             JSONArray keywords = rate.getJSONArray("keywords");
@@ -235,9 +218,10 @@ public class UnionProductHelper {
                 }
             }
         } catch (Exception e) {
-            log.error("fillItemRateDetail error productDetailId:{}", productDetailDO.getId());
+            log.error("fillItemRateDetail error productDetailId:{}", productDetailDO.getId(), e);
         }
 
+        RateTO rateTO = new RateTO();
         rateTO.setDetails(details);
         product.setRate(rateTO);
     }

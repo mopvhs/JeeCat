@@ -1,5 +1,6 @@
 package com.jeesite.modules.cgcat;
 
+import cn.hutool.core.date.StopWatch;
 import com.jeesite.common.entity.Page;
 import com.jeesite.common.lang.NumberUtils;
 import com.jeesite.common.lang.StringUtils;
@@ -10,6 +11,7 @@ import com.jeesite.modules.cat.dao.MaocheAlimamaUnionTitleKeywordDao;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductDO;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductDetailDO;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionTitleKeywordDO;
+import com.jeesite.modules.cat.entity.MaocheCategoryMappingDO;
 import com.jeesite.modules.cat.entity.MaocheCategoryProductRelDO;
 import com.jeesite.modules.cat.enums.AuditStatusEnum;
 import com.jeesite.modules.cat.enums.CatActivityEnum;
@@ -28,6 +30,7 @@ import com.jeesite.modules.cat.model.UnionProductTO;
 import com.jeesite.modules.cat.model.keytitle.UnionProductTagModel;
 import com.jeesite.modules.cat.service.MaocheAlimamaUnionProductDetailService;
 import com.jeesite.modules.cat.service.MaocheAlimamaUnionProductService;
+import com.jeesite.modules.cat.service.MaocheCategoryMappingService;
 import com.jeesite.modules.cat.service.MaocheCategoryProductRelService;
 import com.jeesite.modules.cat.service.MaocheCategoryService;
 import com.jeesite.modules.cat.service.cg.CgUnionProductService;
@@ -35,6 +38,8 @@ import com.jeesite.modules.cgcat.dto.ProductCategoryVO;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.junit.rules.Stopwatch;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -84,6 +89,9 @@ public class CgProductController {
     @Resource
     private MaocheAlimamaUnionProductDetailService maocheAlimamaUnionProductDetailService;
 
+    @Resource
+    private MaocheCategoryMappingService maocheCategoryMappingService;
+
 
     // 商品库
     @RequestMapping(value = "/product/warehouse/detail")
@@ -99,6 +107,13 @@ public class CgProductController {
         if (CollectionUtils.isEmpty(sorts)) {
             sorts.add("volume desc");
             condition.setSorts(sorts);
+        }
+
+        // 类目兼容处理
+        List<String> relationRootNames = maocheCategoryMappingService.getRelationRootName(condition.getLevelOneCategoryName());
+        if (CollectionUtils.isNotEmpty(relationRootNames)) {
+            condition.setLevelOneCategoryName(null);
+            condition.setCategoryNames(relationRootNames);
         }
 
         int from = (page.getPageNo() - 1) * page.getPageSize();
@@ -132,6 +147,13 @@ public class CgProductController {
 
         // 选品库都是审核通过的商品
         condition.setAuditStatus(AuditStatusEnum.PASS.getStatus());
+
+        // 类目兼容处理
+        List<String> relationRootNames = maocheCategoryMappingService.getRelationRootName(condition.getLevelOneCategoryName());
+        if (CollectionUtils.isNotEmpty(relationRootNames)) {
+            condition.setLevelOneCategoryName(null);
+            condition.setCategoryNames(relationRootNames);
+        }
 
         int from = (page.getPageNo() - 1) * page.getPageSize();
         int size = page.getPageSize();
@@ -215,6 +237,13 @@ public class CgProductController {
             return page;
         }
 
+        // 类目兼容处理
+        List<String> relationRootNames = maocheCategoryMappingService.getRelationRootName(condition.getLevelOneCategoryName());
+        if (CollectionUtils.isNotEmpty(relationRootNames)) {
+            condition.setLevelOneCategoryName(null);
+            condition.setCategoryNames(relationRootNames);
+        }
+
         // https://rp.mockplus.cn/run/eSnLjDgFoGgdM/ZaPWdd3ge7M-?cps=expand&rps=expand&nav=1&ha=0&la=0&fc=0&out=1&rt=1
         // 入库的商品不在有好价页面显示
         condition.setNotAuditStatus(AuditStatusEnum.PASS.getStatus()
@@ -250,9 +279,20 @@ public class CgProductController {
         }
 
         condition.setLevelOneCategoryName(null);
-        ElasticSearchData<CarAlimamaUnionProductIndex, CatProductBucketTO> searchData = cgUnionProductService.searchProduct(condition, cgUnionProductService::buildLevelOneCategoryAgg, 0, 0);
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
+
+        SearchSourceBuilder source = cgUnionProductService.searchSource(condition, cgUnionProductService::buildRootCategoryAgg, null, null, 0, 0);
+        ElasticSearchData<CarAlimamaUnionProductIndex, CatProductBucketTO> searchData = cgUnionProductService.search(source);
+
         if (searchData == null) {
             return Result.ERROR(500, "查询异常");
+        }
+
+        List<MaocheCategoryMappingDO> roots = maocheCategoryMappingService.getCategoryFromCache(0L);
+        Map<String, String> rootNameMap = new HashMap<>();
+        for (MaocheCategoryMappingDO item : roots) {
+            rootNameMap.put("agg_" + item.getId(), item.getName());
         }
 
         List<CatProductBucketTO> carProductBucketTOs = new ArrayList<>();
@@ -262,12 +302,21 @@ public class CgProductController {
                 if (StringUtils.isBlank(bucket.getName())) {
                     continue;
                 }
+                String name = rootNameMap.get(bucket.getName());
+                if (StringUtils.isBlank(name)) {
+                    continue;
+                }
+                bucket.setName(name);
+
                 carProductBucketTOs.add(bucket);
             }
         }
         ProductCategoryVO categoryVO = new ProductCategoryVO();
         categoryVO.setCategories(carProductBucketTOs);
         categoryVO.setTotal(searchData.getTotal());
+
+        stopWatch.stop();
+        log.info("类目查询耗时：{}", stopWatch.toString());
         return Result.OK(categoryVO);
     }
 

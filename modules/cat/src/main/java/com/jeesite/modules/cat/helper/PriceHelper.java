@@ -1,6 +1,7 @@
 package com.jeesite.modules.cat.helper;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Objects;
 
 public class PriceHelper {
@@ -25,5 +26,19 @@ public class PriceHelper {
         }
 
         return price.multiply(new BigDecimal("100")).longValue();
+    }
+
+    public static String formatPrice(Long price, String replaceTarget, String replacement) {
+        if (price == null) {
+            return "0";
+        }
+
+        String format = new BigDecimal(price).divide(new BigDecimal("100"), 2, RoundingMode.UP).toString();
+        if (replaceTarget != null && replacement != null) {
+//            format = format.replace(".00", "");
+            format = format.replace(replaceTarget, replacement);
+        }
+
+        return format;
     }
 }

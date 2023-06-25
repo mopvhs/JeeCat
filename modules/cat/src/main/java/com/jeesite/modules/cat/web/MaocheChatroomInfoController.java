@@ -8,7 +8,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -26,7 +25,7 @@ import com.jeesite.modules.cat.service.MaocheChatroomInfoService;
  */
 @Controller
 @RequestMapping(value = "${adminPath}/cat/maocheChatroomInfoDO")
-public class MaocheChatroomInfoDOController extends BaseController {
+public class MaocheChatroomInfoController extends BaseController {
 
 	@Autowired
 	private MaocheChatroomInfoService maocheChatroomInfoDOService;
@@ -34,10 +33,10 @@ public class MaocheChatroomInfoDOController extends BaseController {
 	/**
 	 * 获取数据
 	 */
-	@ModelAttribute
-	public MaocheChatroomInfoDO get(Long id, boolean isNewRecord) {
-		return maocheChatroomInfoDOService.get(id, isNewRecord);
-	}
+//	@ModelAttribute
+//	public MaocheChatroomInfoDO get(Long id, boolean isNewRecord) {
+//		return maocheChatroomInfoDOService.get(id, isNewRecord);
+//	}
 	
 	/**
 	 * 查询列表

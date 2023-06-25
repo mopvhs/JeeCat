@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.dtk.fetch.client.DtkFetchClient;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.google.common.collect.Lists;
 import com.jeesite.common.lang.NumberUtils;
 import com.jeesite.common.lang.StringUtils;
 import com.jeesite.common.utils.JsonUtils;
@@ -15,6 +16,7 @@ import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductDO;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductDetailDO;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionTitleKeywordDO;
 import com.jeesite.modules.cat.entity.MaocheCategoryDO;
+import com.jeesite.modules.cat.entity.MaocheCategoryMappingDO;
 import com.jeesite.modules.cat.entity.MaocheCategoryProductRelDO;
 import com.jeesite.modules.cat.entity.MaocheDataokeProductDO;
 import com.jeesite.modules.cat.enums.ElasticSearchIndexEnum;
@@ -35,6 +37,7 @@ import com.jeesite.modules.cat.model.UnionProductTO;
 import com.jeesite.modules.cat.service.MaocheAlimamaUnionGoodPriceService;
 import com.jeesite.modules.cat.service.MaocheAlimamaUnionProductDetailService;
 import com.jeesite.modules.cat.service.MaocheAlimamaUnionTitleKeywordService;
+import com.jeesite.modules.cat.service.MaocheCategoryMappingService;
 import com.jeesite.modules.cat.service.MaocheCategoryProductRelService;
 import com.jeesite.modules.cat.service.MaocheCategoryService;
 import com.jeesite.modules.cat.service.MaocheDataokeProductService;
@@ -43,6 +46,7 @@ import com.jeesite.modules.cat.service.stage.cg.ProductEsFactory;
 import com.jeesite.modules.cat.service.stage.cg.ProductEsStage;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.config.CookieSpecs;
 import org.apache.http.client.config.RequestConfig;
@@ -50,11 +54,18 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.RequestBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.util.EntityUtils;
+import org.checkerframework.checker.units.qual.C;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.TermsQueryBuilder;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.BucketOrder;
+import org.elasticsearch.search.aggregations.bucket.filter.FilterAggregationBuilder;
+import org.elasticsearch.search.aggregations.metrics.MaxAggregationBuilder;
+import org.elasticsearch.search.aggregations.metrics.MinAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.ScriptSortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
@@ -64,10 +75,12 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 import javax.sql.DataSource;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -105,6 +118,9 @@ public class CgUnionProductService {
     @Resource
     private MaocheDataokeProductService maocheDataokeProductService;
 
+    @Resource
+    private MaocheCategoryMappingService maocheCategoryMappingService;
+
     /**
      * 查询商品索引数据
      * @param condition
@@ -115,7 +131,6 @@ public class CgUnionProductService {
                                                                                             Function<CatUnionProductCondition, AggregationBuilder> aggregation,
                                                                                             int from,
                                                                                             int size) {
-        log.info("productWarehouseDetail condition:{}", JsonUtils.toJSONString(condition));
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
 
         BoolQueryBuilder boolBuilder = CatRobotHelper.buildQuery(condition, CatUnionProductCondition.class);
@@ -164,7 +179,8 @@ public class CgUnionProductService {
         if (aggregation != null) {
             aggregationBuilder = aggregation.apply(condition);
         }
-
+//        StopWatch stopWatch = new StopWatch();
+//        stopWatch.start();
         ElasticSearchData<CarAlimamaUnionProductIndex, CatProductBucketTO> searchData = elasticSearch7Service.search(searchSourceBuilder,
                 ElasticSearchIndexEnum.CAT_PRODUCT_INDEX,
                 aggregationBuilder,
@@ -172,7 +188,77 @@ public class CgUnionProductService {
                 CatRobotHelper::convertUnionProductAggregationMap
                 );
 
-//        log.info("maocheSearch response {}", JSON.toJSONString(searchData));
+//        stopWatch.stop();
+//        log.info("maocheSearch searchSourceBuilder {}, time:{}", JSON.toJSONString(searchSourceBuilder.toString()), stopWatch.toString());
+
+        return searchData;
+    }
+
+    /**
+     *
+     * @param condition 条件
+     * @param aggregations 聚合
+     * @param sort 排序
+     * @param customBoolQueryBuilder 自定义build
+     * @param from from
+     * @param size size
+     * @return
+     */
+    public SearchSourceBuilder searchSource(CatUnionProductCondition condition,
+                                            Function<CatUnionProductCondition, List<AggregationBuilder>> aggregations,
+                                            BiConsumer<CatUnionProductCondition, SearchSourceBuilder> sort,
+                                            BiConsumer<CatUnionProductCondition, BoolQueryBuilder> customBoolQueryBuilder,
+                                            int from,
+                                            int size) {
+
+        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+
+        BoolQueryBuilder boolBuilder = CatRobotHelper.buildQuery(condition, CatUnionProductCondition.class);
+
+        if (customBoolQueryBuilder != null) {
+            customBoolQueryBuilder.accept(condition, boolBuilder);
+        }
+
+        // ES搜索条件
+        searchSourceBuilder.from(from);
+        searchSourceBuilder.size(size);
+        searchSourceBuilder.query(boolBuilder);
+
+        if (aggregations != null) {
+            List<AggregationBuilder> aggs = aggregations.apply(condition);
+            if (CollectionUtils.isNotEmpty(aggs)) {
+                for (AggregationBuilder agg : aggs) {
+                    searchSourceBuilder.aggregation(agg);
+                }
+            }
+        }
+
+        if (sort != null) {
+            sort.accept(condition, searchSourceBuilder);
+        }
+
+        return searchSourceBuilder;
+    }
+
+    public ElasticSearchData<CarAlimamaUnionProductIndex, CatProductBucketTO> search(SearchSourceBuilder searchSourceBuilder) {
+
+        ElasticSearchData<CarAlimamaUnionProductIndex, CatProductBucketTO> searchData = elasticSearch7Service.search(searchSourceBuilder,
+                ElasticSearchIndexEnum.CAT_PRODUCT_INDEX,
+                CatRobotHelper::convertUnionProduct,
+                CatRobotHelper::convertUnionProductAggregationMap
+        );
+
+        return searchData;
+    }
+
+    public ElasticSearchData<CarAlimamaUnionProductIndex, CatProductBucketTO> search(SearchSourceBuilder searchSourceBuilder,
+                                                                                     Function<Aggregations, Map<String, List<CatProductBucketTO>>> bucketConverter) {
+
+        ElasticSearchData<CarAlimamaUnionProductIndex, CatProductBucketTO> searchData = elasticSearch7Service.search(searchSourceBuilder,
+                ElasticSearchIndexEnum.CAT_PRODUCT_INDEX,
+                CatRobotHelper::convertUnionProduct,
+                bucketConverter
+        );
 
         return searchData;
     }
@@ -198,42 +284,41 @@ public class CgUnionProductService {
         // 获取大淘客的数据
         Map<String, MaocheDataokeProductDO> daTaoKeProductMap = getDaTaoKeProductMap(items);
 
-        // 获取全部类目
-        List<CategoryTree> categoryTrees = maocheCategoryService.listAllCategoryFromCache();
+//         获取全部类目
+//        List<CategoryTree> categoryTrees = maocheCategoryService.listAllCategoryFromCache();
+//        List<CategoryTree> categoryTrees = new ArrayList<>();
         // 获取类目
-        List<MaocheCategoryProductRelDO> categoryProductRelDOs = maocheCategoryProductRelService.listByItemIdSuffixs(iids);
-        Map<String, List<MaocheCategoryProductRelDO>> categoryRelMap = new HashMap<>();
-        // 分组
-        for (MaocheCategoryProductRelDO categoryProductRelDO : categoryProductRelDOs) {
-            List<MaocheCategoryProductRelDO> rels = categoryRelMap.get(categoryProductRelDO.getItemIdSuffix());
-            if (CollectionUtils.isEmpty(rels)) {
-                rels = new ArrayList<>();
-            }
-            rels.add(categoryProductRelDO);
-            categoryRelMap.put(categoryProductRelDO.getItemIdSuffix(), rels);
-        }
+//        List<MaocheCategoryProductRelDO> categoryProductRelDOs = maocheCategoryProductRelService.listByItemIdSuffixs(iids);
+//        Map<String, List<MaocheCategoryProductRelDO>> categoryRelMap = new HashMap<>();
+//        // 分组
+//        for (MaocheCategoryProductRelDO categoryProductRelDO : categoryProductRelDOs) {
+//            List<MaocheCategoryProductRelDO> rels = categoryRelMap.get(categoryProductRelDO.getItemIdSuffix());
+//            if (CollectionUtils.isEmpty(rels)) {
+//                rels = new ArrayList<>();
+//            }
+//            rels.add(categoryProductRelDO);
+//            categoryRelMap.put(categoryProductRelDO.getItemIdSuffix(), rels);
+//        }
 
         List<Map<String, Object>> list = new ArrayList<>();
         for (MaocheAlimamaUnionProductDO item : items) {
             try {
 
-                if (!"NORMAL".equals(item.getStatus())) {
+                if (!"NORMAL".equalsIgnoreCase(item.getStatus())) {
 //                    log.info("del product item:{} \n", JsonUtils.toJSONString(item));
                     elasticSearch7Service.delIndex(Collections.singletonList(item.getIid()), ElasticSearchIndexEnum.CAT_PRODUCT_INDEX);
                     continue;
                 }
-                List<MaocheCategoryProductRelDO> rels = categoryRelMap.get(item.getItemIdSuffix());
+//                List<MaocheCategoryProductRelDO> rels = categoryRelMap.get(item.getItemIdSuffix());
                 MaocheAlimamaUnionTitleKeywordDO titleKeywordDO = keywordMap.get(item.getItemIdSuffix());
                 MaocheAlimamaUnionGoodPriceDO goodPriceDO = unionGoodPriceMap.get(item.getItemIdSuffix());
                 MaocheAlimamaUnionProductDetailDO productDetailDO = productDetailMap.get(item.getItemIdSuffix());
-                ProductCategoryModel productCategory = CategoryHelper.getRelProductCategory(rels, categoryTrees);
+//                ProductCategoryModel productCategory = CategoryHelper.getRelProductCategory(rels, categoryTrees);
 
                 ProductEsContext context = new ProductEsContext();
                 context.setItem(item);
                 context.setDaTaoKeProduct(daTaoKeProductMap.get(item.getItemIdSuffix()));
                 context.setProductDetailDO(productDetailDO);
-                context.setCategoryRelList(rels);
-                context.setCategoryTrees(categoryTrees);
                 ProductEsStage stage = productEsFactory.getStage(item.getDataSource());
 
                 CarAlimamaUnionProductIndex catIndex = null;
@@ -248,7 +333,7 @@ public class CgUnionProductService {
                     catIndex = CatEsHelper.buildCatAlimamaUnionProductIndex(item,
                             titleKeywordDO,
                             goodPriceDO,
-                            productCategory,
+                            null,
                             productDetailDO);
                 }
 
@@ -389,7 +474,7 @@ public class CgUnionProductService {
         // 获取大淘客的数据
 //        Map<String, MaocheDataokeProductDO> daTaoKeProductMap = getDaTaoKeProductMap(productDOs);
 
-        List<Long> cidOnes = new ArrayList<>();
+        /*List<Long> cidOnes = new ArrayList<>();
         // 一级类目
         for (CarAlimamaUnionProductIndex item : documents) {
             if (CollectionUtils.isEmpty(item.getCidOnes())) {
@@ -397,7 +482,7 @@ public class CgUnionProductService {
             }
             cidOnes.addAll(item.getCidOnes());
         }
-        List<MaocheCategoryDO> categoryDOs = maocheCategoryService.listByIds(cidOnes);
+        List<MaocheCategoryDO> categoryDOs = maocheCategoryService.listByIds(cidOnes);*/
         // 商品自定义类目
 //        List<MaocheCategoryProductRelDO> maocheCategoryProductRelDOs = maocheCategoryProductRelService.listByItemIdSuffixs(itemIds);
 
@@ -407,7 +492,7 @@ public class CgUnionProductService {
                 keywordDOs,
                 unionGoodPriceDOs,
                 productDetailDOs,
-                categoryDOs);
+                new ArrayList<>());
 
         return unionProducts;
     }
@@ -439,5 +524,87 @@ public class CgUnionProductService {
         return AggregationBuilders
                 .min("min_coupon_price")
                 .field("promotionPrice");
+    }
+
+    public List<AggregationBuilder> buildCatRobotPushAgg(CatUnionProductCondition condition) {
+        List<AggregationBuilder> builders = new ArrayList<>();
+        MinAggregationBuilder aggOne = AggregationBuilders
+                .min("min_coupon_price")
+                .field("promotionPrice");
+
+        MaxAggregationBuilder aggTwo = AggregationBuilders.max("max_coupon").field("coupon");
+
+        builders.add(aggOne);
+        builders.add(aggTwo);
+        return builders;
+    }
+
+    /**
+     * 大类目下的小类目数据
+     * @param condition
+     * @return
+     */
+    public List<AggregationBuilder> buildRootCategoryAgg(CatUnionProductCondition condition) {
+
+        List<AggregationBuilder> builders = new ArrayList<>();
+        String fieldName = "categoryName";
+        String aggNameSuffix = "agg_";
+        // 一级类目id
+        List<Long> rootCids = maocheCategoryMappingService.getRootCids();
+        for (Long cid : rootCids) {
+            String name = aggNameSuffix + cid;
+            // 获取所有子类目
+            List<MaocheCategoryMappingDO> categories = maocheCategoryMappingService.getCategoryFromCache(cid);
+            if (CollectionUtils.isEmpty(categories)) {
+                continue;
+            }
+            List<String> cNames = categories.stream().map(MaocheCategoryMappingDO::getName).collect(Collectors.toList());
+            FilterAggregationBuilder builder = AggregationBuilders
+                    .filter(name, QueryBuilders.termsQuery(fieldName, cNames))
+                    .subAggregation(AggregationBuilders.count(name).field("categoryName"));
+
+            builders.add(builder);
+        }
+
+        return builders;
+    }
+
+    public void commonSort(CatUnionProductCondition condition, SearchSourceBuilder searchSourceBuilder) {
+        if (condition == null || CollectionUtils.isEmpty(condition.getSorts())) {
+            return;
+        }
+        List<String> sorts = condition.getSorts();
+        for (String sort : sorts) {
+            if (StringUtils.isBlank(sort)) {
+                continue;
+            }
+            String[] sortArr = sort.split(" ");
+            String name = sortArr[0];
+            SortOrder sortOrder = SortOrder.DESC;
+            if (sortArr.length > 1) {
+                String order = sortArr[1];
+                if (order.equals("asc")) {
+                    sortOrder = SortOrder.ASC;
+                }
+            }
+            if ("commission".equals(name)) {
+                // 自定义排序脚本
+                String code = "return (doc['commissionRate'].value / 100) * (doc['reservePrice'].value / 100)";
+
+                Script script = new Script(
+                        Script.DEFAULT_SCRIPT_TYPE,
+                        Script.DEFAULT_SCRIPT_LANG,
+                        code,
+                        new HashMap<>(),
+                        new HashMap<>()
+                );
+
+                ScriptSortBuilder scriptSortBuilder = SortBuilders.scriptSort(script, ScriptSortBuilder.ScriptSortType.NUMBER);
+                scriptSortBuilder.order(sortOrder);
+                searchSourceBuilder.sort(scriptSortBuilder);
+            } else {
+                searchSourceBuilder.sort(name, sortOrder);
+            }
+        }
     }
 }

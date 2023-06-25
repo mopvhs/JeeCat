@@ -18,10 +18,12 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.Aggregations;
+import org.elasticsearch.search.aggregations.bucket.filter.ParsedFilter;
 import org.elasticsearch.search.aggregations.bucket.terms.ParsedLongTerms;
 import org.elasticsearch.search.aggregations.bucket.terms.ParsedStringTerms;
 import org.elasticsearch.search.aggregations.bucket.terms.ParsedTerms;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
+import org.elasticsearch.search.aggregations.metrics.ParsedMax;
 import org.elasticsearch.search.aggregations.metrics.ParsedMin;
 
 import java.lang.reflect.Field;
@@ -91,10 +93,26 @@ public class CatRobotHelper {
                 if (!Double.isInfinite(min.getValue())) {
                     count = new BigDecimal(String.valueOf(min.getValue())).longValue();
                 }
-                data.setName(data.getName());
+                data.setName(min.getName());
                 data.setCount(count);
                 data.setDoubleCount(Long.valueOf(count).doubleValue());
 
+                dataList.add(data);
+            } else if (next instanceof ParsedMax max) {
+                CatProductBucketTO data = new CatProductBucketTO();
+                long count = 0;
+                if (!Double.isInfinite(max.getValue())) {
+                    count = new BigDecimal(String.valueOf(max.getValue())).longValue();
+                }
+                data.setName(max.getName());
+                data.setCount(count);
+                data.setDoubleCount(Long.valueOf(count).doubleValue());
+
+                dataList.add(data);
+            } else if (next instanceof ParsedFilter filter) {
+                CatProductBucketTO data = new CatProductBucketTO();
+                data.setName(filter.getName());
+                data.setCount(filter.getDocCount());
                 dataList.add(data);
             }
             String name = next.getName();
@@ -184,6 +202,9 @@ public class CatRobotHelper {
                     break;
                 case "mustNotItemQuery":
                     boolBuilder.mustNot(QueryBuilders.termQuery(name, value));
+                    break;
+                case "mustNotItemsQuery":
+                    boolBuilder.mustNot(QueryBuilders.termsQuery(name, (Collection) value));
                     break;
                 case "existsQuery":
                     if (value instanceof Boolean b) {

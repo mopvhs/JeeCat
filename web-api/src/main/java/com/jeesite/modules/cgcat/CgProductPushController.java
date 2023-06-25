@@ -12,6 +12,7 @@ import com.jeesite.modules.cat.enums.AuditStatusEnum;
 import com.jeesite.modules.cat.enums.SaleStatusEnum;
 import com.jeesite.modules.cat.es.config.es7.ElasticSearch7Service;
 import com.jeesite.modules.cat.es.config.model.ElasticSearchData;
+import com.jeesite.modules.cat.helper.PriceHelper;
 import com.jeesite.modules.cat.helper.dataoke.DaTaoKeResponseHelper;
 import com.jeesite.modules.cat.model.CarAlimamaUnionProductIndex;
 import com.jeesite.modules.cat.model.CatProductBucketTO;
@@ -27,11 +28,13 @@ import com.jeesite.modules.cat.service.cg.CgUnionProductService;
 import com.jeesite.modules.cat.service.cg.CgUnionProductStatisticsService;
 import com.jeesite.modules.cat.service.cg.CgUserRcmdService;
 import com.jeesite.modules.cat.service.cg.DaTaoKeApiService;
-import com.jeesite.modules.cat.service.dingding.DingDingService;
+import com.jeesite.modules.cat.service.message.DingDingService;
 import com.jeesite.modules.cgcat.dto.HistorySearchKeywordVO;
 import com.jeesite.modules.cgcat.dto.ProductCategoryVO;
+import com.jeesite.modules.cgcat.dto.ProductRobotResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -40,10 +43,8 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
+import java.net.URLEncoder;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -82,6 +83,95 @@ public class CgProductPushController {
     private MaocheCategoryMappingService maocheCategoryMappingService;
 
     // 微信企业 @推送商品
+    @RequestMapping(value = "/product/rcmd/robot/at")
+    @ResponseBody
+    public Result<ProductRobotResponse> atRobotRcmdProduct(@RequestBody CatUserMessagePushTO messagePushTO) {
+
+        ProductRobotResponse response = new ProductRobotResponse();
+        String url = "https://cat.zhizher.com/cat-sass-mobile/#/";
+        response.setTitle("姨姨，撒都没找到！");
+        response.setContent("您可以更换更准确的关键词或者@猫车小助理协助\n");
+        response.setImg("https://mmbiz.qpic.cn/sz_mmbiz_png/y7ibJn5iaZcWBicu2ewoJaiazq2q7ot0szXMAw3JaQlBFH3QPk2oicR5SdlVNbwlkGbZ6ooatibEuOWgjQzSGWvTFusA/640?wx_fmt=png");
+        response.setTargetUrl(url);
+        if (messagePushTO == null) {
+            return Result.OK(response);
+        }
+
+        // 是否命中@逻辑
+        List<String> list = PatternUtils.matchMention(messagePushTO.getKeyword());
+        String keyword = messagePushTO.getKeyword();
+        for (String target : list) {
+            keyword = keyword.replace(target, "");
+        }
+        keyword = StringUtils.trim(keyword);
+        try {
+            url += "pages/sys/search_result/index?keyword=" + URLEncoder.encode(keyword, "UTF-8");
+            response.setTargetUrl(url);
+        } catch (Exception e) {
+
+        }
+
+        CatUnionProductCondition condition = new CatUnionProductCondition();
+        condition.setTitle(keyword);
+        condition.setSaleStatus(SaleStatusEnum.ON_SHELF.getStatus());
+        condition.setAuditStatus(AuditStatusEnum.PASS.getStatus());
+        SearchSourceBuilder source = cgUnionProductService.searchSource(condition, cgUnionProductService::buildCatRobotPushAgg, null, null, 0, 1);
+
+        ElasticSearchData<CarAlimamaUnionProductIndex, CatProductBucketTO> searchData = cgUnionProductService.search(source);
+
+
+        // 首页，并且检索不出来商品的时候，检索的商品源改为选品库的
+        if ((searchData == null || searchData.getTotal() == 0)) {
+            // 未人工审核的商品
+            condition.setSaleStatus(SaleStatusEnum.INIT.getStatus());
+            source = cgUnionProductService.searchSource(condition, cgUnionProductService::buildCatRobotPushAgg, null, null, 0, 1);
+            searchData = cgUnionProductService.search(source);
+        }
+        if (searchData == null || searchData.getTotal() == 0) {
+            return Result.OK(response);
+        }
+
+        long total = searchData.getTotal();
+
+        Map<String, List<CatProductBucketTO>> bucketMap = searchData.getBucketMap();
+        // 获取券后价最低的金额
+        long minPrice = 0;
+        long maxCouponPrice = 0;
+        if (bucketMap != null) {
+
+            // 获取券后价最低的金额
+            if (CollectionUtils.isNotEmpty(bucketMap.get("min_coupon_price"))) {
+                CatProductBucketTO minCouponPrice = bucketMap.get("min_coupon_price").get(0);
+                minPrice = Optional.ofNullable(minCouponPrice.getCount()).orElse(0L);
+            }
+
+            // 优惠券最大的金额
+            if (CollectionUtils.isNotEmpty(bucketMap.get("max_coupon"))) {
+                CatProductBucketTO minCouponPrice = bucketMap.get("max_coupon").get(0);
+                maxCouponPrice = Optional.ofNullable(minCouponPrice.getCount()).orElse(0L);
+            }
+
+        }
+
+        // 帮您找到猫砂盆 1502件
+        String titleFormat = "%s %d件来了";
+        String contentFormat = "券后最低%s元，最多省%s元，欢迎浏览";
+        String title = keyword;
+        if (StringUtils.length(title) > 4) {
+            title = keyword.substring(0, 4) + "...";
+        }
+
+        String content = String.format(contentFormat,
+                PriceHelper.formatPrice(minPrice, ".00", ""),
+                PriceHelper.formatPrice(maxCouponPrice, ".00", ""));
+
+        response.setTitle(String.format(titleFormat, title, total));
+        response.setContent(content);
+
+        return Result.OK(response);
+    }
+
+    // 微信企业
     @RequestMapping(value = "/product/push/detail")
     @ResponseBody
     public Page<UnionProductTO> productWarehouseDetail(@RequestBody CatUserMessagePushTO messagePushTO, HttpServletRequest request, HttpServletResponse response) {
@@ -91,17 +181,11 @@ public class CgProductPushController {
             return page;
         }
 
-        log.info("messagePushTO {}", JsonUtils.toJSONString(messagePushTO));
-
-        Map<String, Object> otherData = new HashMap<>();
-        String res = "亲爱的小主您好，根据你的要求，共找到%d个商品，券后最低【%s】,已按猫宝分计算完毕，自动排序供您筛选，欢迎浏览以下页面：";
-
-        String tips = null;
         // 是否命中@逻辑
         List<String> list = PatternUtils.matchMention(messagePushTO.getKeyword());
-
         int pageNo = Optional.ofNullable(messagePushTO.getPageNo()).orElse(1);
-        Integer pageSize = Optional.ofNullable(messagePushTO.getPageSize()).orElse(20);
+//        Integer pageSize = Optional.ofNullable(messagePushTO.getPageSize()).orElse(10);
+        int pageSize = 10;
         int from = (pageNo - 1) * pageSize;
         int size = pageSize;
 
@@ -122,13 +206,11 @@ public class CgProductPushController {
         condition.setTitle(keyword);
         condition.setSaleStatus(SaleStatusEnum.ON_SHELF.getStatus());
         condition.setAuditStatus(AuditStatusEnum.PASS.getStatus());
-
         condition.setSorts(sorts);
 
         long cidOne = NumberUtils.toLong(messagePushTO.getCidOne());
         List<String> categoryNames = new ArrayList<>();
         if (cidOne > 0) {
-//            condition.setCidOnes(Collections.singletonList(cidOne));
             // 获取到类目映射
             List<MaocheCategoryMappingDO> categories = maocheCategoryMappingService.listByParentId(cidOne);
             if (CollectionUtils.isNotEmpty(categories)) {
@@ -138,52 +220,39 @@ public class CgProductPushController {
             condition.setCategoryNames(categoryNames);
         }
 
-        // 聚合，获取券后价格最低的一个商品金额
-        ElasticSearchData<CarAlimamaUnionProductIndex, CatProductBucketTO> searchData = cgUnionProductService.searchProduct(condition,
-                cgUnionProductService::buildCatMessagePushAgg,
-                from,
-                size);
+        SearchSourceBuilder source = cgUnionProductService.searchSource(condition, null, cgUnionProductService::commonSort, null, from, size);
+        ElasticSearchData<CarAlimamaUnionProductIndex, CatProductBucketTO> searchData = cgUnionProductService.search(source);
 
         boolean backup = false;
         // 首页，并且检索不出来商品的时候，检索的商品源改为选品库的
         if ((searchData == null || searchData.getTotal() == 0) && from == 0) {
             // 未人工审核的商品
             condition.setSaleStatus(SaleStatusEnum.INIT.getStatus());
-            searchData = cgUnionProductService.searchProduct(condition,
-                    cgUnionProductService::buildCatMessagePushAgg,
-                    from,
-                    size);
+            source = cgUnionProductService.searchSource(condition, null, cgUnionProductService::commonSort, null, from, size);
+            searchData = cgUnionProductService.search(source);
 
             backup = true;
         }
         if (searchData == null || searchData.getTotal() == 0) {
-            otherData.put("tips", String.format("亲爱的小主您好，根据你的要求，共找到%d个商品", 0));
             page.setList(new ArrayList<>());
             page.setCount(0);
-            page.setOtherData(otherData);
             return page;
         }
 
         long total = searchData.getTotal();
 
-        long minPrice = 0;
-        Map<String, List<CatProductBucketTO>> bucketMap = searchData.getBucketMap();
-        if (bucketMap != null && bucketMap.get("min_coupon_price") != null) {
-            CatProductBucketTO minCouponPrice = bucketMap.get("min_coupon_price").get(0);
-            minPrice = Optional.ofNullable(minCouponPrice.getCount()).orElse(0L);
+        List<UnionProductTO> productTOs = cgUnionProductService.listProductInfo(searchData);
+        // 过滤无效额商品
+        if (CollectionUtils.isNotEmpty(productTOs)) {
+            productTOs = productTOs.stream().filter(i -> StringUtils.isNotBlank(i.getImgUrl())).collect(Collectors.toList());
         }
 
-        String matchRes = String.format(res, total, new BigDecimal(minPrice).divide(new BigDecimal("100"), 2, RoundingMode.UP).toString());
-        otherData.put("tips", matchRes);
-
-        List<UnionProductTO> productTOs = cgUnionProductService.listProductInfo(searchData);
         // 这样前端计算的时候 就没有下一页了
         if (backup) {
             total = productTOs.size();
         }
 
         Page<UnionProductTO> toPage = new Page<>(page.getPageNo() + 1, page.getPageSize(), total, productTOs);
-        toPage.setOtherData(otherData);
 
         return toPage;
     }
@@ -238,13 +307,13 @@ public class CgProductPushController {
     // 微信企业 @推送商品
     @RequestMapping(value = "/product/statistics/detail")
     @ResponseBody
-    public Result<?> statistics() {
+    public String statistics() {
 
 //        GetMappingsResponse indexMapping = elasticSearch7Service.getIndexMapping(ElasticSearchIndexEnum.CAT_PRODUCT_INDEX);
 
         String s = cgUnionProductStatisticsService.runJob();
 
-        return Result.OK(s);
+        return s;
     }
 
     public static void main(String[] args) {
@@ -304,23 +373,15 @@ public class CgProductPushController {
 
         List<CategoryTree> categoryTreeFromCache = maocheCategoryService.getCategoryTreeFromCache();
 
-
-
         ProductCategoryVO response = new ProductCategoryVO();
         List<CatProductBucketTO> categories = new ArrayList<>();
-
-
 
         CatProductBucketTO allItem = new CatProductBucketTO();
         allItem.setKey("0");
         allItem.setName("全部");
         categories.add(0, allItem);
 
-        List<Long> rootCids = new ArrayList<>();
-        rootCids.add(50L);
-        rootCids.add(23L);
-        rootCids.add(25L);
-        rootCids.add(1L);
+        List<Long> rootCids = maocheCategoryMappingService.getRootCids();
         // 先后台写死顺序
         List<MaocheCategoryMappingDO> categoryMappingDOs = maocheCategoryMappingService.listByParentId(0L);
         if (CollectionUtils.isNotEmpty(categoryMappingDOs)) {
@@ -360,5 +421,42 @@ public class CgProductPushController {
         List<Long> historyLowPriceIds = DaTaoKeResponseHelper.getHistoryLowPriceIds(JsonUtils.toJSONString(historyLowPriceList.getData()));
 
         return Result.OK(historyLowPriceIds);
+    }
+
+
+    @RequestMapping(value = "/product/test/category")
+    @ResponseBody
+    public Result<?> testCategory() {
+
+        CatUnionProductCondition condition = new CatUnionProductCondition();
+
+        SearchSourceBuilder source = cgUnionProductService.searchSource(condition, cgUnionProductService::buildRootCategoryAgg, null, null, 0, 0);
+        ElasticSearchData<CarAlimamaUnionProductIndex, CatProductBucketTO> searchData = cgUnionProductService.search(source);
+
+        List<MaocheCategoryMappingDO> roots = maocheCategoryMappingService.getCategoryFromCache(0L);
+        Map<String, String> rootNameMap = new HashMap<>();
+        for (MaocheCategoryMappingDO item : roots) {
+            rootNameMap.put("agg_" + item.getId(), item.getName());
+        }
+
+        List<CatProductBucketTO> carProductBucketTOs = new ArrayList<>();
+        Map<String, List<CatProductBucketTO>> bucketMap = searchData.getBucketMap();
+        for (Map.Entry<String, List<CatProductBucketTO>> entry : bucketMap.entrySet()) {
+            for (CatProductBucketTO bucket : entry.getValue()) {
+                if (StringUtils.isBlank(bucket.getName())) {
+                    continue;
+                }
+                String name = rootNameMap.get(bucket.getName());
+                if (StringUtils.isBlank(name)) {
+                    continue;
+                }
+                bucket.setName(name);
+                carProductBucketTOs.add(bucket);
+            }
+        }
+        ProductCategoryVO categoryVO = new ProductCategoryVO();
+        categoryVO.setCategories(carProductBucketTOs);
+        categoryVO.setTotal(searchData.getTotal());
+        return Result.OK(categoryVO);
     }
 }

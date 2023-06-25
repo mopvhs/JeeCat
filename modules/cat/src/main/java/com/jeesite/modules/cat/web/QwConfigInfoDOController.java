@@ -34,10 +34,10 @@ public class QwConfigInfoDOController extends BaseController {
 	/**
 	 * 获取数据
 	 */
-	@ModelAttribute
-	public QwConfigInfoDO get(Long id, boolean isNewRecord) {
-		return qwConfigInfoDOService.get(id, isNewRecord);
-	}
+//	@ModelAttribute
+//	public QwConfigInfoDO get(Long id, boolean isNewRecord) {
+//		return qwConfigInfoDOService.get(id, isNewRecord);
+//	}
 	
 	/**
 	 * 查询列表

@@ -7,26 +7,19 @@ import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductDO;
 import com.jeesite.modules.cat.es.config.es7.ElasticSearch7Service;
 import com.jeesite.modules.cat.service.MaocheAlimamaUnionProductService;
 import com.jeesite.modules.cat.service.MaocheSenderTaskService;
-import com.jeesite.modules.cat.service.cg.AutoProductService;
 import com.jeesite.modules.cat.service.cg.CgUnionProductService;
 import com.jeesite.modules.cat.service.cg.DaTaoKeApiService;
-import com.jeesite.modules.cat.service.dingding.DingDingService;
+import com.jeesite.modules.cat.service.message.DingDingService;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.IJobHandler;
 import com.xxl.job.core.handler.annotation.XxlJob;
-import io.netty.util.concurrent.DefaultThreadFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 /**
  * 全量构建商品索引
@@ -69,7 +62,7 @@ public class CgProductSyncXxlJob extends IJobHandler {
 
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
-        String status = "NORMAL";
+        String status = null;
         try {
             long id = 0L;
             int limit = 20;

@@ -181,7 +181,7 @@ public class MaocheDataokeProductService extends CrudService<MaocheDataokeProduc
 
 		product.setUpdateBy("consumer");
 		product.setRemarks("");
-		product.setStatus("normal");
+		product.setStatus("NORMAL");
 
 		return dao.update(product) > 0;
 	}

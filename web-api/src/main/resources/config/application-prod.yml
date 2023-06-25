@@ -85,16 +85,16 @@ mybatis:
       enabled: false
 
 elasticsearch:
-    ip: es-4uienven.public.tencentelasticsearch.com
-    port: 9200
-    scheme: https
-    user: elastic
-    passwd: ZRu8UqZG
-#  ip: 124.222.232.134
-#  port: 9200
-#  scheme: http
-#  user: elastic
-#  passwd: 24KmVo1FfoyNk65YMr8j
+#    ip: es-4uienven.public.tencentelasticsearch.com
+#    port: 9200
+#    scheme: https
+#    user: elastic
+#    passwd: ZRu8UqZG
+  ip: 124.222.232.134
+  port: 9200
+  scheme: http
+  user: elastic
+  passwd: 24KmVo1FfoyNk65YMr8j
 
 dtk:
   appKey: 647802ed3a2b4
@@ -106,8 +106,8 @@ xxl:
     adminAddresses: https://task.mtxtool.com/xxl-job-admin
     appname: jeeCat
     accessToken: 2fadea384aeea2b87a77837b11e4f3d1
-    address: 119.45.117.100:9999
-    ip: 119.45.117.100
+    address:
+    ip:
     port: 28980
     logPath: logs/jeecat/job/jobhandler/
     logRetentionDays: 30

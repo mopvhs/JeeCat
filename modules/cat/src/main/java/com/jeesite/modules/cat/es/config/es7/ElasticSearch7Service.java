@@ -9,6 +9,7 @@ import io.netty.util.concurrent.DefaultThreadFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.lucene.search.TotalHits;
 import org.elasticsearch.action.DocWriteResponse;
 import org.elasticsearch.action.delete.DeleteRequest;
@@ -141,6 +142,87 @@ public class ElasticSearch7Service {
             return response;
         } catch (Exception e) {
             log.error("查询ElasticSearch7Service查询异常，searchRequest:{}, indexEnum：{}", JSON.toJSONString(searchRequest), JSON.toJSONString(indexEnum), e);
+        }
+
+        return null;
+    }
+
+    /**
+     * 查询
+     * @param searchSourceBuilder
+     * @param indexEnum
+     * @param converter
+     * @return
+     * @param <R>
+     */
+    public <R, A> ElasticSearchData<R, A> search(SearchSourceBuilder searchSourceBuilder,
+                                                 ElasticSearchIndexEnum indexEnum,
+                                                 Function<String, R> converter,
+                                                 Function<Aggregations, Map<String, List<A>>> bucketConverter) {
+
+        searchSourceBuilder.sort("_score", SortOrder.DESC);
+
+        SearchRequest searchRequest = new SearchRequest();
+        searchRequest.indices(indexEnum.getIndex());
+        searchRequest.types(indexEnum.getType());
+        searchRequest.source(searchSourceBuilder);
+
+        try {
+            StopWatch stopWatch = new StopWatch();
+            stopWatch.start();
+            SearchResponse searchResponse = restHighLevelClient.search(searchRequest, RequestOptions.DEFAULT);
+            stopWatch.stop();
+            log.info("es search2 indexEnum {}, time:{}, source :{}", indexEnum.getIndex(), stopWatch.toString(), searchSourceBuilder.toString());
+
+            if (searchResponse == null) {
+                return null;
+            }
+            SearchResponseSections internalResponse = searchResponse.getInternalResponse();
+            if (internalResponse == null) {
+                return null;
+            }
+            SearchHits searchHits = internalResponse.hits();
+            ElasticSearchData<R, A> response = new ElasticSearchData<>();
+            List<R> hits = new ArrayList<>();
+
+            for (SearchHit hit : searchHits.getHits()) {
+                R apply = converter.apply(hit.getSourceAsString());
+                if (apply != null) {
+                    hits.add(apply);
+                }
+            }
+
+            Map<String, List<A>> aggBucketMap = new HashMap<>();
+            if (bucketConverter != null && internalResponse.aggregations() != null) {
+                Map<String, List<A>> apply = bucketConverter.apply(internalResponse.aggregations());
+                if (MapUtils.isNotEmpty(apply)) {
+                    aggBucketMap = apply;
+                }
+            }
+
+            long total = 0;
+            TotalHits totalHits = searchHits.getTotalHits();
+            if (totalHits != null) {
+                total = totalHits.value;
+                if (total >= 10000) {
+                    CountRequest countRequest = new CountRequest();
+                    countRequest.query(searchSourceBuilder.query());
+                    countRequest.indices(indexEnum.getIndex());
+                    countRequest.types(indexEnum.getType());
+                    CountResponse count = restHighLevelClient.count(countRequest, RequestOptions.DEFAULT);
+                    if (count != null) {
+                        total = count.getCount();
+                    }
+                }
+            }
+
+            response.setTotal(total);
+            response.setDocuments(hits);
+            response.setBucketMap(aggBucketMap);
+
+            return response;
+        } catch (Exception e) {
+            log.error("查询ElasticSearch7Service2查询异常，searchRequest:{}, indexEnum：{}", JSON.toJSONString(searchRequest), JSON.toJSONString(indexEnum), e);
         }
 
         return null;

@@ -1,0 +1,102 @@
+<% layout('/layouts/default.html', {title: '群组消息管理', libs: ['dataGrid']}){ %>
+<div class="main-content">
+	<div class="box box-main">
+		<div class="box-header">
+			<div class="box-title">
+				<i class="fa icon-notebook"></i> ${text('群组消息管理')}
+			</div>
+			<div class="box-tools pull-right">
+				<a href="#" class="btn btn-default" id="btnSearch" title="${text('查询')}"><i class="fa fa-filter"></i> ${text('查询')}</a>
+				<% if(hasPermi('cat:qwChatroomInfoDO:edit')){ %>
+					<a href="${ctx}/cat/qwChatroomInfoDO/form" class="btn btn-default btnTool" title="${text('新增群组消息')}"><i class="fa fa-plus"></i> ${text('新增')}</a>
+				<% } %>
+				<a href="#" class="btn btn-default" id="btnSetting" title="${text('设置')}"><i class="fa fa-navicon"></i></a>
+			</div>
+		</div>
+		<div class="box-body">
+			<#form:form id="searchForm" model="${qwChatroomInfoDO}" action="${ctx}/cat/qwChatroomInfoDO/listData" method="post" class="form-inline hide"
+					data-page-no="${parameter.pageNo}" data-page-size="${parameter.pageSize}" data-order-by="${parameter.orderBy}">
+				<div class="form-group">
+					<label class="control-label">${text('wxid')}：</label>
+					<div class="control-inline">
+						<#form:input path="wxid" maxlength="256" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('room_chat_id')}：</label>
+					<div class="control-inline">
+						<#form:input path="roomChatId" maxlength="256" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('room_name')}：</label>
+					<div class="control-inline">
+						<#form:input path="roomName" maxlength="256" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('room_owner_id')}：</label>
+					<div class="control-inline">
+						<#form:input path="roomOwnerId" maxlength="256" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('room_create_time')}：</label>
+					<div class="control-inline">
+						<#form:input path="roomCreateTime" maxlength="256" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('create_time')}：</label>
+					<div class="control-inline">
+						<#form:input path="createTime" readonly="true" maxlength="20" class="form-control laydate width-datetime"
+							dataFormat="datetime" data-type="datetime" data-format="yyyy-MM-dd HH:mm"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('update_time')}：</label>
+					<div class="control-inline">
+						<#form:input path="updateTime" readonly="true" maxlength="20" class="form-control laydate width-datetime"
+							dataFormat="datetime" data-type="datetime" data-format="yyyy-MM-dd HH:mm"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<button type="submit" class="btn btn-primary btn-sm">${text('查询')}</button>
+					<button type="reset" class="btn btn-default btn-sm isQuick">${text('重置')}</button>
+				</div>
+			</#form:form>
+			<table id="dataGrid"></table>
+			<div id="dataGridPage"></div>
+		</div>
+	</div>
+</div>
+<% } %>
+<script>
+// 初始化DataGrid对象
+$('#dataGrid').dataGrid({
+	searchForm: $("#searchForm"),
+	columnModel: [
+		{header:'${text("wxid")}', name:'wxid', index:'a.wxid', width:150, align:"left", frozen:true, formatter: function(val, obj, row, act){
+			return '<a href="${ctx}/cat/qwChatroomInfoDO/form?id='+row.id+'" class="btnList" data-title="${text("编辑群组消息")}">'+(val||row.id)+'</a>';
+		}},
+		{header:'${text("room_chat_id")}', name:'roomChatId', index:'a.room_chat_id', width:150, align:"left"},
+		{header:'${text("room_name")}', name:'roomName', index:'a.room_name', width:150, align:"left"},
+		{header:'${text("room_owner_id")}', name:'roomOwnerId', index:'a.room_owner_id', width:150, align:"left"},
+		{header:'${text("room_create_time")}', name:'roomCreateTime', index:'a.room_create_time', width:150, align:"left"},
+		{header:'${text("create_time")}', name:'createTime', index:'a.create_time', width:150, align:"center"},
+		{header:'${text("update_time")}', name:'updateTime', index:'a.update_time', width:150, align:"center"},
+		{header:'${text("操作")}', name:'actions', width:120, formatter: function(val, obj, row, act){
+			var actions = [];
+			//<% if(hasPermi('cat:qwChatroomInfoDO:edit')){ %>
+				actions.push('<a href="${ctx}/cat/qwChatroomInfoDO/form?id='+row.id+'" class="btnList" title="${text("编辑群组消息")}"><i class="fa fa-pencil"></i></a>&nbsp;');
+				actions.push('<a href="${ctx}/cat/qwChatroomInfoDO/delete?id='+row.id+'" class="btnList" title="${text("删除群组消息")}" data-confirm="${text("确认要删除该群组消息吗？")}"><i class="fa fa-trash-o"></i></a>&nbsp;');
+			//<% } %>
+			return actions.join('');
+		}}
+	],
+	// 加载成功后执行事件
+	ajaxSuccess: function(data){
+		
+	}
+});
+</script>

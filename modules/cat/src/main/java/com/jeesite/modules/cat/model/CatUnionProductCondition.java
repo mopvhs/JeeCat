@@ -18,6 +18,8 @@ public class CatUnionProductCondition implements Serializable {
 
     @EsItemAspect
     private Long id;
+    @EsItemAspect(queryType = "mustNotItemsQuery", field = "id")
+    private List<Long> filterIds;
 //    @EsItemAspect
 //    private Long categoryId;
     @EsItemAspect(queryType = "itemQuery")

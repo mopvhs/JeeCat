@@ -9,7 +9,7 @@ import com.jeesite.modules.cat.entity.QwConfigInfoDO;
  * @author YHQ
  * @version 2023-06-21
  */
-@MyBatisDao
+@MyBatisDao(dataSourceName = "ds2")
 public interface QwConfigInfoDao extends CrudDao<QwConfigInfoDO> {
 	
 }

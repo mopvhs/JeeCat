@@ -135,6 +135,17 @@ public class ProductValueHelper {
     }
 
     /**
+     * 店铺dsr
+     * @param jsonObject
+     * @return
+     */
+    public static String getShortTitle(JSONObject jsonObject) {
+        String shortTitle = jsonObject.getString("short_title");
+
+        return shortTitle;
+    }
+
+    /**
      * 类目名称
      * @param jsonObject
      * @return

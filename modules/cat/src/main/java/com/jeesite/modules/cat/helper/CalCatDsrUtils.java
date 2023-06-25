@@ -4,6 +4,8 @@ import com.jeesite.common.lang.NumberUtils;
 import com.jeesite.common.lang.StringUtils;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * https://docs.qq.com/doc/DQkFHSmx4dWlWRm1G
@@ -11,13 +13,13 @@ import java.math.BigDecimal;
 public class CalCatDsrUtils {
 
 
-    public static void main(String[] args) {
-        long l = calCarRate(48984L, 40000L, 18L,"19.9万", 46L);
+//    public static void main(String[] args) {
+//        long l = calCarRate(48984L, 40000L, 18L,"19.9万", 46L);
+//
+//        System.out.println(l);
+//    }
 
-        System.out.println(l);
-    }
-
-    public static long calCarRate(Long shopDsr, Long volume, Long creditLevel, String fans, Long commissionRate) {
+    public static Map<String, String> calCatDsr(Long shopDsr, Long volume, Long creditLevel, String fans, Long commissionRate) {
         int shopDsrFactor = getShopDsrFactor(shopDsr);
         int volumeFactor = getProductVolumeFactor(volume);
         int creditLevelFactor = getProductCreditLevelFactor(creditLevel);
@@ -30,8 +32,21 @@ public class CalCatDsrUtils {
                 new BigDecimal("0.1").multiply(new BigDecimal(creditLevelFactor)).longValue() +
                 new BigDecimal("0.15").multiply(new BigDecimal(fansFactor)).longValue() +
                 new BigDecimal("0.15").multiply(new BigDecimal(commissionRateFactor)).longValue();
+        long catDsr = Math.min(catRate, 50000);
+        StringBuilder tips = new StringBuilder();
+        tips.append("评分公式：（P1=0.3*店铺评分A +0.3*月销量C +0.1*店铺等级D+0.15*店铺粉丝数E+0.15*佣金率F ）\n");
+        tips.append("各评分计算因子转换：真实分数 -> 计算分数\n");
+        tips.append("【店铺评分】:（").append(shopDsr).append("->").append(shopDsrFactor).append(")\n");
+        tips.append("【月销量】:（").append(volume).append("->").append(volumeFactor).append(")\n");
+        tips.append("【店铺等级】:（").append(creditLevel).append("->").append(creditLevelFactor).append(")\n");
+        tips.append("【店铺粉丝数】:（").append(fans).append("->").append(fansFactor).append(")\n");
+        tips.append("【佣金率】:（").append(commissionRate).append("->").append(commissionRateFactor).append(")\n");
 
-        return Math.min(catRate, 50000);
+        Map<String, String> res = new HashMap<>();
+        res.put("catDsr", String.valueOf(catDsr));
+        res.put("tips", tips.toString());
+
+        return res;
     }
 
     /**

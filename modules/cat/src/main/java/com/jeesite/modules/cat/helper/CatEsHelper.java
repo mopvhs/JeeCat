@@ -22,6 +22,7 @@ import com.jeesite.modules.cat.model.UnionProductTagTO;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public class CatEsHelper {
@@ -108,8 +109,10 @@ public class CatEsHelper {
         }
 
         // 猫车分
-        long catDsr = CalCatDsrUtils.calCarRate(shopDsr, volume, creditLevel, fans, commissionRate);
-
+        Map<String, String> calCatDsr = CalCatDsrUtils.calCatDsr(shopDsr, volume, creditLevel, fans, commissionRate);
+        String catDsrTips = calCatDsr.get("tips");
+        index.setCatDsr(NumberUtils.toLong(calCatDsr.get("catDsr")));
+        index.setCatDsrTips(catDsrTips);
         List<String> activity = new ArrayList<>();
         if (goodPriceDO != null) {
             activity.add(CatActivityEnum.GOOD_PRICE.getActivity());
@@ -132,7 +135,6 @@ public class CatEsHelper {
         index.setActivity(activity);
         index.setTkTotalSales(tkTotalSales);
         index.setCouponRemainCount(couponRemainCount);
-        index.setCatDsr(catDsr);
         index.setPromotionPrice(promotionPrice);
         index.setSaleStatus(Optional.ofNullable(item.getSaleStatus()).orElse(SaleStatusEnum.INIT.getStatus()));
         index.setDataSource(item.getDataSource());
@@ -210,9 +212,10 @@ public class CatEsHelper {
         index.setTkTotalSales(null);
         index.setCouponRemainCount(promotion.getCouponRemainCount());
         // 猫车分
-        long catDsr = CalCatDsrUtils.calCarRate(score.getDsrScore(), model.getVolume(), shop.getShopLevel(), shop.getFans(), model.getCommissionRate());
-
-        index.setCatDsr(catDsr);
+        Map<String, String> calCatDsr = CalCatDsrUtils.calCatDsr(score.getDsrScore(), model.getVolume(), shop.getShopLevel(), shop.getFans(), model.getCommissionRate());
+        String catDsrTips = calCatDsr.get("tips");
+        index.setCatDsr(NumberUtils.toLong(calCatDsr.get("catDsr")));
+        index.setCatDsrTips(catDsrTips);
         index.setPromotionPrice(promotion.getPromotionPrice());
         index.setSaleStatus(Optional.ofNullable(model.getSaleStatus()).orElse(SaleStatusEnum.INIT.getStatus()));
         index.setCreateTime(model.getCreateTime());

@@ -1,7 +1,6 @@
 package com.jeesite.modules.cat.service.cg;
 
 import com.jeesite.common.utils.JsonUtils;
-import com.jeesite.common.web.Result;
 import com.jeesite.modules.cat.dao.MaocheAlimamaUnionProductDao;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductDO;
 import com.jeesite.modules.cat.enums.AuditStatusEnum;
@@ -12,7 +11,7 @@ import com.jeesite.modules.cat.es.config.model.ElasticSearchData;
 import com.jeesite.modules.cat.helper.CatRobotHelper;
 import com.jeesite.modules.cat.model.CarAlimamaUnionProductIndex;
 import com.jeesite.modules.cat.service.MaocheAlimamaUnionProductService;
-import com.jeesite.modules.cat.service.dingding.DingDingService;
+import com.jeesite.modules.cat.service.message.DingDingService;
 import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;

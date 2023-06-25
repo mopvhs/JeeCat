@@ -51,6 +51,7 @@ public class CarAlimamaUnionProductIndex implements Serializable {
 
     // 猫车分
     private Long catDsr;
+    private String catDsrTips;
 //    private String shopTitle;
 //    private String shortTitle;
 //    private List<String> smallImages;
