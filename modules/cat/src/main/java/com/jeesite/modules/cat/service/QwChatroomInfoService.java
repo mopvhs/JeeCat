@@ -1,6 +1,9 @@
 package com.jeesite.modules.cat.service;
 
+import java.util.ArrayList;
 import java.util.List;
+
+import com.jeesite.common.lang.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -77,5 +80,16 @@ public class QwChatroomInfoService extends CrudService<QwChatroomInfoDao, QwChat
 	public void delete(QwChatroomInfoDO qwChatroomInfoDO) {
 		super.delete(qwChatroomInfoDO);
 	}
-	
+
+
+	public List<QwChatroomInfoDO> listByOwnerId(String roomOwnerId) {
+		if (StringUtils.isBlank(roomOwnerId)) {
+			return new ArrayList<>();
+		}
+
+		QwChatroomInfoDO query = new QwChatroomInfoDO();
+		query.setRoomOwnerId(roomOwnerId);
+
+		return dao.findList(query);
+	}
 }

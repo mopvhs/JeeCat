@@ -1,12 +1,17 @@
 package com.jeesite.modules.cat.service;
 
+import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 
 import com.google.common.collect.Lists;
 import com.jeesite.modules.cat.enums.AuditStatusEnum;
 import com.jeesite.modules.cat.enums.ProductDataSource;
+import com.jeesite.modules.cat.enums.SaleStatusEnum;
 import com.jeesite.modules.cat.enums.SyncMarkEnum;
+import lombok.Data;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -103,6 +108,28 @@ public class MaocheAlimamaUnionProductService extends CrudService<MaocheAlimamaU
 		return i > 0;
 	}
 
+	/**
+	 * 如果是入库的，标记需要同步数据
+	 * @param ids
+	 * @param auditStatus
+	 * @return
+	 */
+	public boolean updateSaleAuditStatus(List<Long> ids, Integer auditStatus, Long saleStatus) {
+
+		Integer syncMark = null;
+		if (Objects.equals(auditStatus, AuditStatusEnum.PASS.getStatus())) {
+			syncMark = SyncMarkEnum.PASS.getType();
+		}
+		String onShelfDate = null;
+		if (Objects.equals(saleStatus, SaleStatusEnum.ON_SHELF.getStatus())) {
+			onShelfDate = new Timestamp(System.currentTimeMillis()).toString();
+		}
+
+		int i = dao.updateSaleAuditStatus(ids, saleStatus, onShelfDate, auditStatus, syncMark);
+
+		return i > 0;
+	}
+
 	public List<MaocheAlimamaUnionProductDO> listByMaocheInnerIds(List<String> innerIds, ProductDataSource source) {
 		if (CollectionUtils.isEmpty(innerIds) || source == null) {
 			return new ArrayList<>();
@@ -139,6 +166,26 @@ public class MaocheAlimamaUnionProductService extends CrudService<MaocheAlimamaU
 			query.setDataSource(source.getSource());
 			query.setLevelOneCategoryName(levelOneCategoryName);
 			query.setStatus(status);
+			List<MaocheAlimamaUnionProductDO> items = dao.findList(query);
+			if (CollectionUtils.isNotEmpty(items)) {
+				productDOs.addAll(items);
+			}
+		}
+
+		return productDOs;
+	}
+
+
+	public List<MaocheAlimamaUnionProductDO> listByIds(List<Long> ids) {
+		if (CollectionUtils.isEmpty(ids)) {
+			return new ArrayList<>();
+		}
+
+		List<MaocheAlimamaUnionProductDO> productDOs = new ArrayList<>();
+		List<List<Long>> partition = Lists.partition(ids, 20);
+		for (List<Long> p : partition) {
+			MaocheAlimamaUnionProductDO query = new MaocheAlimamaUnionProductDO();
+			query.setIid_in(p.toArray(new Long[0]));
 			List<MaocheAlimamaUnionProductDO> items = dao.findList(query);
 			if (CollectionUtils.isNotEmpty(items)) {
 				productDOs.addAll(items);

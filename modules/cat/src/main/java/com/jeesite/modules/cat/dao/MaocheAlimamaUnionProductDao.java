@@ -27,6 +27,12 @@ public interface MaocheAlimamaUnionProductDao extends CrudDao<MaocheAlimamaUnion
 
     int updateProductStatus(@Param("ids") List<Long> ids, @Param("status") String status);
 
+    int updateSaleAuditStatus(@Param("ids") List<Long> ids,
+                            @Param("saleStatus") Long saleStatus,
+                            @Param("onShelfDate") String onShelfDate,
+                            @Param("auditStatus") Integer auditStatus,
+                            @Param("syncMark") Integer syncMark);
+
     /**
      *
      * @param ids
@@ -35,4 +41,6 @@ public interface MaocheAlimamaUnionProductDao extends CrudDao<MaocheAlimamaUnion
      * @return
      */
     int updateSaleStatus(@Param("ids") List<Long> ids, @Param("saleStatus") Long saleStatus, @Param("onShelfDate") String onShelfDate);
+
+    int updateQualityStatus(@Param("ids") List<Long> ids, @Param("qualityStatus") Long qualityStatus);
 }

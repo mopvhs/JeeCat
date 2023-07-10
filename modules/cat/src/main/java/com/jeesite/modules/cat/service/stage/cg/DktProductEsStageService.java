@@ -1,5 +1,6 @@
 package com.jeesite.modules.cat.service.stage.cg;
 
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.dtk.fetch.response.DtkGoodsListResponse;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -18,6 +19,7 @@ import com.jeesite.modules.cat.model.CategoryTree;
 import com.jeesite.modules.cat.model.ProductCategoryModel;
 import com.jeesite.modules.cat.model.ProductScoreModel;
 import com.jeesite.modules.cat.model.PromotionModel;
+import com.jeesite.modules.cat.model.RateDetailTO;
 import com.jeesite.modules.cat.model.ShopModel;
 import com.jeesite.modules.cat.model.UnionProductModel;
 import lombok.Data;
@@ -92,6 +94,9 @@ public class DktProductEsStageService extends AbstractProductEsStage<ProductEsCo
 
         // 类目
         fillCategoryModel(context, innerContext);
+
+        // 属性
+        fillPropsModel(context, innerContext);
 
         return model;
     }
@@ -231,6 +236,33 @@ public class DktProductEsStageService extends AbstractProductEsStage<ProductEsCo
         productCategory.setLevelOneCategoryName(levelOneCategoryName);
 
         model.setCategory(productCategory);
+
+    }
+
+    private void fillPropsModel(ProductEsContext context, Context innerContext) {
+        UnionProductModel model = innerContext.getModel();
+        MaocheAlimamaUnionProductDetailDO productDetailDO = context.getProductDetailDO();
+        if (productDetailDO == null) {
+            return;
+        }
+        String origContent = productDetailDO.getOrigContent();
+        if (StringUtils.isBlank(origContent)) {
+            return;
+        }
+
+        try {
+            JSONObject jsonObject = JSONObject.parseObject(origContent);
+            String detailPropsProductName = ProductValueHelper.getDetailPropsProductName(jsonObject);
+            String detailPropsBrand = ProductValueHelper.getDetailPropsBrand(jsonObject);
+
+            model.setPropsBrand(detailPropsBrand);
+            model.setPropsProductName(detailPropsProductName);
+
+            List<RateDetailTO> details = ProductValueHelper.getDetailRates(jsonObject);
+            model.setRates(details);
+        } catch (Exception e) {
+
+        }
 
     }
 

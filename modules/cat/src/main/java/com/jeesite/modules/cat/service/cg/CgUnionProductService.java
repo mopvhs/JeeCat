@@ -274,7 +274,7 @@ public class CgUnionProductService {
         Map<String, MaocheAlimamaUnionTitleKeywordDO> keywordMap = keywordDOs.stream().collect(Collectors.toMap(MaocheAlimamaUnionTitleKeywordDO::getItemIdSuffix, Function.identity(), (o1, o2) -> o1));
 
         // 获取有好价信息
-        List<MaocheAlimamaUnionGoodPriceDO> unionGoodPriceDOs = maocheAlimamaUnionGoodPriceService.listByItemIdSuffixs(iids);
+        List<MaocheAlimamaUnionGoodPriceDO> unionGoodPriceDOs = maocheAlimamaUnionGoodPriceService.listByItemIdSuffixs(iids, 3);
         Map<String, MaocheAlimamaUnionGoodPriceDO> unionGoodPriceMap = unionGoodPriceDOs.stream().collect(Collectors.toMap(MaocheAlimamaUnionGoodPriceDO::getItemIdSuffix, Function.identity(), (o1, o2) -> o1));
 
         // 商品sku detail
@@ -303,6 +303,10 @@ public class CgUnionProductService {
         List<Map<String, Object>> list = new ArrayList<>();
         for (MaocheAlimamaUnionProductDO item : items) {
             try {
+                if (!"宠物/宠物食品及用品".equals(item.getLevelOneCategoryName())) {
+                    elasticSearch7Service.delIndex(Collections.singletonList(item.getIid()), ElasticSearchIndexEnum.CAT_PRODUCT_INDEX);
+                    continue;
+                }
 
                 if (!"NORMAL".equalsIgnoreCase(item.getStatus())) {
 //                    log.info("del product item:{} \n", JsonUtils.toJSONString(item));
@@ -413,8 +417,6 @@ public class CgUnionProductService {
         builder.setConfig(configBuilder);
         builder.setUri(url);
 
-//        HttpEntity httpEntity = new StringEntity(JSON.toJSONString(params), ContentType.create("application/json", Charset.forName("UTF-8")));
-//        builder.setEntity(httpEntity);
         String res = "";
         try {
             CloseableHttpResponse response = httpClient.execute(builder.build());
@@ -444,6 +446,49 @@ public class CgUnionProductService {
         return res;
     }
 
+    /**
+     * https://www.veapi.cn/apidoc/tongyongjiekou/70
+     * 从用户提供的电商平台的标题中，提取精准产品词，和相关的品牌词、规格、材质等属性。从而准确理解用户搜索意图。
+     * @param title
+     * @param vekey
+     */
+    public String titleKeyWord(String title, String vekey) {
+        if (StringUtils.isBlank(title)) {
+            return null;
+        }
+
+        CloseableHttpClient httpClient = MtxHttpClientUtils.getHttpsClient();
+
+        String method = "GET";
+        // API网址
+        String url = "http://api.veapi.cn/tbk/titlekeyword?vekey=%s&title=%s";
+        url = String.format(url, vekey, title);
+
+        RequestBuilder builder = RequestBuilder.create(method);
+        RequestConfig configBuilder = RequestConfig.custom().setCookieSpec(CookieSpecs.STANDARD).build();
+        builder.setConfig(configBuilder);
+        builder.setUri(url);
+
+        String res = "";
+        try {
+//            CloseableHttpResponse response = httpClient.execute(builder.build());
+//            HttpEntity entity = response.getEntity();
+//            String resp = EntityUtils.toString(entity, "UTF-8");
+//
+//            JSONObject jsonObject = JSONObject.parseObject(resp);
+//            if (jsonObject != null) {
+//                JSONObject data = jsonObject.getJSONObject("data");
+//                if (data != null) {
+//                    res = data.getString("tbk_pwd");
+//                }
+//            }
+        } catch (Exception e) {
+            log.error("titleKeyWord 获取授权地址失败", e);
+        }
+
+        return res;
+    }
+
 
     public List<UnionProductTO> listProductInfo(ElasticSearchData<CarAlimamaUnionProductIndex, CatProductBucketTO> searchData) {
         if (searchData == null) {
@@ -466,10 +511,10 @@ public class CgUnionProductService {
         List<MaocheAlimamaUnionTitleKeywordDO> keywordDOs = maocheAlimamaUnionTitleKeywordService.listByItemIdSuffixs(itemIds);
 
         // 获取有好价信息
-        List<MaocheAlimamaUnionGoodPriceDO> unionGoodPriceDOs = maocheAlimamaUnionGoodPriceService.listByItemIdSuffixs(itemIds);
+        List<MaocheAlimamaUnionGoodPriceDO> unionGoodPriceDOs = maocheAlimamaUnionGoodPriceService.listByItemIdSuffixs(itemIds, 3);
 
         // 获取sku 详情
-        List<MaocheAlimamaUnionProductDetailDO> productDetailDOs = maocheAlimamaUnionProductDetailService.listByItemIdSuffixs(itemIds);
+//        List<MaocheAlimamaUnionProductDetailDO> productDetailDOs = maocheAlimamaUnionProductDetailService.listByItemIdSuffixs(itemIds);
 
         // 获取大淘客的数据
 //        Map<String, MaocheDataokeProductDO> daTaoKeProductMap = getDaTaoKeProductMap(productDOs);
@@ -491,7 +536,7 @@ public class CgUnionProductService {
                 productDOs,
                 keywordDOs,
                 unionGoodPriceDOs,
-                productDetailDOs,
+                null,
                 new ArrayList<>());
 
         return unionProducts;
@@ -606,5 +651,19 @@ public class CgUnionProductService {
                 searchSourceBuilder.sort(name, sortOrder);
             }
         }
+    }
+
+    public static void main(String[] args) {
+
+        String a1 = "该商品当前低于去年促销价";
+        String a2 = "该商品低于全网同款均价XX%";
+        String a3 = "该商品当前为近XX天最低价";
+
+        String match = "低于";
+        int i = StringUtils.indexOf(a2, match);
+        System.out.println(i);
+
+        System.out.println(a2.substring(0, i));
+        System.out.println(a2.substring(i));
     }
 }

@@ -74,6 +74,8 @@ public class CarAlimamaUnionProductIndex implements Serializable {
 
     private Long auditStatus;
 
+    private Long qualityStatus;
+
     // 标签
     private List<String> brand;
     private List<String> secondBrand;
@@ -105,4 +107,10 @@ public class CarAlimamaUnionProductIndex implements Serializable {
 
     private Long syncTime;
     private Long updateTime;
+
+    // 商品品明(detail接口)
+    private String propsBrand;
+    private String propsProductName;
+
+    private List<RateDetailTO> rates;
 }

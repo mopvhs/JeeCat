@@ -11,7 +11,9 @@ import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductDetailDO;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionTitleKeywordDO;
 import com.jeesite.modules.cat.entity.MaocheCategoryDO;
 import com.jeesite.modules.cat.entity.MaocheDataokeProductDO;
+import com.jeesite.modules.cat.enums.QualityStatusEnum;
 import com.jeesite.modules.cat.model.CarAlimamaUnionProductIndex;
+import com.jeesite.modules.cat.model.HighLightTextTO;
 import com.jeesite.modules.cat.model.PromotionTagTO;
 import com.jeesite.modules.cat.model.RateDetailTO;
 import com.jeesite.modules.cat.model.RateTO;
@@ -25,6 +27,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -56,7 +59,7 @@ public class UnionProductHelper {
         Map<Long, MaocheAlimamaUnionProductDO> productDOMap = productDOs.stream().collect(Collectors.toMap(MaocheAlimamaUnionProductDO::getIid, Function.identity(), (o1, o2) -> o1));
         Map<String, MaocheAlimamaUnionTitleKeywordDO> keywordMap = keywordDOs.stream().collect(Collectors.toMap(MaocheAlimamaUnionTitleKeywordDO::getItemIdSuffix, Function.identity(), (o1, o2) -> o1));
         Map<String, MaocheAlimamaUnionGoodPriceDO> unionGoodPriceMap = unionGoodPriceDOs.stream().collect(Collectors.toMap(MaocheAlimamaUnionGoodPriceDO::getItemIdSuffix, Function.identity(), (o1, o2) -> o1));
-        Map<String, MaocheAlimamaUnionProductDetailDO> productDetailMap = productDetailDOs.stream().collect(Collectors.toMap(MaocheAlimamaUnionProductDetailDO::getItemIdSuffix, Function.identity(), (o1, o2) -> o1));
+//        Map<String, MaocheAlimamaUnionProductDetailDO> productDetailMap = productDetailDOs.stream().collect(Collectors.toMap(MaocheAlimamaUnionProductDetailDO::getItemIdSuffix, Function.identity(), (o1, o2) -> o1));
         Map<Long, MaocheCategoryDO> customCategoryMap = categoryDOs.stream().collect(Collectors.toMap(MaocheCategoryDO::getIid, Function.identity(), (o1, o2) -> o1));
 
         List<UnionProductTO> products = new ArrayList<>();
@@ -73,7 +76,7 @@ public class UnionProductHelper {
 
             UnionProductTO product = new UnionProductTO();
             product.setId(index.getId());
-            product.setItemId(productDO.getItemId());
+            product.setItemId(jsonObject.getString("item_id"));
             // todo 不同的平台执行不同的流行
             product.setShareCommand("");
             product.setTitle(index.getTitle());
@@ -88,6 +91,7 @@ public class UnionProductHelper {
             product.setShopDsr(index.getShopDsr());
             // 猫车分
             product.setCatDsr(index.getCatDsr());
+            product.setCatDsrTips(index.getCatDsrTips());
             // 店铺名称
             product.setShopName(jsonObject.getString("shop_title"));
             // 设置优惠券数量信息
@@ -96,6 +100,10 @@ public class UnionProductHelper {
             product.setCouponTotalCount(jsonObject.getLong("coupon_total_count"));
             product.setPromotionPrice(index.getPromotionPrice());
 
+            product.setQualityStatus(productDO.getQualityStatus());
+            if (QualityStatusEnum.GOLD.getStatus().equals(productDO.getQualityStatus())) {
+                product.setQualityIcon("https://mmbiz.qpic.cn/sz_mmbiz_png/y7ibJn5iaZcWDwjNpicRywUhEOhkwoRcchFKmVgckjUl7qQhddmhT8XBQc43k9FQENNbfH4VuVLO4pfOMa1m1DMmA/640?wx_fmt=png");
+            }
 
             long commission = -999999999L;
             if (index.getCommissionRate() != null && index.getCommissionRate() > 0) {
@@ -112,17 +120,29 @@ public class UnionProductHelper {
 
             product.setDataSource(Optional.ofNullable(productDO.getDataSource()).orElse(""));
             product.setBenefitDesc(Optional.ofNullable(index.getBenefitDesc()).orElse(""));
+
+            MaocheAlimamaUnionGoodPriceDO goodPriceDO = unionGoodPriceMap.get(productDO.getItemIdSuffix());
+
+            // 关键利益点
+            fillBenefitInfo(product, goodPriceDO, jsonObject);
+
             product.setItemDescription(Optional.ofNullable(jsonObject.getString("item_description")).orElse(""));
             // 评论信息
-            fillItemRateDetail(product, productDetailMap.get(productDO.getItemIdSuffix()));
+//            fillItemRateDetail(product, productDetailMap.get(productDO.getItemIdSuffix()));
 
-            fillItemAdvantage(product, unionGoodPriceMap.get(productDO.getItemIdSuffix()));
+            RateTO rateTO = new RateTO();
+            rateTO.setDetails(index.getRates());
+            product.setRate(rateTO);
+
+            fillItemAdvantage(product, goodPriceDO);
             // 商品所属
             if (CollectionUtils.isNotEmpty(product.getActivity())) {
                 product.setBelongTo(product.getActivity());
             } else {
                 product.setBelongTo(Collections.singletonList("超搜"));
             }
+
+            fillCustomTags(product, productDO);
 
             List<String> cidOneNames = new ArrayList<>();
             // 获取自定义类目
@@ -142,11 +162,86 @@ public class UnionProductHelper {
             UnionProductTagTO unionProductTagTO = convert2TagTO(keywordMap.get(productDO.getItemIdSuffix()));
             product.setTag(unionProductTagTO);
 
+            // 针对有好价的商品，替换promotionTags的数据
+            replaceCouponOfPromotionTags(product);
+
             products.add(product);
         }
 
 
         return products;
+    }
+
+    private static void replaceCouponOfPromotionTags(UnionProductTO product) {
+        if (CollectionUtils.isEmpty(product.getPromotionTags())) {
+            return;
+        }
+        List<PromotionTagTO> promotionTags = new ArrayList<>();
+        for (PromotionTagTO tag : product.getPromotionTags()) {
+            if (tag.getTagType().equalsIgnoreCase("COUPON")) {
+                continue;
+            }
+            promotionTags.add(tag);
+        }
+        if (product.getCoupon() != null && product.getCoupon() > 0 && product.getCouponRemainCount() != null && product.getCouponRemainCount() > 0) {
+            PromotionTagTO couponTag = new PromotionTagTO();
+            couponTag.setTagTypeDisplay("优惠券");
+            couponTag.setTagType("COUPON");
+            couponTag.setTagDisplay(PriceHelper.formatPrice(product.getCoupon(), ".00", "") + "元");
+            promotionTags.add(0, couponTag);
+        }
+        product.setPromotionTags(promotionTags);
+    }
+
+    private static void fillBenefitInfo(UnionProductTO product,
+                                        MaocheAlimamaUnionGoodPriceDO goodPriceDO,
+                                        JSONObject productOrigContent) {
+
+
+        // 叨叨
+        String benefitDesc = Optional.ofNullable(product.getBenefitDesc()).orElse("");
+        if (StringUtils.isNotBlank(benefitDesc)) {
+            int start = StringUtils.indexOf(benefitDesc, "【");
+            int end = StringUtils.indexOf(benefitDesc, "】");
+
+            if (start >= 0 && end > 0) {
+                String highLight = benefitDesc.substring(start, end + 1);
+                String normal = benefitDesc.substring(end  + 1);
+                HighLightTextTO benefitDescTO = new HighLightTextTO();
+                benefitDescTO.setNormal(normal);
+                benefitDescTO.setHighLight(highLight);
+                product.setHighLightBenefitDesc(benefitDescTO);
+            } else {
+                HighLightTextTO benefitDescTO = new HighLightTextTO();
+                benefitDescTO.setNormal(benefitDesc);
+                product.setHighLightBenefitDesc(benefitDescTO);
+            }
+        }
+
+        HighLightTextTO textTO = buildGoodPriceBenefit(goodPriceDO);
+        if (textTO != null && StringUtils.isNotBlank(textTO.getNormal())) {
+            product.setMainBenefit(textTO);
+            return;
+        }
+
+        if (productOrigContent == null) {
+            return;
+        }
+
+        Object itemDescription = productOrigContent.get("item_description");
+        if (itemDescription == null) {
+            return;
+        }
+
+        String desc = (String) itemDescription;
+        if (StringUtils.isBlank(desc)) {
+            return;
+        }
+
+        textTO = new HighLightTextTO();
+        // 普通的全部高亮
+        textTO.setHighLight(desc);
+        product.setMainBenefit(textTO);
     }
 
     private static String getProductImage(JSONObject jsonObject) {
@@ -255,9 +350,60 @@ public class UnionProductHelper {
         if (algoTags != null && algoTags.size() > 0) {
             product.setProductAdvantage(algoTags.toJavaList(String.class));
         }
+    }
+
+
+    private static HighLightTextTO buildGoodPriceBenefit(MaocheAlimamaUnionGoodPriceDO goodPriceDO) {
+        if (goodPriceDO == null) {
+            return null;
+        }
+        JSONObject jsonObject = JSONObject.parseObject(goodPriceDO.getContent());
+        if (jsonObject == null) {
+            return null;
+        }
+
         String goodPriceBenefit = jsonObject.getString("goodPriceBenefit");
         if (StringUtils.isNotBlank(goodPriceBenefit)) {
-            product.getPriceAdvantage().add(goodPriceBenefit);
+            try {
+                HighLightTextTO highLightTextTO = null;
+                List<String> keywords = new ArrayList<>();
+                keywords.add("低于");
+                keywords.add("近");
+                for (String keyword : keywords) {
+                    int i = StringUtils.indexOf(goodPriceBenefit, keyword);
+                    if (i < 0) {
+                        continue;
+                    }
+                    highLightTextTO = new HighLightTextTO();
+                    highLightTextTO.setNormal(goodPriceBenefit.substring(0, i));
+                    highLightTextTO.setHighLight(goodPriceBenefit.substring(i));
+                    return highLightTextTO;
+                }
+            } catch (Exception e) {
+                log.error("fillItemAdvantage set highLight exception goodPriceBenefit:{}", goodPriceBenefit, e);
+            }
+        }
+
+        return null;
+    }
+
+    private static void fillCustomTags(UnionProductTO product, MaocheAlimamaUnionProductDO productDO) {
+        if (product == null) {
+            return;
+        }
+        try {
+            List<String> customTags = Optional.ofNullable(product.getCustomTags()).orElse(new ArrayList<>());
+
+            // new 标
+            Date createTime = productDO.getCreateTime();
+            // 一天内
+            if (createTime != null && (System.currentTimeMillis() - productDO.getCreateTime().getTime()) <= 86400) {
+                customTags.add("new");
+            }
+
+            product.setCustomTags(customTags);
+        } catch (Exception e) {
+            log.error("fillCustomTags exception e", e);
         }
     }
 
@@ -325,9 +471,19 @@ public class UnionProductHelper {
 
     public static void main(String[] args) {
 
-        int rate = 602;
-        int price = 1900;
-        long commission = new BigDecimal(String.valueOf(rate)).multiply(new BigDecimal(String.valueOf(price))).divide(new BigDecimal("10000"), 2, RoundingMode.HALF_UP).longValue();
-        System.out.println(commission);
+        String text = "12【1212】打算撒记得撒娇";
+        int start = StringUtils.indexOf(text, "【");
+        if (start < 0) {
+            return;
+        }
+        int end = StringUtils.indexOf(text, "】");
+        if (end < 0) {
+            return;
+        }
+
+        String highLight = text.substring(0, start) + text.substring(start, end + 1) + text.substring(end  + 1);
+
+        System.out.println(highLight);
+
     }
 }

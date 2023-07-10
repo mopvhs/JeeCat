@@ -9,7 +9,7 @@ import com.jeesite.modules.cat.entity.QwChatroomInfoDO;
  * @author YHQ
  * @version 2023-06-23
  */
-@MyBatisDao
+@MyBatisDao(dataSourceName = "ds2")
 public interface QwChatroomInfoDao extends CrudDao<QwChatroomInfoDO> {
 	
 }

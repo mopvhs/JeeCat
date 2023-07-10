@@ -2,6 +2,8 @@ package com.jeesite.modules.cat.entity;
 
 import javax.validation.constraints.Size;
 import java.util.Date;
+
+import com.jeesite.common.lang.DateUtils;
 import com.jeesite.common.mybatis.annotation.JoinTable;
 import com.jeesite.common.mybatis.annotation.JoinTable.Type;
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -10,6 +12,9 @@ import com.jeesite.common.entity.DataEntity;
 import com.jeesite.common.mybatis.annotation.Column;
 import com.jeesite.common.mybatis.annotation.Table;
 import com.jeesite.common.mybatis.mapper.query.QueryType;
+import com.jeesite.common.shiro.realms.IIiIiiiIIIii;
+import com.jeesite.common.shiro.realms.IiIiIiiIiiii;
+import io.swagger.annotations.ApiModelProperty;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
@@ -132,6 +137,11 @@ public class MaocheAlimamaUnionGoodPriceDO extends DataEntity<MaocheAlimamaUnion
 	public void setItemIdSuffix_in(String[] itemIds) {
 		this.sqlMap.getWhere().and("item_id_suffix", QueryType.IN, itemIds);
 	}
+
+	public void setUpdateTime_gte(Date updateTime) {
+		this.sqlMap.getWhere().and("update_time", QueryType.GTE, updateTime);
+	}
+
 
 
 }

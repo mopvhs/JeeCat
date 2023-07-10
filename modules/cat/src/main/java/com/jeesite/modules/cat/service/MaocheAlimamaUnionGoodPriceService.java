@@ -1,6 +1,7 @@
 package com.jeesite.modules.cat.service;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -84,11 +85,23 @@ public class MaocheAlimamaUnionGoodPriceService extends CrudService<MaocheAlimam
 		super.delete(maocheAlimamaUnionGoodPriceDO);
 	}
 
-	public List<MaocheAlimamaUnionGoodPriceDO> listByItemIdSuffixs(List<String> itemIds) {
+	/**
+	 *
+	 * @param itemIds
+	 * @param withDay 更新时间是多少天内的 0不限制
+	 * @return
+	 */
+	public List<MaocheAlimamaUnionGoodPriceDO> listByItemIdSuffixs(List<String> itemIds, Integer withDay) {
 		if (CollectionUtils.isEmpty(itemIds)) {
 			return new ArrayList<>();
 		}
+
 		itemIds = itemIds.stream().distinct().collect(Collectors.toList());
+
+		Date updateTime = null;
+		if (withDay != null && withDay > 0) {
+			updateTime = new Date(System.currentTimeMillis() - (withDay * 86400L * 1000));
+		}
 
 		List<MaocheAlimamaUnionGoodPriceDO> words = new ArrayList<>();
 		// 循环拿
@@ -96,6 +109,9 @@ public class MaocheAlimamaUnionGoodPriceService extends CrudService<MaocheAlimam
 		for (List<String> p : partition) {
 			MaocheAlimamaUnionGoodPriceDO query = new MaocheAlimamaUnionGoodPriceDO();
 			query.setItemIdSuffix_in(p.toArray(new String[0]));
+			if (updateTime != null) {
+				query.setUpdateTime_gte(updateTime);
+			}
 			List<MaocheAlimamaUnionGoodPriceDO> list = dao.findList(query);
 			if (CollectionUtils.isEmpty(list)) {
 				continue;

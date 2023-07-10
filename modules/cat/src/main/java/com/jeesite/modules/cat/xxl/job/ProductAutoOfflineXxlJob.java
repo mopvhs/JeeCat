@@ -1,6 +1,6 @@
 package com.jeesite.modules.cat.xxl.job;
 
-import com.jeesite.modules.cat.service.cg.CgUnionProductStatisticsService;
+import com.jeesite.modules.cat.service.cg.AutoProductService;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.IJobHandler;
 import com.xxl.job.core.handler.annotation.XxlJob;
@@ -11,27 +11,30 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 
 /**
- * 每日推荐
+ * 商品自动下架
  */
 @Slf4j
 @Component
-public class CgProductDailyRcmdXxlJob extends IJobHandler {
+public class ProductAutoOfflineXxlJob extends IJobHandler {
 
     @Resource
-    private CgUnionProductStatisticsService cgUnionProductStatisticsService;
+    private AutoProductService autoProductService;
 
     @Override
-    @XxlJob("cgProductDailyRcmdXxlJob")
+    @XxlJob("productAutoOfflineXxlJob")
     public void execute() throws Exception {
-        XxlJobHelper.log("cgProductDailyRcmdXxlJob xxl job start");
+        XxlJobHelper.log("productAutoOfflineXxlJob xxl job start");
 
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
+        try {
+            autoProductService.autoOfflineProduct();
 
-        cgUnionProductStatisticsService.statistics();
-
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+        }
         stopWatch.stop();
 
-        XxlJobHelper.log("cgProductDailyRcmdXxlJob xxl job end 耗时：" + stopWatch.toString());
+        XxlJobHelper.log("productAutoOfflineXxlJob xxl job end 耗时：" + stopWatch.toString());
     }
 }

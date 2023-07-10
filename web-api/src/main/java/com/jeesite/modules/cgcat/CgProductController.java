@@ -246,8 +246,8 @@ public class CgProductController {
 
         // https://rp.mockplus.cn/run/eSnLjDgFoGgdM/ZaPWdd3ge7M-?cps=expand&rps=expand&nav=1&ha=0&la=0&fc=0&out=1&rt=1
         // 入库的商品不在有好价页面显示
-        condition.setNotAuditStatus(AuditStatusEnum.PASS.getStatus()
-        );
+//        condition.setNotAuditStatus(AuditStatusEnum.PASS.getStatus()
+//        );
         condition.setActivity(Collections.singletonList(CatActivityEnum.GOOD_PRICE.getActivity()));
 
         List<String> sorts = Optional.ofNullable(condition.getSorts()).orElse(new ArrayList<>());
@@ -369,7 +369,7 @@ public class CgProductController {
         }
 
         // 更新索引
-        List<MaocheAlimamaUnionProductDO> productDOs = maocheAlimamaUnionProductDao.listByIds(ids);
+        List<MaocheAlimamaUnionProductDO> productDOs = maocheAlimamaUnionProductService.listByIds(ids);
 
         cgUnionProductService.indexEs(productDOs, 10);
 
@@ -394,7 +394,7 @@ public class CgProductController {
         }
 
         // 更新索引
-        List<MaocheAlimamaUnionProductDO> productDOs = maocheAlimamaUnionProductDao.listByIds(ids);
+        List<MaocheAlimamaUnionProductDO> productDOs = maocheAlimamaUnionProductService.listByIds(ids);
         if (CollectionUtils.isEmpty(productDOs)) {
             return Result.ERROR(404, "资源不存在");
         }
@@ -432,7 +432,7 @@ public class CgProductController {
             return Result.ERROR(500, "更新失败");
         }
         // 重新查一次数据库
-        productDOs = maocheAlimamaUnionProductDao.listByIds(ids);
+        productDOs = maocheAlimamaUnionProductService.listByIds(ids);
         cgUnionProductService.indexEs(productDOs, 10);
 
         return Result.OK("入库完成，但存在上架失败商品，原因是：详情数据为空 失败商品id为：" + JsonUtils.toJSONString(noUpdateIds));

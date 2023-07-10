@@ -106,6 +106,8 @@ public class UnionProductTO implements Serializable {
 
     // 猫车分
     private Long catDsr;
+    // 猫车分计算公式
+    private String catDsrTips;
 
     // 评论
     private RateTO rate;
@@ -113,6 +115,19 @@ public class UnionProductTO implements Serializable {
     // 利益点
     private String benefitDesc;
 
+    // 利益点
+    private HighLightTextTO highLightBenefitDesc;
+
     // 数据来源
     private String dataSource;
+
+    // 高亮利益点(有好价 -> 维易详情)
+    private HighLightTextTO mainBenefit;
+
+    // 自定义标签(new)
+    private List<String> customTags;
+
+    private Long qualityStatus;
+
+    private String qualityIcon;
 }

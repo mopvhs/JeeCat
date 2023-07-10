@@ -33,6 +33,7 @@
 		item_id,
 		item_id_suffix,
 		audit_status,
+		quality_status,
 		sale_status,
 		sync_mark,
 		data_source,
@@ -40,6 +41,7 @@
 		create_time,
 		update_time,
 		sync_time,
+		level_one_category_name,
 		status,
 		sale_status_date,
 		status
@@ -98,6 +100,30 @@
 		</where>
 	</update>
 
+
+	<update id="updateSaleAuditStatus">
+		update
+		maoche_alimama_union_product
+		<set>
+			audit_status = #{auditStatus}
+			<if test="syncMark != null">
+				, sync_mark = #{syncMark}
+			</if>
+			<if test="saleStatus != null">
+				, sale_status = #{saleStatus}
+			</if>
+			<if test="onShelfDate != null">
+				, sale_status_date = #{onShelfDate}
+			</if>
+		</set>
+		<where>
+			id in
+			<foreach collection="ids" item="id" close=")" open="(" separator=",">
+				#{id}
+			</foreach>
+		</where>
+	</update>
+
 	<update id="updateProductStatus">
 		update
 		maoche_alimama_union_product
@@ -120,6 +146,20 @@
 			<if test="onShelfDate != null">
 				, sale_status_date = #{onShelfDate}
 			</if>
+		</set>
+		<where>
+			id in
+			<foreach collection="ids" item="id" close=")" open="(" separator=",">
+				#{id}
+			</foreach>
+		</where>
+	</update>
+
+	<update id="updateQualityStatus">
+		update
+		maoche_alimama_union_product
+		<set>
+			quality_status = #{qualityStatus}
 		</set>
 		<where>
 			id in

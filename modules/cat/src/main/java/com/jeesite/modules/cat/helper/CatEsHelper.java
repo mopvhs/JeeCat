@@ -1,30 +1,37 @@
 package com.jeesite.modules.cat.helper;
 
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.jeesite.common.lang.NumberUtils;
 import com.jeesite.common.lang.StringUtils;
 import com.jeesite.common.utils.DateTimeUtils;
+import com.jeesite.common.utils.JsonUtils;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionGoodPriceDO;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductDO;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductDetailDO;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionTitleKeywordDO;
 import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageDO;
 import com.jeesite.modules.cat.enums.CatActivityEnum;
+import com.jeesite.modules.cat.enums.QualityStatusEnum;
 import com.jeesite.modules.cat.enums.SaleStatusEnum;
 import com.jeesite.modules.cat.model.CarAlimamaUnionProductIndex;
 import com.jeesite.modules.cat.model.CarRobotCrawlerMessageIndex;
 import com.jeesite.modules.cat.model.ProductCategoryModel;
 import com.jeesite.modules.cat.model.ProductScoreModel;
 import com.jeesite.modules.cat.model.PromotionModel;
+import com.jeesite.modules.cat.model.RateDetailTO;
 import com.jeesite.modules.cat.model.ShopModel;
 import com.jeesite.modules.cat.model.UnionProductModel;
 import com.jeesite.modules.cat.model.UnionProductTagTO;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+@Slf4j
 public class CatEsHelper {
 
     public static CarRobotCrawlerMessageIndex buildCatIndex(MaocheRobotCrawlerMessageDO item) {
@@ -105,7 +112,16 @@ public class CatEsHelper {
                     fans = seller.getString("fans");
                     creditLevel = NumberUtils.toLong(seller.getString("creditLevel"));
                 }
+
+                String detailPropsProductName = ProductValueHelper.getDetailPropsProductName(productDetail);
+                String detailPropsBrand = ProductValueHelper.getDetailPropsBrand(productDetail);
+
+                index.setPropsProductName(detailPropsProductName);
+                index.setPropsBrand(detailPropsBrand);
             }
+
+            List<RateDetailTO> details = ProductValueHelper.getDetailRates(productDetail);
+            index.setRates(details);
         }
 
         // 猫车分
@@ -141,6 +157,7 @@ public class CatEsHelper {
         index.setCreateTime(item.getCreateTime().getTime());
         index.setUpdateTime(item.getUpdateTime() != null ? item.getUpdateTime().getTime() : 0L);
         index.setSyncTime(item.getSyncTime() != null ? item.getSyncTime().getTime() : 0L);
+        index.setQualityStatus(item.getQualityStatus());
 
         if (productCategory != null) {
             // 类目
@@ -207,6 +224,7 @@ public class CatEsHelper {
         index.setCommissionRate(model.getCommissionRate());
         index.setShopDsr(shop.getShopDsr());
         index.setAuditStatus(model.getAuditStatus());
+        index.setQualityStatus(model.getQualityStatus());
 
         index.setActivity(new ArrayList<>());
         index.setTkTotalSales(null);
@@ -220,6 +238,8 @@ public class CatEsHelper {
         index.setSaleStatus(Optional.ofNullable(model.getSaleStatus()).orElse(SaleStatusEnum.INIT.getStatus()));
         index.setCreateTime(model.getCreateTime());
         index.setDataSource(model.getDataSource());
+        index.setPropsProductName(model.getPropsProductName());
+        index.setPropsBrand(model.getPropsBrand());
 
         // 类目
         if (category != null) {

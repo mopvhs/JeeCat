@@ -22,7 +22,7 @@ import org.apache.commons.lang3.math.NumberUtils;
  * @version 2023-05-05
  */
 @Table(name="maoche_alimama_union_product", alias="a", label="maoche_alimama_union_product信息", columns={
-		@Column(name="id", attrName="id", label="id", isPK=true),
+		@Column(name="id", attrName="iid", label="id", isPK=true),
 		@Column(name="orig_content", attrName="origContent", label="原始JSON数据"),
 		@Column(name="category_id", attrName="categoryId", label="category_id", isUpdateForce=true),
 		@Column(name="category_name", attrName="categoryName", label="category_name", queryType=QueryType.LIKE),
@@ -65,6 +65,7 @@ import org.apache.commons.lang3.math.NumberUtils;
 		@Column(name="url", attrName="url", label="url"),
 		@Column(name="audit_status", attrName="auditStatus", label="audit_status"),
 		@Column(name="sale_status", attrName="saleStatus", label="sale_status"),
+		@Column(name="quality_status", attrName="qualityStatus", label="quality_status"),
 		@Column(name="user_type", attrName="userType", label="user_type", isUpdateForce=true),
 		@Column(name="volume", attrName="volume", label="volume", isUpdateForce=true),
 		@Column(name="white_image", attrName="whiteImage", label="white_image"),
@@ -141,6 +142,10 @@ public class MaocheAlimamaUnionProductDO extends DataEntity<MaocheAlimamaUnionPr
 	 */
 	private Long saleStatus;
 	private Date saleStatusDate;
+	/**
+	 * {@link com.jeesite.modules.cat.enums.QualityStatusEnum}
+	 */
+	private Long qualityStatus;
 	// 入库时间
 	private Date createTime;
 	// 更新时间
@@ -181,6 +186,16 @@ public class MaocheAlimamaUnionProductDO extends DataEntity<MaocheAlimamaUnionPr
 	public void setIid(Long iid) {
 		this.iid = iid;
 	}
+
+	/**
+	 * 重载插入前执行的方法，setId 为 null，使用数据自增
+	 */
+	@Override
+	public void preInsert() {
+		super.preInsert();
+		setId(null);
+	}
+
 
 	public MaocheAlimamaUnionProductDO() {
 		this(null);
@@ -652,6 +667,14 @@ public class MaocheAlimamaUnionProductDO extends DataEntity<MaocheAlimamaUnionPr
 
 	public void setMaocheInnerId(String maocheInnerId) {
 		this.maocheInnerId = maocheInnerId;
+	}
+
+	public Long getQualityStatus() {
+		return qualityStatus;
+	}
+
+	public void setQualityStatus(Long qualityStatus) {
+		this.qualityStatus = qualityStatus;
 	}
 
 	public void setIid_in(Long[] ids) {

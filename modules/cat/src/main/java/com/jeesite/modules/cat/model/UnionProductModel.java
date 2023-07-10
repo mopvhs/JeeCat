@@ -4,6 +4,7 @@ import lombok.Data;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 
 @Data
@@ -33,6 +34,8 @@ public class UnionProductModel implements Serializable {
 
     // 入库转态
     private Long auditStatus;
+
+    private Long qualityStatus;
 
     // 上架状态
     private Long saleStatus;
@@ -69,4 +72,9 @@ public class UnionProductModel implements Serializable {
     private Long updateTime;
 
     private Long syncTime;
+
+    // 商品品明(detail接口)
+    private String propsBrand;
+    private String propsProductName;
+    private List<RateDetailTO> rates;
 }

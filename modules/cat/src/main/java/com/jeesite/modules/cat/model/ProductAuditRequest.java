@@ -1,6 +1,7 @@
 package com.jeesite.modules.cat.model;
 
 import com.jeesite.modules.cat.enums.AuditStatusEnum;
+import com.jeesite.modules.cat.enums.QualityStatusEnum;
 import lombok.Data;
 
 import java.util.List;
@@ -19,6 +20,12 @@ public class ProductAuditRequest {
      * {@link com.jeesite.modules.cat.enums.SaleStatusEnum}
      */
     private Long saleStatus;
+
+
+    /**
+     * {@link QualityStatusEnum}
+     */
+    private Long qualityStatus;
 
     private String itemId;
 

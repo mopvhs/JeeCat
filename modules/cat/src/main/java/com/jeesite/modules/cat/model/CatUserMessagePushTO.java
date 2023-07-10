@@ -23,4 +23,12 @@ public class CatUserMessagePushTO implements Serializable {
     private Integer pageNo;
 
     private Integer pageSize;
+
+    private String title;
+
+    /**
+     * 0 无
+     * 1 只看有券
+     */
+    private Integer onlyCoupon;
 }

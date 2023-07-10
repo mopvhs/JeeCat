@@ -9,12 +9,14 @@ import com.jeesite.common.web.Result;
 import com.jeesite.modules.cat.dao.MaocheAlimamaUnionProductDao;
 import com.jeesite.modules.cat.entity.MaocheCategoryMappingDO;
 import com.jeesite.modules.cat.enums.AuditStatusEnum;
+import com.jeesite.modules.cat.enums.CatActivityEnum;
 import com.jeesite.modules.cat.enums.SaleStatusEnum;
 import com.jeesite.modules.cat.es.config.es7.ElasticSearch7Service;
 import com.jeesite.modules.cat.es.config.model.ElasticSearchData;
 import com.jeesite.modules.cat.helper.PriceHelper;
 import com.jeesite.modules.cat.helper.dataoke.DaTaoKeResponseHelper;
 import com.jeesite.modules.cat.model.CarAlimamaUnionProductIndex;
+import com.jeesite.modules.cat.model.CatNineProductTO;
 import com.jeesite.modules.cat.model.CatProductBucketTO;
 import com.jeesite.modules.cat.model.CatUnionProductCondition;
 import com.jeesite.modules.cat.model.CatUserMessagePushTO;
@@ -24,10 +26,12 @@ import com.jeesite.modules.cat.model.UnionProductTO;
 import com.jeesite.modules.cat.model.dataoke.DaTaoKeResponse;
 import com.jeesite.modules.cat.service.MaocheCategoryMappingService;
 import com.jeesite.modules.cat.service.MaocheCategoryService;
+import com.jeesite.modules.cat.service.cg.AutoProductService;
 import com.jeesite.modules.cat.service.cg.CgUnionProductService;
 import com.jeesite.modules.cat.service.cg.CgUnionProductStatisticsService;
 import com.jeesite.modules.cat.service.cg.CgUserRcmdService;
 import com.jeesite.modules.cat.service.cg.DaTaoKeApiService;
+import com.jeesite.modules.cat.service.helper.ProductSearchHelper;
 import com.jeesite.modules.cat.service.message.DingDingService;
 import com.jeesite.modules.cgcat.dto.HistorySearchKeywordVO;
 import com.jeesite.modules.cgcat.dto.ProductCategoryVO;
@@ -45,6 +49,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.net.URLEncoder;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -82,6 +87,9 @@ public class CgProductPushController {
     @Resource
     private MaocheCategoryMappingService maocheCategoryMappingService;
 
+    @Resource
+    private AutoProductService autoProductService;
+
     // 微信企业 @推送商品
     @RequestMapping(value = "/product/rcmd/robot/at")
     @ResponseBody
@@ -115,23 +123,28 @@ public class CgProductPushController {
         condition.setTitle(keyword);
         condition.setSaleStatus(SaleStatusEnum.ON_SHELF.getStatus());
         condition.setAuditStatus(AuditStatusEnum.PASS.getStatus());
+        condition.setHadRates(true);
         SearchSourceBuilder source = cgUnionProductService.searchSource(condition, cgUnionProductService::buildCatRobotPushAgg, null, null, 0, 1);
 
         ElasticSearchData<CarAlimamaUnionProductIndex, CatProductBucketTO> searchData = cgUnionProductService.search(source);
 
-
+        boolean backup = false;
         // 首页，并且检索不出来商品的时候，检索的商品源改为选品库的
         if ((searchData == null || searchData.getTotal() == 0)) {
             // 未人工审核的商品
             condition.setSaleStatus(SaleStatusEnum.INIT.getStatus());
             source = cgUnionProductService.searchSource(condition, cgUnionProductService::buildCatRobotPushAgg, null, null, 0, 1);
             searchData = cgUnionProductService.search(source);
+            backup = true;
         }
         if (searchData == null || searchData.getTotal() == 0) {
             return Result.OK(response);
         }
 
         long total = searchData.getTotal();
+        if (backup) {
+            total = Math.min(total, 20);
+        }
 
         Map<String, List<CatProductBucketTO>> bucketMap = searchData.getBucketMap();
         // 获取券后价最低的金额
@@ -150,7 +163,6 @@ public class CgProductPushController {
                 CatProductBucketTO minCouponPrice = bucketMap.get("max_coupon").get(0);
                 maxCouponPrice = Optional.ofNullable(minCouponPrice.getCount()).orElse(0L);
             }
-
         }
 
         // 帮您找到猫砂盆 1502件
@@ -184,7 +196,6 @@ public class CgProductPushController {
         // 是否命中@逻辑
         List<String> list = PatternUtils.matchMention(messagePushTO.getKeyword());
         int pageNo = Optional.ofNullable(messagePushTO.getPageNo()).orElse(1);
-//        Integer pageSize = Optional.ofNullable(messagePushTO.getPageSize()).orElse(10);
         int pageSize = 10;
         int from = (pageNo - 1) * pageSize;
         int size = pageSize;
@@ -206,7 +217,13 @@ public class CgProductPushController {
         condition.setTitle(keyword);
         condition.setSaleStatus(SaleStatusEnum.ON_SHELF.getStatus());
         condition.setAuditStatus(AuditStatusEnum.PASS.getStatus());
+        condition.setHadRates(true);
         condition.setSorts(sorts);
+
+        if (messagePushTO.getOnlyCoupon() != null && messagePushTO.getOnlyCoupon().equals(1)) {
+            condition.setGteCoupon(1L);
+            condition.setGteCouponRemainCount(1L);
+        }
 
         long cidOne = NumberUtils.toLong(messagePushTO.getCidOne());
         List<String> categoryNames = new ArrayList<>();
@@ -228,7 +245,7 @@ public class CgProductPushController {
         if ((searchData == null || searchData.getTotal() == 0) && from == 0) {
             // 未人工审核的商品
             condition.setSaleStatus(SaleStatusEnum.INIT.getStatus());
-            source = cgUnionProductService.searchSource(condition, null, cgUnionProductService::commonSort, null, from, size);
+            source = cgUnionProductService.searchSource(condition, null, cgUnionProductService::commonSort, null, from, 20);
             searchData = cgUnionProductService.search(source);
 
             backup = true;
@@ -250,6 +267,71 @@ public class CgProductPushController {
         // 这样前端计算的时候 就没有下一页了
         if (backup) {
             total = productTOs.size();
+        }
+
+        Page<UnionProductTO> toPage = new Page<>(page.getPageNo() + 1, pageSize, total, productTOs);
+
+        return toPage;
+    }
+
+    // 有好价h5
+    @RequestMapping(value = "/product/good/list")
+    @ResponseBody
+    public Page<UnionProductTO> listGoodProducts(@RequestBody CatUserMessagePushTO messagePushTO, HttpServletRequest request, HttpServletResponse response) {
+
+        Page<UnionProductTO> page = new Page<>(request, response);
+        if (messagePushTO == null || StringUtils.isBlank(messagePushTO.getCidOne())) {
+            return page;
+        }
+
+        List<MaocheCategoryMappingDO> subCategories = maocheCategoryMappingService.getCategoryFromCache(NumberUtils.toLong(messagePushTO.getCidOne()));
+        if (CollectionUtils.isEmpty(subCategories)) {
+            return page;
+        }
+
+        // 猫车分倒排
+        List<String> sorts = new ArrayList<>();
+        sorts.add("catDsr desc");
+
+        CatUnionProductCondition condition = new CatUnionProductCondition();
+        List<String> activity = Collections.singletonList(CatActivityEnum.GOOD_PRICE.getActivity());
+
+        List<String> categoryNames = subCategories.stream().map(MaocheCategoryMappingDO::getName).collect(Collectors.toList());
+        condition.setCategoryNames(categoryNames);
+        condition.setActivity(activity);
+        condition.setGteShopDsr(48000);
+        // 5%
+        condition.setGteCommissionRate(500L);
+        condition.setGteCouponRemainCount(1L);
+        condition.setHadRates(true);
+
+        Long nDay = 86400L * 3L * 1000L;
+        condition.setGteUpdateTime(System.currentTimeMillis() - nDay);
+
+        condition.setAuditStatus(AuditStatusEnum.PASS.getStatus());
+        condition.setSorts(sorts);
+
+        // 是否命中@逻辑
+        List<String> list = PatternUtils.matchMention(messagePushTO.getKeyword());
+        int pageNo = Optional.ofNullable(messagePushTO.getPageNo()).orElse(1);
+        int pageSize = 10;
+        int from = (pageNo - 1) * pageSize;
+        int size = pageSize;
+
+        SearchSourceBuilder source = cgUnionProductService.searchSource(condition, null, cgUnionProductService::commonSort, null, from, size);
+        ElasticSearchData<CarAlimamaUnionProductIndex, CatProductBucketTO> searchData = cgUnionProductService.search(source);
+
+        if (searchData == null || searchData.getTotal() == 0) {
+            page.setList(new ArrayList<>());
+            page.setCount(0);
+            return page;
+        }
+
+        long total = searchData.getTotal();
+        List<UnionProductTO> productTOs = cgUnionProductService.listProductInfo(searchData);
+        // 过滤无效额商品
+        if (CollectionUtils.isNotEmpty(productTOs)) {
+            productTOs = productTOs.stream().filter(i -> StringUtils.isNotBlank(i.getImgUrl())).collect(Collectors.toList());
         }
 
         Page<UnionProductTO> toPage = new Page<>(page.getPageNo() + 1, page.getPageSize(), total, productTOs);
@@ -281,6 +363,7 @@ public class CgProductPushController {
             condition.setTitle(keywords.get(random.nextInt(2)));
             condition.setSaleStatus(SaleStatusEnum.ON_SHELF.getStatus());
             condition.setAuditStatus(AuditStatusEnum.PASS.getStatus());
+            condition.setHadRates(true);
             condition.setSorts(sorts);
 
             // 聚合，获取券后价格最低的一个商品金额
@@ -309,11 +392,10 @@ public class CgProductPushController {
     @ResponseBody
     public String statistics() {
 
-//        GetMappingsResponse indexMapping = elasticSearch7Service.getIndexMapping(ElasticSearchIndexEnum.CAT_PRODUCT_INDEX);
 
-        String s = cgUnionProductStatisticsService.runJob();
+        cgUnionProductStatisticsService.statistics();
 
-        return s;
+        return "完成";
     }
 
     public static void main(String[] args) {
@@ -459,4 +541,95 @@ public class CgProductPushController {
         categoryVO.setTotal(searchData.getTotal());
         return Result.OK(categoryVO);
     }
+
+
+
+    @RequestMapping(value = "/product/test/autoGoodProductAudit")
+    @ResponseBody
+    public String autoGoodProductAudit() {
+
+        autoProductService.autoGoodProductAudit();
+
+        return "";
+    }
+
+    @RequestMapping(value = "/product/test/nightRcmd")
+    @ResponseBody
+    public String nightRcmd() {
+
+        cgUnionProductStatisticsService.nineRcmd();
+
+        return "";
+    }
+
+    @RequestMapping(value = "/product/test/autoOfflineProduct")
+    @ResponseBody
+    public String autoOfflineProduct() {
+
+        autoProductService.autoOfflineProduct();
+
+        return "";
+    }
+
+    @RequestMapping(value = "/product/test/autoNormalProductSaleAudit")
+    @ResponseBody
+    public String autoNormalProductSaleAudit() {
+
+        autoProductService.autoNormalProductSaleAudit();
+
+        return "";
+    }
+
+    // 9.9
+    @RequestMapping(value = "/product/nine/list")
+    @ResponseBody
+    public Page<UnionProductTO> listNineProducts(@RequestBody CatNineProductTO search, HttpServletRequest request, HttpServletResponse response) {
+
+        Page<UnionProductTO> page = new Page<>(request, response);
+        if (search == null) {
+            return page;
+        }
+
+        CatUnionProductCondition condition = ProductSearchHelper.buildNineSearchCondition();
+        List<String> sorts = new ArrayList<>(Collections.singletonList("promotionPrice asc"));
+        sorts.add("catDsr desc");
+        condition.setSorts(sorts);
+
+        int pageNo = Optional.ofNullable(search.getPageNo()).orElse(1);
+        int pageSize = 10;
+        int from = (pageNo - 1) * pageSize;
+        int size = pageSize;
+
+        long cidOne = NumberUtils.toLong(search.getCidOne());
+        List<String> categoryNames = new ArrayList<>();
+        if (cidOne > 0) {
+            // 获取到类目映射
+            List<MaocheCategoryMappingDO> categories = maocheCategoryMappingService.listByParentId(cidOne);
+            if (CollectionUtils.isNotEmpty(categories)) {
+                categoryNames.addAll(categories.stream().map(MaocheCategoryMappingDO::getName).toList());
+            }
+
+            condition.setCategoryNames(categoryNames);
+        }
+
+        SearchSourceBuilder source = cgUnionProductService.searchSource(condition, null, cgUnionProductService::commonSort, null, from, size);
+        ElasticSearchData<CarAlimamaUnionProductIndex, CatProductBucketTO> searchData = cgUnionProductService.search(source);
+        if (searchData == null || searchData.getTotal() == 0) {
+            page.setList(new ArrayList<>());
+            page.setCount(0);
+            return page;
+        }
+
+        long total = searchData.getTotal();
+        List<UnionProductTO> productTOs = cgUnionProductService.listProductInfo(searchData);
+        // 过滤无效额商品
+        if (CollectionUtils.isNotEmpty(productTOs)) {
+            productTOs = productTOs.stream().filter(i -> StringUtils.isNotBlank(i.getImgUrl())).collect(Collectors.toList());
+        }
+
+        Page<UnionProductTO> toPage = new Page<>(page.getPageNo() + 1, pageSize, total, productTOs);
+
+        return toPage;
+    }
+
 }

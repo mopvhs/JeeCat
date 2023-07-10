@@ -63,28 +63,31 @@ public class CgProductSyncXxlJob extends IJobHandler {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
         String status = null;
-        try {
-            long id = 0L;
-            int limit = 20;
-            while (true) {
+        int total = 0;
+
+        long id = 0L;
+        int limit = 20;
+        while (true) {
+            try {
                 List<MaocheAlimamaUnionProductDO> list = maocheAlimamaUnionProductDao.findAll(id, status, limit);
                 if (CollectionUtils.isEmpty(list)) {
                     break;
                 }
                 cgUnionProductService.indexEs(list, limit);
 
+                total += list.size();
                 id = list.get(list.size() - 1).getIid();
                 if (list.size() < limit) {
                     break;
                 }
+            } catch (Exception e) {
+                dingDingService.sendParseDingDingMsg("全量同步异常 起始id:{}, 异常{}", null, id, e.getMessage());
+                log.error(e.getMessage(), e);
             }
-
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
         }
         stopWatch.stop();
 
-        dingDingService.sendParseDingDingMsg("xxl job 全量同步索引数据完成，耗时：{}", stopWatch.toString());
+        dingDingService.sendParseDingDingMsg("xxl job 全量同步索引数据完成，total:{}, 耗时：{}", null, total, stopWatch.toString());
 
         XxlJobHelper.log("CgProductSyncXxlJob xxl job end 耗时：" + stopWatch.toString());
     }

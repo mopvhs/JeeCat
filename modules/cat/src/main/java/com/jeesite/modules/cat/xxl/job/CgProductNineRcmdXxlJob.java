@@ -11,27 +11,27 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 
 /**
- * 每日推荐
+ * 9.9元推荐
  */
 @Slf4j
 @Component
-public class CgProductDailyRcmdXxlJob extends IJobHandler {
+public class CgProductNineRcmdXxlJob extends IJobHandler {
 
     @Resource
     private CgUnionProductStatisticsService cgUnionProductStatisticsService;
 
     @Override
-    @XxlJob("cgProductDailyRcmdXxlJob")
+    @XxlJob("cgProductNineRcmdXxlJob")
     public void execute() throws Exception {
-        XxlJobHelper.log("cgProductDailyRcmdXxlJob xxl job start");
+        XxlJobHelper.log("cgProductNineRcmdXxlJob xxl job start");
 
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
 
-        cgUnionProductStatisticsService.statistics();
+        cgUnionProductStatisticsService.nineRcmd();
 
         stopWatch.stop();
 
-        XxlJobHelper.log("cgProductDailyRcmdXxlJob xxl job end 耗时：" + stopWatch.toString());
+        XxlJobHelper.log("cgProductNineRcmdXxlJob xxl job end 耗时：" + stopWatch.toString());
     }
 }

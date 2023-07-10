@@ -41,20 +41,21 @@ public class QwService {
         JSONArray array = JSONObject.parseArray(clientAccountInfo);
         JSONObject jsonObject = array.getJSONObject(0);
         Long clientId = jsonObject.getLong("client_id");
-        String userId = jsonObject.getString("user_id");
-
 
         msg.put("client_id", clientId);
 
-        String url = "http://43.154.237.117:9999/send_cmd";
+        String url = "http://106.52.152.159:9999/send_cmd";
 
         Map<String, String> data = new HashMap<>();
         data.put("unique_id", uniqueId);
         data.put("cmd_json", JsonUtils.toJSONString(msg));
 
-        String doPost = flameHttpService.doFormPost(url, data);
-
-        System.out.println(doPost);
+        try {
+            String doPost = flameHttpService.doFormPost(url, data);
+//            System.out.println("msg：" + JsonUtils.toJSONString(msg));
+        } catch (Exception e) {
+            log.error("send_cmd exception ", e);
+        }
 
         return true;
     }
