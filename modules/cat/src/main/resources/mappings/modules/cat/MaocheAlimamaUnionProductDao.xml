@@ -30,6 +30,7 @@
 	<sql id="Simple_Column_List">
 		id,
 		orig_content,
+		iid,
 		item_id,
 		item_id_suffix,
 		audit_status,
@@ -67,6 +68,17 @@
 			id in
 			<foreach collection="ids" item="id" close=")" open="(" separator=",">
 				#{id}
+			</foreach>
+		</where>
+	</select>
+
+	<select id="listByIids" resultType="MaocheAlimamaUnionProductDO">
+		SELECT *
+		FROM maoche_alimama_union_product
+		<where>
+			iid in
+			<foreach collection="iids" item="iid" close=")" open="(" separator=",">
+				#{iid}
 			</foreach>
 		</where>
 	</select>

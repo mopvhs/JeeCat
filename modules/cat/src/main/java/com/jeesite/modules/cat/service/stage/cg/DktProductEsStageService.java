@@ -121,7 +121,7 @@ public class DktProductEsStageService extends AbstractProductEsStage<ProductEsCo
         String itemDescription = productContent.getString("item_description");
         Long tkTotalSales = NumberUtils.toLong(productContent.getString("tk_total_sales"));
 
-        model.setId(item.getIid());
+        model.setId(item.getUiid());
         model.setTitle(itemInfo.getTitle());
         model.setBenefitDesc(itemInfo.getDesc());
         model.setItemDescription(itemDescription);
@@ -139,6 +139,9 @@ public class DktProductEsStageService extends AbstractProductEsStage<ProductEsCo
 
         // 状态
         model.setSaleStatus(item.getSaleStatus());
+        if (item.getSaleStatusDate() != null) {
+            model.setSaleStatusTime(item.getSaleStatusDate().getTime());
+        }
         model.setAuditStatus(item.getAuditStatus());
         model.setDataSource(item.getDataSource());
 

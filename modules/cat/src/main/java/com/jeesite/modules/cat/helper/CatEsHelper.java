@@ -8,8 +8,10 @@ import com.jeesite.common.lang.StringUtils;
 import com.jeesite.common.utils.DateTimeUtils;
 import com.jeesite.common.utils.JsonUtils;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionGoodPriceDO;
+import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductBihaohuoDO;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductDO;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductDetailDO;
+import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductPriceChartDO;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionTitleKeywordDO;
 import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageDO;
 import com.jeesite.modules.cat.enums.CatActivityEnum;
@@ -17,6 +19,8 @@ import com.jeesite.modules.cat.enums.QualityStatusEnum;
 import com.jeesite.modules.cat.enums.SaleStatusEnum;
 import com.jeesite.modules.cat.model.CarAlimamaUnionProductIndex;
 import com.jeesite.modules.cat.model.CarRobotCrawlerMessageIndex;
+import com.jeesite.modules.cat.model.PriceChartInfoTO;
+import com.jeesite.modules.cat.model.PriceChartSkuBaseTO;
 import com.jeesite.modules.cat.model.ProductCategoryModel;
 import com.jeesite.modules.cat.model.ProductScoreModel;
 import com.jeesite.modules.cat.model.PromotionModel;
@@ -24,7 +28,9 @@ import com.jeesite.modules.cat.model.RateDetailTO;
 import com.jeesite.modules.cat.model.ShopModel;
 import com.jeesite.modules.cat.model.UnionProductModel;
 import com.jeesite.modules.cat.model.UnionProductTagTO;
+import com.jeesite.modules.cat.service.stage.cg.ProductEsContext;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -68,7 +74,8 @@ public class CatEsHelper {
                                                                                MaocheAlimamaUnionTitleKeywordDO titleKeywordDO,
                                                                                MaocheAlimamaUnionGoodPriceDO goodPriceDO,
                                                                                ProductCategoryModel productCategory,
-                                                                               MaocheAlimamaUnionProductDetailDO productDetailDO) {
+                                                                               MaocheAlimamaUnionProductDetailDO productDetailDO,
+                                                                               MaocheAlimamaUnionProductBihaohuoDO priceChartDO) {
         if (item == null) {
             return null;
         }
@@ -137,7 +144,7 @@ public class CatEsHelper {
         // 券后价
         Long promotionPrice = ProductValueHelper.calVeApiPromotionPrice(jsonObject);
 
-        index.setId(item.getIid());
+        index.setId(item.getUiid());
         index.setVolume(volume);
         index.setTitle(title);
         index.setCoupon(coupon);
@@ -153,6 +160,9 @@ public class CatEsHelper {
         index.setCouponRemainCount(couponRemainCount);
         index.setPromotionPrice(promotionPrice);
         index.setSaleStatus(Optional.ofNullable(item.getSaleStatus()).orElse(SaleStatusEnum.INIT.getStatus()));
+        if (item.getSaleStatusDate() != null) {
+            index.setSaleStatusTime(item.getSaleStatusDate().getTime());
+        }
         index.setDataSource(item.getDataSource());
         index.setCreateTime(item.getCreateTime().getTime());
         index.setUpdateTime(item.getUpdateTime() != null ? item.getUpdateTime().getTime() : 0L);
@@ -170,6 +180,8 @@ public class CatEsHelper {
 //        String data = "{\"brand\":\"贝贝\",\"secondbrand\":\"\",\"product\":\"纸巾\",\"object\":[],\"season\":[],\"model\":[],\"material\":[],\"attribute\":[\"贝贝\",\"乳霜\"]}\n";
         String tagContent = titleKeywordDO != null ? titleKeywordDO.getContentManual() : null;
         fillTag(index, tagContent);
+
+        fillPriceChartInfo(index, priceChartDO);
 
         return index;
     }
@@ -201,8 +213,49 @@ public class CatEsHelper {
         index.setAttribute(new ArrayList<>());
     }
 
+    public static void fillPriceChartInfo(CarAlimamaUnionProductIndex index, MaocheAlimamaUnionProductBihaohuoDO priceChartDO) {
+        if (index == null) {
+            return;
+        }
+        Long price = index.getPromotionPrice();
 
-    public static CarAlimamaUnionProductIndex buildCatUnionProductIndex(UnionProductModel model) {
+        long priceChart = 0;
+        long priceChartMinPrice = 0;
+        long priceChartSyncTime = 0;
+        List<PriceChartSkuBaseTO> priceChartSkuBase = null;
+        if (priceChartDO != null) {
+            JSONObject jsonObject = JsonUtils.toJsonObject(priceChartDO.getOrigContent());
+            log.info("price chart id:{}, chart id:{}", index.getId(), priceChartDO.getUiid());
+            if (jsonObject != null) {
+                priceChartSkuBase = ProductValueHelper.getPriceChartSkuBase(jsonObject);
+                priceChartMinPrice = ProductValueHelper.getPriceChartMinPrice(priceChartSkuBase);
+//                priceChartInfo = ProductValueHelper.getPriceChartInfo(jsonObject);
+                if (CollectionUtils.isNotEmpty(priceChartSkuBase)) {
+                    for (PriceChartSkuBaseTO base : priceChartSkuBase) {
+                        if (StringUtils.isNotBlank(base.getCompareDesc())) {
+                            priceChart = 1;
+                            break;
+                        }
+                    }
+                }
+            }
+            if (priceChartDO.getSyncDate() != null) {
+                priceChartSyncTime = priceChartDO.getSyncDate().getTime();
+            }
+        }
+
+        if (priceChartMinPrice > 0) {
+            price = Math.min(price, priceChartMinPrice);
+        }
+
+        index.setPromotionPrice(price);
+        index.setPriceChartSkuBases(priceChartSkuBase);
+        index.setPriceChartInfo(null);
+        index.setPriceChart(priceChart);
+        index.setPriceChartSyncTime(priceChartSyncTime);
+    }
+
+    public static CarAlimamaUnionProductIndex buildCatUnionProductIndex(UnionProductModel model, ProductEsContext context) {
 
         if (model == null) {
             return null;
@@ -236,10 +289,14 @@ public class CatEsHelper {
         index.setCatDsrTips(catDsrTips);
         index.setPromotionPrice(promotion.getPromotionPrice());
         index.setSaleStatus(Optional.ofNullable(model.getSaleStatus()).orElse(SaleStatusEnum.INIT.getStatus()));
+        if (model.getSaleStatusTime() != null) {
+            index.setSaleStatusTime(model.getSaleStatusTime());
+        }
         index.setCreateTime(model.getCreateTime());
         index.setDataSource(model.getDataSource());
         index.setPropsProductName(model.getPropsProductName());
         index.setPropsBrand(model.getPropsBrand());
+        index.setRates(model.getRates());
 
         // 类目
         if (category != null) {
@@ -249,6 +306,8 @@ public class CatEsHelper {
             index.setCidTwos(category.getCid2s());
             index.setCidThirds(category.getCid3s());
         }
+
+        fillPriceChartInfo(index, context.getPriceChartDO());
 
         return index;
     }

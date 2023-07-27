@@ -78,9 +78,6 @@ public class DtkConsumer implements IDtkConsumer {
         // 存在的忽略，不存在的新增
         for (DtkGoodsListResponse.ItemInfo dtk : data.getList()) {
             long id = dtk.getId().longValue();
-            if (id == 41357914) {
-                log.info("ni kan kan {}, dtk:{}", 41357914, JsonUtils.toJSONString(dtk));
-            }
             MaocheDataokeProductDO product = productDOMap.get(id);
             if (product != null) {
                 // 更新
@@ -142,7 +139,7 @@ public class DtkConsumer implements IDtkConsumer {
         if (CollectionUtils.isNotEmpty(products)) {
             List<MaocheAlimamaUnionProductDO> unionProductDOs = maocheAlimamaUnionProductService.listByMaocheInnerIds(products.stream().map(MaocheDataokeProductDO::getId).toList(), ProductDataSource.DATAOKE);
             if (CollectionUtils.isNotEmpty(unionProductDOs)) {
-                List<Long> unionProductIds = unionProductDOs.stream().map(MaocheAlimamaUnionProductDO::getIid).toList();
+                List<Long> unionProductIds = unionProductDOs.stream().map(MaocheAlimamaUnionProductDO::getUiid).toList();
                 boolean delete = maocheAlimamaUnionProductService.updateProductStatus(unionProductIds, "DELETE");
                 log.info("invalidConsume delete ids:{}, delete:{}", JsonUtils.toJSONString(unionProductIds), delete);
                 for (MaocheAlimamaUnionProductDO unionProductDO : unionProductDOs) {

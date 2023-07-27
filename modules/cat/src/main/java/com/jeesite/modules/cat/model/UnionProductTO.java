@@ -124,10 +124,18 @@ public class UnionProductTO implements Serializable {
     // 高亮利益点(有好价 -> 维易详情)
     private HighLightTextTO mainBenefit;
 
-    // 自定义标签(new)
-    private List<String> customTags;
-
     private Long qualityStatus;
 
     private String qualityIcon;
+
+    // 价格信息
+    private ProductPriceTO displayPrice;
+
+    // 图片价格标签
+    private List<ProductTagTO> priceChartTags;
+
+    private List<HighLightTextTO> daoDaoList;
+
+    // 自定义标签(new)
+    private List<ProductTagTO> productTags;
 }

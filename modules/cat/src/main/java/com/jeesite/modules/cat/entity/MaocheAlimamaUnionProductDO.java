@@ -22,8 +22,9 @@ import org.apache.commons.lang3.math.NumberUtils;
  * @version 2023-05-05
  */
 @Table(name="maoche_alimama_union_product", alias="a", label="maoche_alimama_union_product信息", columns={
-		@Column(name="id", attrName="iid", label="id", isPK=true),
+		@Column(name="id", attrName="uiid", label="id", isPK=true),
 		@Column(name="orig_content", attrName="origContent", label="原始JSON数据"),
+		@Column(name="iid", attrName="iid", label="iid"),
 		@Column(name="category_id", attrName="categoryId", label="category_id", isUpdateForce=true),
 		@Column(name="category_name", attrName="categoryName", label="category_name", queryType=QueryType.LIKE),
 		@Column(name="commission_rate", attrName="commissionRate", label="commission_rate"),
@@ -85,7 +86,8 @@ import org.apache.commons.lang3.math.NumberUtils;
 public class MaocheAlimamaUnionProductDO extends DataEntity<MaocheAlimamaUnionProductDO> {
 	
 	private static final long serialVersionUID = 1L;
-	private Long iid;
+	private Long uiid;
+	private String iid;
 	private String origContent;		// 原始JSON数据 https://www.veapi.cn/apidoc/taobaolianmeng/86
 	private Long categoryId;		// category_id
 	private String categoryName;		// category_name
@@ -168,7 +170,7 @@ public class MaocheAlimamaUnionProductDO extends DataEntity<MaocheAlimamaUnionPr
 	 */
 	@Override
 	public String getId() {
-		return ObjectUtils.toString(getIid());
+		return ObjectUtils.toString(getUiid());
 	}
 
 	/**
@@ -176,15 +178,15 @@ public class MaocheAlimamaUnionProductDO extends DataEntity<MaocheAlimamaUnionPr
 	 */
 	@Override
 	public void setId(String id) {
-		setIid(StringUtils.isNotBlank(id) ? NumberUtils.toLong(id) : null);
+		setUiid(StringUtils.isNotBlank(id) ? NumberUtils.toLong(id) : null);
 	}
 
-	public Long getIid() {
-		return iid;
+	public Long getUiid() {
+		return uiid;
 	}
 
-	public void setIid(Long iid) {
-		this.iid = iid;
+	public void setUiid(Long uiid) {
+		this.uiid = uiid;
 	}
 
 	/**
@@ -673,12 +675,24 @@ public class MaocheAlimamaUnionProductDO extends DataEntity<MaocheAlimamaUnionPr
 		return qualityStatus;
 	}
 
+	public String getIid() {
+		return iid;
+	}
+
+	public void setIid(String iid) {
+		this.iid = iid;
+	}
+
 	public void setQualityStatus(Long qualityStatus) {
 		this.qualityStatus = qualityStatus;
 	}
 
 	public void setIid_in(Long[] ids) {
 		this.sqlMap.getWhere().and("id", QueryType.IN, ids);
+	}
+
+	public void setStringIid_in(String[] iids) {
+		this.sqlMap.getWhere().and("iid", QueryType.IN, iids);
 	}
 
 	public void setMaocheInnerId_in(String[] ids) {

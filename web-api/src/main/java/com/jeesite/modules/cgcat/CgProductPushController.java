@@ -1,12 +1,17 @@
 package com.jeesite.modules.cgcat;
 
+import com.google.common.collect.Lists;
 import com.jeesite.common.entity.Page;
 import com.jeesite.common.lang.NumberUtils;
 import com.jeesite.common.lang.StringUtils;
+import com.jeesite.common.utils.DateTimeUtils;
 import com.jeesite.common.utils.JsonUtils;
 import com.jeesite.common.utils.PatternUtils;
 import com.jeesite.common.web.Result;
 import com.jeesite.modules.cat.dao.MaocheAlimamaUnionProductDao;
+import com.jeesite.modules.cat.dao.MaocheAlimamaUnionProductPriceChartDao;
+import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductDO;
+import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductPriceChartDO;
 import com.jeesite.modules.cat.entity.MaocheCategoryMappingDO;
 import com.jeesite.modules.cat.enums.AuditStatusEnum;
 import com.jeesite.modules.cat.enums.CatActivityEnum;
@@ -112,6 +117,24 @@ public class CgProductPushController {
             keyword = keyword.replace(target, "");
         }
         keyword = StringUtils.trim(keyword);
+
+        // 是否命中9.9
+        if ("9.9".equalsIgnoreCase(keyword)) {
+            List<Long> nineNumList = cgUnionProductStatisticsService.getNineNum();
+            if (CollectionUtils.isNotEmpty(nineNumList) && nineNumList.size() >= 2) {
+                long totalNum = nineNumList.get(0);
+                long todayNum = nineNumList.get(1);
+                String title = "猫车® 今日9.9精选" + totalNum + "件，新增" + todayNum + "件";
+                if (totalNum > 0) {
+                    response.setTitle(title);
+                    response.setContent("精选店铺评分4.8分以上猫咪优质好物，帮您省心买\n");
+                    response.setImg("https://mmbiz.qpic.cn/sz_mmbiz_png/y7ibJn5iaZcWBicu2ewoJaiazq2q7ot0szXMAw3JaQlBFH3QPk2oicR5SdlVNbwlkGbZ6ooatibEuOWgjQzSGWvTFusA/640?wx_fmt=png");
+                    response.setTargetUrl("https://cat.zhizher.com/cat-sass-mobile/#/pages/sys/goods/index");
+                    return Result.OK(response);
+                }
+            }
+        }
+
         try {
             url += "pages/sys/search_result/index?keyword=" + URLEncoder.encode(keyword, "UTF-8");
             response.setTargetUrl(url);
@@ -123,7 +146,7 @@ public class CgProductPushController {
         condition.setTitle(keyword);
         condition.setSaleStatus(SaleStatusEnum.ON_SHELF.getStatus());
         condition.setAuditStatus(AuditStatusEnum.PASS.getStatus());
-        condition.setHadRates(true);
+//        condition.setHadRates(true);
         SearchSourceBuilder source = cgUnionProductService.searchSource(condition, cgUnionProductService::buildCatRobotPushAgg, null, null, 0, 1);
 
         ElasticSearchData<CarAlimamaUnionProductIndex, CatProductBucketTO> searchData = cgUnionProductService.search(source);
@@ -202,6 +225,9 @@ public class CgProductPushController {
 
         // 猫车分倒排
         List<String> sorts = new ArrayList<>();
+        if (CollectionUtils.isNotEmpty(messagePushTO.getSorts())) {
+            sorts.addAll(messagePushTO.getSorts());
+        }
         sorts.add("catDsr desc");
 
         String keyword = messagePushTO.getKeyword();
@@ -217,12 +243,17 @@ public class CgProductPushController {
         condition.setTitle(keyword);
         condition.setSaleStatus(SaleStatusEnum.ON_SHELF.getStatus());
         condition.setAuditStatus(AuditStatusEnum.PASS.getStatus());
-        condition.setHadRates(true);
+//        condition.setHadRates(true);
         condition.setSorts(sorts);
 
         if (messagePushTO.getOnlyCoupon() != null && messagePushTO.getOnlyCoupon().equals(1)) {
             condition.setGteCoupon(1L);
             condition.setGteCouponRemainCount(1L);
+        }
+
+        if (messagePushTO.getOnlyPriceChart() != null && messagePushTO.getOnlyPriceChart().equals(1)) {
+            condition.setPriceChart(1L);
+            condition.setGtePriceChartSyncTime(DateTimeUtils.earliestTimeToday(System.currentTimeMillis()) - 86400000L);
         }
 
         long cidOne = NumberUtils.toLong(messagePushTO.getCidOne());
@@ -631,5 +662,54 @@ public class CgProductPushController {
 
         return toPage;
     }
+
+    @Resource
+    private MaocheAlimamaUnionProductPriceChartDao maocheAlimamaUnionProductPriceChartDao;
+
+    @RequestMapping(value = "/product/price/chart/test")
+    @ResponseBody
+    public Result<?> testPriceTest() {
+
+        List<MaocheAlimamaUnionProductPriceChartDO> allGroupByIid = maocheAlimamaUnionProductPriceChartDao.getAllGroupByIid();
+
+        List<String> iids = allGroupByIid.stream().map(MaocheAlimamaUnionProductPriceChartDO::getIid).collect(Collectors.toList());
+
+
+        List<List<String>> partition = Lists.partition(iids, 20);
+        for (List<String> p : partition) {
+            List<MaocheAlimamaUnionProductDO> list = maocheAlimamaUnionProductDao.listByIids(p);
+            if (CollectionUtils.isEmpty(list)) {
+                continue;
+            }
+            List<Long> ids = list.stream().map(MaocheAlimamaUnionProductDO::getUiid).collect(Collectors.toList());
+            Map<Long, String> idMap = list.stream().collect(Collectors.toMap(MaocheAlimamaUnionProductDO::getUiid, MaocheAlimamaUnionProductDO::getIid, (o1, o2) -> o1));
+
+            CatUnionProductCondition condition = new CatUnionProductCondition();
+            condition.setIds(ids);
+            condition.setPriceChart(1L);
+
+            SearchSourceBuilder source = cgUnionProductService.searchSource(condition, null, null, null, 0, 0);
+            ElasticSearchData<CarAlimamaUnionProductIndex, CatProductBucketTO> searchData = cgUnionProductService.search(source);
+            if (searchData == null || CollectionUtils.isEmpty(searchData.getDocuments())) {
+                log.info("testPriceTest p:{}", JsonUtils.toJSONString(p));
+                break;
+            }
+
+            if (searchData.getDocuments().size() < p.size()) {
+                for (CarAlimamaUnionProductIndex index : searchData.getDocuments()) {
+                    idMap.put(index.getId(), null);
+                }
+                List<String> a = new ArrayList<>(idMap.values());
+                a.remove(null);
+
+                log.info("testPriceTest id:{}", StringUtils.join(a, ","));
+            }
+        }
+
+
+        return Result.OK("完成");
+    }
+
+
 
 }

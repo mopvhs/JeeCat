@@ -18,7 +18,7 @@ public class ProductSearchHelper {
 //        condition.setGteCommissionRate(500L);
 //        condition.setStartCatDsr(44000L);
         condition.setGteCouponRemainCount(1L);
-        condition.setGteVolume(300L);
+        condition.setGteVolume(100L);
         condition.setLtePromotionPrice(990L);
 
         condition.setHadRates(true);

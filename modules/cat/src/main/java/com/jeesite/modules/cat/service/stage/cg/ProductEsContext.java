@@ -1,8 +1,10 @@
 package com.jeesite.modules.cat.service.stage.cg;
 
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionGoodPriceDO;
+import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductBihaohuoDO;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductDO;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductDetailDO;
+import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductPriceChartDO;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionTitleKeywordDO;
 import com.jeesite.modules.cat.entity.MaocheCategoryProductRelDO;
 import com.jeesite.modules.cat.entity.MaocheDataokeProductDO;
@@ -34,5 +36,7 @@ public class ProductEsContext implements Serializable {
     private List<MaocheCategoryProductRelDO> categoryRelList;
 
     private MaocheAlimamaUnionProductDetailDO productDetailDO;
+
+    private MaocheAlimamaUnionProductBihaohuoDO priceChartDO;
 
 }

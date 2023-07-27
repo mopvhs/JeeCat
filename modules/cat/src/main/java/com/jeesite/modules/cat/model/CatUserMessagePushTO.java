@@ -4,6 +4,7 @@ import lombok.Data;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.util.List;
 
 @Data
 public class CatUserMessagePushTO implements Serializable {
@@ -31,4 +32,16 @@ public class CatUserMessagePushTO implements Serializable {
      * 1 只看有券
      */
     private Integer onlyCoupon;
+
+    /**
+     * 0 无
+     * 1 只看有券
+     */
+    private Integer onlyPriceChart;
+
+    /**
+     * xxx desc
+     * yyy asc
+     */
+    private List<String> sorts;
 }

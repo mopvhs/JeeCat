@@ -18,6 +18,9 @@ public class CatUnionProductCondition implements Serializable {
 
     @EsItemAspect
     private Long id;
+    @EsItemAspect(queryType = "itemsQuery", field = "id")
+    private List<Long> ids;
+
     @EsItemAspect(queryType = "mustNotItemsQuery", field = "id")
     private List<Long> filterIds;
 //    @EsItemAspect
@@ -152,6 +155,12 @@ public class CatUnionProductCondition implements Serializable {
     @EsItemAspect(queryType = "rangeQuery", field = "catDsr", rangeOp = "lte")
     private Long endCatDsr;
 
+    // range查询
+    @EsItemAspect(queryType = "rangeQuery", field = "saleStatusTime", rangeOp = "gte")
+    private Long gteSaleStatusTime;
+    @EsItemAspect(queryType = "rangeQuery", field = "saleStatusTime", rangeOp = "lte")
+    private Long lteSaleStatusTime;
+
     // 入库时间
     @EsItemAspect(queryType = "rangeQuery", field = "createTime", rangeOp = "gte")
     private Long gteCreateTime;
@@ -173,4 +182,12 @@ public class CatUnionProductCondition implements Serializable {
 
     @EsItemAspect(queryType = "existsQuery", field = "rates")
     private Boolean hadRates;
+
+    @EsItemAspect(queryType = "rangeQuery", field = "priceChartSyncTime", rangeOp = "gte")
+    private Long gtePriceChartSyncTime;
+    @EsItemAspect
+    private Long priceChart;
+
+    @EsItemAspect(queryType = "prefixQuery", field = "priceChartSkuBases.compareDesc")
+    private String prefixSkuCompareDesc;
 }

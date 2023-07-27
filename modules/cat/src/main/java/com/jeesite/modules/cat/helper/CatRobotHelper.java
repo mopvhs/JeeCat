@@ -224,6 +224,9 @@ public class CatRobotHelper {
                     fieldList.add(field);
                     rangMap.put(name, fieldList);
                     break;
+                case "prefixQuery":
+                    boolBuilder.must(QueryBuilders.prefixQuery(name, String.valueOf(value)));
+                    break;
             }
         }
 

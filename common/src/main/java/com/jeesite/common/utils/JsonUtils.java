@@ -1,6 +1,7 @@
 
 package com.jeesite.common.utils;
 
+import com.alibaba.fastjson.JSONObject;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -92,5 +93,25 @@ public final class JsonUtils {
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * 将json转换为List、Map等引用类型
+     *
+     * @param jsonString
+     * @throws IOException
+     */
+    public static JSONObject toJsonObject(String jsonString) {
+        try {
+            if (StringUtils.isBlank(jsonString)) {
+                return null;
+            }
+
+            return JSONObject.parseObject(jsonString);
+        } catch (Exception e) {
+
+        }
+
+        return null;
     }
 }

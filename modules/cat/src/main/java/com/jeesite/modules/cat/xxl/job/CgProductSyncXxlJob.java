@@ -76,7 +76,7 @@ public class CgProductSyncXxlJob extends IJobHandler {
                 cgUnionProductService.indexEs(list, limit);
 
                 total += list.size();
-                id = list.get(list.size() - 1).getIid();
+                id = list.get(list.size() - 1).getUiid();
                 if (list.size() < limit) {
                     break;
                 }

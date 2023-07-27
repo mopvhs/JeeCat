@@ -407,7 +407,7 @@ public class CgProductController {
             List<MaocheAlimamaUnionProductDetailDO> detailDOS = maocheAlimamaUnionProductDetailService.listByItemIdSuffixs(itemIds);
             Map<String, MaocheAlimamaUnionProductDetailDO> detailMap = detailDOS.stream().collect(Collectors.toMap(MaocheAlimamaUnionProductDetailDO::getItemIdSuffix, Function.identity(), (o1, o2) -> o1));
             for (MaocheAlimamaUnionProductDO productDO : productDOs) {
-                Long iid = productDO.getIid();
+                Long iid = productDO.getUiid();
                 if (detailMap.containsKey(String.valueOf(productDO.getItemIdSuffix()))) {
                     updateIds.add(iid);
                 } else {

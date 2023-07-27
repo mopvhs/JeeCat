@@ -342,7 +342,7 @@ public class CgUnionProductStatisticsService {
         return msg;
     }
 
-    private Map<String, Object> buildCardDataMap(String desc, String thumburl, String title, String url, String rid) {
+    private static Map<String, Object> buildCardDataMap(String desc, String thumburl, String title, String url, String rid) {
         Map<String, Object> data = new HashMap<>();
 
         data.put("conversation_id", rid);
@@ -470,9 +470,7 @@ public class CgUnionProductStatisticsService {
     }
 
     public void nineRcmd() {
-        CatUnionProductCondition condition = ProductSearchHelper.buildNineSearchCondition();
-
-        List<Long> nineNumMap = getNineNum(condition);
+        List<Long> nineNumMap = getNineNum();
         long totalNum = nineNumMap.get(0);
         long todayNum = nineNumMap.get(1);
 
@@ -488,6 +486,7 @@ public class CgUnionProductStatisticsService {
         categoryNumMap.put(23L, 4);
         categoryNumMap.put(50L, 4);
 
+        CatUnionProductCondition condition = ProductSearchHelper.buildNineSearchCondition();
         List<String> sorts = new ArrayList<>(Collections.singletonList("shopDsr desc"));
         condition.setSorts(sorts);
 
@@ -555,18 +554,26 @@ public class CgUnionProductStatisticsService {
         content.append("\n.... \n\n").append("更多今日低价欢迎点击以下专题页获取\n");
 
         String title = "猫车® 今日9.9精选" + totalNum + "件，新增" + todayNum + "件";
-        Map<String, Object> cardMap = buildCardDataMap("精选店铺评分4.8分以上猫咪优质好物，帮您省心买",
-                "https://mmbiz.qpic.cn/sz_mmbiz_png/y7ibJn5iaZcWBicu2ewoJaiazq2q7ot0szXMAw3JaQlBFH3QPk2oicR5SdlVNbwlkGbZ6ooatibEuOWgjQzSGWvTFusA/640?wx_fmt=png",
-                title,
-                "https://cat.zhizher.com/cat-sass-mobile/#/pages/sys/goods/index",
-                null);
+        Map<String, Object> cardMap = nineCardMap(title);
 
         String tail = "更多好物好价，欢迎群内@猫车选品官，带上关键词即可找券/答疑@猫车小助手\n";
 
         sendNine(header.toString(), tail, content.toString(), cardMap);
     }
 
-    private List<Long> getNineNum(CatUnionProductCondition baseCondition) {
+    public static Map<String, Object> nineCardMap(String title) {
+        Map<String, Object> cardMap = buildCardDataMap("精选店铺评分4.8分以上猫咪优质好物，帮您省心买",
+                "https://mmbiz.qpic.cn/sz_mmbiz_png/y7ibJn5iaZcWBicu2ewoJaiazq2q7ot0szXMAw3JaQlBFH3QPk2oicR5SdlVNbwlkGbZ6ooatibEuOWgjQzSGWvTFusA/640?wx_fmt=png",
+                title,
+                "https://cat.zhizher.com/cat-sass-mobile/#/pages/sys/goods/index",
+                null);
+
+        return cardMap;
+    }
+
+    public List<Long> getNineNum() {
+
+        CatUnionProductCondition baseCondition = ProductSearchHelper.buildNineSearchCondition();
 
         long totalNum = 0;
         long todayNum = 0;
@@ -578,9 +585,9 @@ public class CgUnionProductStatisticsService {
             totalNum = searchData.getTotal();
         }
 
-        // 今日新增
-        long starTime = DateTimeUtils.earliestTimeToday(System.currentTimeMillis());
-        baseCondition.setGteCreateTime(starTime);
+        // 今日新增(昨天14点开始)
+        long starTime = DateTimeUtils.earliestTimeToday(System.currentTimeMillis()) - (10 * 3600 * 1000L);
+        baseCondition.setGteSaleStatusTime(starTime);
 
         source = cgUnionProductService.searchSource(baseCondition, null, cgUnionProductService::commonSort, null, 0, 1);
         searchData = cgUnionProductService.search(source);
@@ -590,7 +597,7 @@ public class CgUnionProductStatisticsService {
         }
 
         // 清空
-        baseCondition.setGteCreateTime(null);
+        baseCondition.setSaleStatus(null);
 
         List<Long> num = new ArrayList<>();
         num.add(totalNum);
@@ -609,9 +616,9 @@ public class CgUnionProductStatisticsService {
 
         try {
             for (QwChatroomInfoDO qwChatroomInfoDO : qwChatroomInfoDOS) {
-                if (!qwChatroomInfoDO.getId().equals("68")) {
-                    continue;
-                }
+//                if (!qwChatroomInfoDO.getId().equals("68")) {
+//                    continue;
+//                }
                 String roomChatId = qwChatroomInfoDO.getRoomChatId();
                 qwService.send(UNIQUE_ID, textMap(header, roomChatId));
                 Thread.sleep(3500);

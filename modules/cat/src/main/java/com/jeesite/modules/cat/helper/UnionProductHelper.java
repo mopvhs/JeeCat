@@ -10,10 +10,13 @@ import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductDO;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductDetailDO;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionTitleKeywordDO;
 import com.jeesite.modules.cat.entity.MaocheCategoryDO;
-import com.jeesite.modules.cat.entity.MaocheDataokeProductDO;
 import com.jeesite.modules.cat.enums.QualityStatusEnum;
 import com.jeesite.modules.cat.model.CarAlimamaUnionProductIndex;
 import com.jeesite.modules.cat.model.HighLightTextTO;
+import com.jeesite.modules.cat.model.PriceChartInfoTO;
+import com.jeesite.modules.cat.model.PriceChartSkuBaseTO;
+import com.jeesite.modules.cat.model.ProductPriceTO;
+import com.jeesite.modules.cat.model.ProductTagTO;
 import com.jeesite.modules.cat.model.PromotionTagTO;
 import com.jeesite.modules.cat.model.RateDetailTO;
 import com.jeesite.modules.cat.model.RateTO;
@@ -22,15 +25,20 @@ import com.jeesite.modules.cat.model.UnionProductTagTO;
 import com.jeesite.modules.cat.model.keytitle.UnionProductTagModel;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -56,11 +64,12 @@ public class UnionProductHelper {
             unionGoodPriceDOs = new ArrayList<>();
         }
         Map<Long, CarAlimamaUnionProductIndex> indexMap = indexList.stream().collect(Collectors.toMap(CarAlimamaUnionProductIndex::getId, Function.identity(), (o1, o2) -> o1));
-        Map<Long, MaocheAlimamaUnionProductDO> productDOMap = productDOs.stream().collect(Collectors.toMap(MaocheAlimamaUnionProductDO::getIid, Function.identity(), (o1, o2) -> o1));
+        Map<Long, MaocheAlimamaUnionProductDO> productDOMap = productDOs.stream().collect(Collectors.toMap(MaocheAlimamaUnionProductDO::getUiid, Function.identity(), (o1, o2) -> o1));
         Map<String, MaocheAlimamaUnionTitleKeywordDO> keywordMap = keywordDOs.stream().collect(Collectors.toMap(MaocheAlimamaUnionTitleKeywordDO::getItemIdSuffix, Function.identity(), (o1, o2) -> o1));
         Map<String, MaocheAlimamaUnionGoodPriceDO> unionGoodPriceMap = unionGoodPriceDOs.stream().collect(Collectors.toMap(MaocheAlimamaUnionGoodPriceDO::getItemIdSuffix, Function.identity(), (o1, o2) -> o1));
 //        Map<String, MaocheAlimamaUnionProductDetailDO> productDetailMap = productDetailDOs.stream().collect(Collectors.toMap(MaocheAlimamaUnionProductDetailDO::getItemIdSuffix, Function.identity(), (o1, o2) -> o1));
         Map<Long, MaocheCategoryDO> customCategoryMap = categoryDOs.stream().collect(Collectors.toMap(MaocheCategoryDO::getIid, Function.identity(), (o1, o2) -> o1));
+//        Map<String, MaocheAlimamaUnionProductPriceChartDO> priceChartDOMap = priceChartDOs.stream().collect(Collectors.toMap(MaocheAlimamaUnionProductPriceChartDO::getIid, Function.identity(), (o1, o2) -> o1));
 
         List<UnionProductTO> products = new ArrayList<>();
         for (CarAlimamaUnionProductIndex index : indexList) {
@@ -102,7 +111,7 @@ public class UnionProductHelper {
 
             product.setQualityStatus(productDO.getQualityStatus());
             if (QualityStatusEnum.GOLD.getStatus().equals(productDO.getQualityStatus())) {
-                product.setQualityIcon("https://mmbiz.qpic.cn/sz_mmbiz_png/y7ibJn5iaZcWDwjNpicRywUhEOhkwoRcchFKmVgckjUl7qQhddmhT8XBQc43k9FQENNbfH4VuVLO4pfOMa1m1DMmA/640?wx_fmt=png");
+                product.setQualityIcon("https://cat.zhizher.com/assets/jbsp.png");
             }
 
             long commission = -999999999L;
@@ -165,6 +174,8 @@ public class UnionProductHelper {
             // 针对有好价的商品，替换promotionTags的数据
             replaceCouponOfPromotionTags(product);
 
+            fillPriceInfo(product, index);
+
             products.add(product);
         }
 
@@ -191,6 +202,91 @@ public class UnionProductHelper {
             promotionTags.add(0, couponTag);
         }
         product.setPromotionTags(promotionTags);
+    }
+
+    private static void fillPriceInfo(UnionProductTO product, CarAlimamaUnionProductIndex index) {
+        Long price = index.getPromotionPrice();
+
+        ProductPriceTO priceTO = new ProductPriceTO();
+        priceTO.setDesc("到手价");
+        priceTO.setPrice(price);
+        product.setDisplayPrice(priceTO);
+
+        // 排序
+        List<String> sortKeywords = new ArrayList<>();
+        sortKeywords.add("旗舰店");
+        sortKeywords.add("近");
+        sortKeywords.add("淘宝同款低价");
+        sortKeywords.add("同款低价");
+        sortKeywords.add("低于");
+
+        // 价格标签
+        List<PriceChartSkuBaseTO> skuBases = index.getPriceChartSkuBases();
+        if (CollectionUtils.isNotEmpty(skuBases)) {
+            List<String> list = skuBases.stream().filter(Objects::nonNull).map(PriceChartSkuBaseTO::getCompareDesc).filter(StringUtils::isNotBlank).distinct().collect(Collectors.toList());
+
+            List<ProductTagTO> sorts = new ArrayList<>();
+            for (String keyword : sortKeywords) {
+                Iterator<String> iterator = list.iterator();
+                while (iterator.hasNext()) {
+                    String next = iterator.next();
+                    if (next.startsWith(keyword)) {
+                        ProductTagTO tag = new ProductTagTO(next, null, 0, 0);
+                        tag.setIconInfo("https://cat.zhizher.com/assets/down_arrow.png", 31, 31);
+                        sorts.add(tag);
+//                        if (next.equals("同款低价")) {
+//                            tag.setIconInfo("https://cat.zhizher.com/assets/down_arrow.png", 31, 31);
+//                        }
+                        iterator.remove();
+                        break;
+                    }
+                }
+            }
+            if (CollectionUtils.isNotEmpty(list)) {
+                sorts.addAll(list.stream().map(i -> new ProductTagTO(i, "https://cat.zhizher.com/assets/down_arrow.png", 31, 31)).toList());
+            }
+            product.setPriceChartTags(sorts);
+
+            Map<String, PriceChartSkuBaseTO> minPriceMap = new HashMap<>();
+            List<HighLightTextTO> daoDaoList = new ArrayList<>();
+
+            Map<Long, PriceChartSkuBaseTO> skuBaseTOMap = skuBases.stream().collect(Collectors.toMap(PriceChartSkuBaseTO::getSkuId, Function.identity(), (o1, o2) -> o1));
+            // 叨叨
+            for (PriceChartSkuBaseTO item : skuBases) {
+                if (StringUtils.isBlank(item.getCompareDesc()) || skuBaseTOMap.get(item.getSkuId()) == null) {
+                    continue;
+                }
+                PriceChartSkuBaseTO chartInfoTO = minPriceMap.get(item.getCompareDesc());
+                if (chartInfoTO == null) {
+                    minPriceMap.put(item.getCompareDesc(), item);
+                    continue;
+                }
+                // 对比价格
+                if (item.getPrice() < chartInfoTO.getPrice()) {
+                    minPriceMap.put(item.getCompareDesc(), item);
+                    continue;
+                }
+            }
+
+            if (MapUtils.isNotEmpty(minPriceMap)) {
+                for (Map.Entry<String, PriceChartSkuBaseTO> entry : minPriceMap.entrySet()) {
+                    PriceChartSkuBaseTO value = entry.getValue();
+                    if (value == null) {
+                        continue;
+                    }
+                    PriceChartSkuBaseTO skuBaseTO = skuBaseTOMap.get(value.getSkuId());
+                    if (StringUtils.isBlank(skuBaseTO.getSkuProperty())) {
+                        continue;
+                    }
+                    HighLightTextTO textTO = new HighLightTextTO();
+                    textTO.setHighLight(value.getCompareDesc() + "￥" + PriceHelper.formatPrice(value.getPrice(), ".00", ""));
+                    textTO.setNormal("选择" + skuBaseTO.getSkuProperty() + "下单");
+                    daoDaoList.add(textTO);
+                }
+            }
+
+            product.setDaoDaoList(daoDaoList);
+        }
     }
 
     private static void fillBenefitInfo(UnionProductTO product,
@@ -392,16 +488,20 @@ public class UnionProductHelper {
             return;
         }
         try {
-            List<String> customTags = Optional.ofNullable(product.getCustomTags()).orElse(new ArrayList<>());
+            List<ProductTagTO> customTags = Optional.ofNullable(product.getProductTags()).orElse(new ArrayList<>());
 
             // new 标
             Date createTime = productDO.getCreateTime();
             // 一天内
             if (createTime != null && (System.currentTimeMillis() - productDO.getCreateTime().getTime()) <= 86400) {
-                customTags.add("new");
+                customTags.add(new ProductTagTO("new", null, 0, 0));
+            }
+            // 金标商品
+            if (QualityStatusEnum.GOLD.getStatus().equals(productDO.getQualityStatus())) {
+                customTags.add(new ProductTagTO(null, "https://cat.zhizher.com/assets/jbsp.png", 32, 100));
             }
 
-            product.setCustomTags(customTags);
+            product.setProductTags(customTags);
         } catch (Exception e) {
             log.error("fillCustomTags exception e", e);
         }
@@ -468,22 +568,57 @@ public class UnionProductHelper {
         return productDOs.stream().map(MaocheAlimamaUnionProductDO::getItemIdSuffix).distinct().collect(Collectors.toList());
     }
 
+    /**
+     * 获取商品itemId
+     * @param productDOs
+     * @return
+     */
+    public static List<String> getIids(List<MaocheAlimamaUnionProductDO> productDOs) {
+        if (CollectionUtils.isEmpty(productDOs)) {
+            return new ArrayList<>();
+        }
+
+        return productDOs.stream().map(MaocheAlimamaUnionProductDO::getIid).distinct().collect(Collectors.toList());
+    }
+
 
     public static void main(String[] args) {
 
-        String text = "12【1212】打算撒记得撒娇";
-        int start = StringUtils.indexOf(text, "【");
-        if (start < 0) {
-            return;
-        }
-        int end = StringUtils.indexOf(text, "】");
-        if (end < 0) {
-            return;
-        }
+//        String text = "12【1212】打算撒记得撒娇";
+//        int start = StringUtils.indexOf(text, "【");
+//        if (start < 0) {
+//            return;
+//        }
+//        int end = StringUtils.indexOf(text, "】");
+//        if (end < 0) {
+//            return;
+//        }
+//
+//        String highLight = text.substring(0, start) + text.substring(start, end + 1) + text.substring(end  + 1);
+//
+//        System.out.println(highLight);
 
-        String highLight = text.substring(0, start) + text.substring(start, end + 1) + text.substring(end  + 1);
+        String s1 = "旗舰店90天最低价";
+        String s2 = "淘宝同款低价";
+        String s3 = "同款低价";
+        String s4 = "近42天最低价";
 
-        System.out.println(highLight);
+
+        List<String> list = new ArrayList<>();
+        list.add(s3);
+        list.add(s4);
+        list.add(s1);
+        list.add(s2);
+
+        List<String> sortKeywords = new ArrayList<>();
+        sortKeywords.add("旗舰店");
+        sortKeywords.add("淘宝同款低价");
+        sortKeywords.add("同款低价");
+        sortKeywords.add("近");
+
+        // 正则
+
+
 
     }
 }

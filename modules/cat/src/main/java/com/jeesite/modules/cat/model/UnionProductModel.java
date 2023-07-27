@@ -39,6 +39,7 @@ public class UnionProductModel implements Serializable {
 
     // 上架状态
     private Long saleStatus;
+    private Long saleStatusTime;
 
     // 数据来源
     private String dataSource;

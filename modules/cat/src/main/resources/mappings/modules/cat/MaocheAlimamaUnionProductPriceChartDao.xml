@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jeesite.modules.cat.dao.MaocheAlimamaUnionProductPriceChartDao">
+	
+	<!-- 查询数据
+	<select id="findList" resultType="MaocheAlimamaUnionProductPriceChartDO">
+		SELECT ${sqlMap.column.toSql()}
+		FROM ${sqlMap.table.toSql()}
+		<where>
+			${sqlMap.where.toSql()}
+		</where>
+		ORDER BY ${sqlMap.order.toSql()}
+	</select> -->
+
+	<select id="listLatestChartPrices" resultType="MaocheAlimamaUnionProductPriceChartDO">
+		select
+		*
+		from
+		maoche_alimama_union_product_price_chart
+		<where>
+			id in (
+			select max(id)
+			from maoche_alimama_union_product_price_chart
+			<where>
+				iid in
+				<foreach collection="iids" item="iid" close=")" open="(" separator=",">
+				#{iid}
+				</foreach>
+				group by iid
+			</where>
+			)
+		</where>
+	</select>
+
+	<select id="getAllGroupByIid" resultType="MaocheAlimamaUnionProductPriceChartDO">
+		select iid from maoche_alimama_union_product_price_chart group by iid
+	</select>
+	
+</mapper>
