@@ -81,6 +81,7 @@ import org.apache.commons.lang3.math.NumberUtils;
 		@Column(name="sync_time", attrName="syncTime", label="sync_time", isUpdateForce=true),
 		@Column(name="sale_status_date", attrName="saleStatusDate", label="sale_status_date", isUpdateForce=true),
 		@Column(name="status", attrName="status", label="status", isUpdateForce=true),
+		@Column(name="custom_benefit", attrName="customBenefit", label="customBenefit", isUpdateForce=true),
 	}
 )
 public class MaocheAlimamaUnionProductDO extends DataEntity<MaocheAlimamaUnionProductDO> {
@@ -163,6 +164,8 @@ public class MaocheAlimamaUnionProductDO extends DataEntity<MaocheAlimamaUnionPr
 
 	// 内部id
 	private String maocheInnerId;
+
+	private String customBenefit;
 
 	/**
 	 * 重载默认方法，主键类型互转，方便操作
@@ -685,6 +688,14 @@ public class MaocheAlimamaUnionProductDO extends DataEntity<MaocheAlimamaUnionPr
 
 	public void setQualityStatus(Long qualityStatus) {
 		this.qualityStatus = qualityStatus;
+	}
+
+	public String getCustomBenefit() {
+		return customBenefit;
+	}
+
+	public void setCustomBenefit(String customBenefit) {
+		this.customBenefit = customBenefit;
 	}
 
 	public void setIid_in(Long[] ids) {

@@ -1,6 +1,5 @@
 package com.jeesite.modules.cgcat;
 
-import cn.hutool.core.date.StopWatch;
 import com.jeesite.common.entity.Page;
 import com.jeesite.common.lang.NumberUtils;
 import com.jeesite.common.lang.StringUtils;
@@ -20,6 +19,7 @@ import com.jeesite.modules.cat.es.config.es7.ElasticSearch7Service;
 import com.jeesite.modules.cat.es.config.model.ElasticSearchData;
 import com.jeesite.modules.cat.helper.CatAggHelper;
 import com.jeesite.modules.cat.helper.CategoryHelper;
+import com.jeesite.modules.cat.helper.UnionProductHelper;
 import com.jeesite.modules.cat.model.CarAlimamaUnionProductIndex;
 import com.jeesite.modules.cat.model.CatProductBucketTO;
 import com.jeesite.modules.cat.model.CatUnionProductCondition;
@@ -39,7 +39,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.junit.rules.Stopwatch;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -48,7 +47,6 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.swing.text.html.Option;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -109,6 +107,15 @@ public class CgProductController {
             condition.setSorts(sorts);
         }
 
+        if (StringUtils.isNotBlank(condition.getPrefixSkuCompareDesc())) {
+            if (condition.getPrefixSkuCompareDesc().equals("empty")) {
+                condition.setPrefixSkuCompareDesc(null);
+            } else if (condition.getPrefixSkuCompareDesc().equals("all")) {
+                condition.setPrefixSkuCompareDesc(null);
+                condition.setHadSkuCompareDesc(true);
+            }
+        }
+
         // 类目兼容处理
         List<String> relationRootNames = maocheCategoryMappingService.getRelationRootName(condition.getLevelOneCategoryName());
         if (CollectionUtils.isNotEmpty(relationRootNames)) {
@@ -143,6 +150,15 @@ public class CgProductController {
         if (CollectionUtils.isEmpty(sorts)) {
             sorts.add("catDsr desc");
             condition.setSorts(sorts);
+        }
+
+        if (StringUtils.isNotBlank(condition.getPrefixSkuCompareDesc())) {
+            if (condition.getPrefixSkuCompareDesc().equals("empty")) {
+                condition.setPrefixSkuCompareDesc(null);
+            } else if (condition.getPrefixSkuCompareDesc().equals("all")) {
+                condition.setPrefixSkuCompareDesc(null);
+                condition.setHadSkuCompareDesc(true);
+            }
         }
 
         // 选品库都是审核通过的商品
@@ -279,8 +295,14 @@ public class CgProductController {
         }
 
         condition.setLevelOneCategoryName(null);
-        StopWatch stopWatch = new StopWatch();
-        stopWatch.start();
+        if (StringUtils.isNotBlank(condition.getPrefixSkuCompareDesc())) {
+            if (condition.getPrefixSkuCompareDesc().equals("empty")) {
+                condition.setPrefixSkuCompareDesc(null);
+            } else if (condition.getPrefixSkuCompareDesc().equals("all")) {
+                condition.setPrefixSkuCompareDesc(null);
+                condition.setHadSkuCompareDesc(true);
+            }
+        }
 
         SearchSourceBuilder source = cgUnionProductService.searchSource(condition, cgUnionProductService::buildRootCategoryAgg, null, null, 0, 0);
         ElasticSearchData<CarAlimamaUnionProductIndex, CatProductBucketTO> searchData = cgUnionProductService.search(source);
@@ -315,8 +337,6 @@ public class CgProductController {
         categoryVO.setCategories(carProductBucketTOs);
         categoryVO.setTotal(searchData.getTotal());
 
-        stopWatch.stop();
-        log.info("类目查询耗时：{}", stopWatch.toString());
         return Result.OK(categoryVO);
     }
 
@@ -399,19 +419,20 @@ public class CgProductController {
             return Result.ERROR(404, "资源不存在");
         }
 
-        List<String> itemIds = productDOs.stream().map(MaocheAlimamaUnionProductDO::getItemIdSuffix).toList();
+        List<String> iids = UnionProductHelper.getIids(productDOs);
+
         List<Long> noUpdateIds = new ArrayList<>();
         // 如果是上架操作，判断是否已经爬取了评价信息
         if (request.getSaleStatus().equals(SaleStatusEnum.ON_SHELF.getStatus())) {
             List<Long> updateIds = new ArrayList<>();
-            List<MaocheAlimamaUnionProductDetailDO> detailDOS = maocheAlimamaUnionProductDetailService.listByItemIdSuffixs(itemIds);
-            Map<String, MaocheAlimamaUnionProductDetailDO> detailMap = detailDOS.stream().collect(Collectors.toMap(MaocheAlimamaUnionProductDetailDO::getItemIdSuffix, Function.identity(), (o1, o2) -> o1));
+            List<MaocheAlimamaUnionProductDetailDO> detailDOS = maocheAlimamaUnionProductDetailService.listByIids(iids);
+            Map<String, MaocheAlimamaUnionProductDetailDO> detailMap = detailDOS.stream().collect(Collectors.toMap(MaocheAlimamaUnionProductDetailDO::getIid, Function.identity(), (o1, o2) -> o1));
             for (MaocheAlimamaUnionProductDO productDO : productDOs) {
-                Long iid = productDO.getUiid();
-                if (detailMap.containsKey(String.valueOf(productDO.getItemIdSuffix()))) {
-                    updateIds.add(iid);
+                Long uiid = productDO.getUiid();
+                if (detailMap.containsKey(String.valueOf(productDO.getIid()))) {
+                    updateIds.add(uiid);
                 } else {
-                    noUpdateIds.add(iid);
+                    noUpdateIds.add(uiid);
                 }
             }
             ids = updateIds;
@@ -436,6 +457,32 @@ public class CgProductController {
         cgUnionProductService.indexEs(productDOs, 10);
 
         return Result.OK("入库完成，但存在上架失败商品，原因是：详情数据为空 失败商品id为：" + JsonUtils.toJSONString(noUpdateIds));
+    }
+
+    // 审核状态变更
+    @RequestMapping(value = "/product/custom/benefit/edit")
+    @ResponseBody
+    public Result<Object> editProductCustomBenefit(@RequestBody ProductAuditRequest request) {
+
+        if (request == null || CollectionUtils.isEmpty(request.getIds())) {
+            return Result.ERROR(500, "参数错误");
+        }
+
+        // 批量更新
+        List<Long> ids = request.getIds().stream().distinct().collect(Collectors.toList());
+
+        List<MaocheAlimamaUnionProductDO> productDOs = maocheAlimamaUnionProductService.listByIds(ids);
+        if (CollectionUtils.isEmpty(productDOs)) {
+            return Result.ERROR(404, "资源不存在");
+        }
+
+        maocheAlimamaUnionProductService.updateCustomBenefit(ids, request.getCustomBenefit());
+
+        // 重新查一次数据库
+        productDOs = maocheAlimamaUnionProductService.listByIds(ids);
+        cgUnionProductService.indexEs(productDOs, 10);
+
+        return Result.OK("更新完成");
     }
 
 

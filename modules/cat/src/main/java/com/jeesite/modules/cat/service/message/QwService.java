@@ -52,7 +52,7 @@ public class QwService {
 
         try {
             String doPost = flameHttpService.doFormPost(url, data);
-//            System.out.println("msg：" + JsonUtils.toJSONString(msg));
+            log.info("QwService send data: {}, result: {}", JsonUtils.toJSONString(data), doPost);
         } catch (Exception e) {
             log.error("send_cmd exception ", e);
         }

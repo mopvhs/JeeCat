@@ -78,4 +78,6 @@ public class UnionProductModel implements Serializable {
     private String propsBrand;
     private String propsProductName;
     private List<RateDetailTO> rates;
+
+    private String customBenefit;
 }

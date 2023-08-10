@@ -12,6 +12,8 @@ public class CatUserMessagePushTO implements Serializable {
     @Serial
     private static final long serialVersionUID = 5238877692600588401L;
 
+    private Long id;
+
     private String openId;
 
     private String keyword;

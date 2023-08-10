@@ -190,4 +190,6 @@ public class CatUnionProductCondition implements Serializable {
 
     @EsItemAspect(queryType = "prefixQuery", field = "priceChartSkuBases.compareDesc")
     private String prefixSkuCompareDesc;
+    @EsItemAspect(queryType = "existsQuery", field = "priceChartSkuBases.compareDesc")
+    private Boolean hadSkuCompareDesc;
 }

@@ -111,6 +111,8 @@ public class DktProductEsStageService extends AbstractProductEsStage<ProductEsCo
         DtkGoodsListResponse.ItemInfo itemInfo = innerContext.getItemInfo();
         JSONObject productContent = innerContext.getUnionProductContent();
 
+        String itemId = ProductValueHelper.getItemId(productContent);
+
         // 商品原价
         long originalPrice = daTaoKeProduct.getOriginalPrice();
 
@@ -122,6 +124,7 @@ public class DktProductEsStageService extends AbstractProductEsStage<ProductEsCo
         Long tkTotalSales = NumberUtils.toLong(productContent.getString("tk_total_sales"));
 
         model.setId(item.getUiid());
+        model.setItemId(itemId);
         model.setTitle(itemInfo.getTitle());
         model.setBenefitDesc(itemInfo.getDesc());
         model.setItemDescription(itemDescription);
@@ -136,6 +139,8 @@ public class DktProductEsStageService extends AbstractProductEsStage<ProductEsCo
         model.setCreateTime(item.getCreateTime().getTime());
         model.setItemId(item.getItemId());
         model.setItemIdSuffix(item.getItemIdSuffix());
+
+        model.setCustomBenefit(item.getCustomBenefit());
 
         // 状态
         model.setSaleStatus(item.getSaleStatus());
@@ -155,17 +160,19 @@ public class DktProductEsStageService extends AbstractProductEsStage<ProductEsCo
         UnionProductModel model = innerContext.getModel();
         JSONObject productContent = innerContext.getUnionProductContent();
 
-        // 优惠券金额
 
+        // 优惠券金额
         long coupon = ProductValueHelper.getCouponAmount(productContent);
         // 优惠券数量
         Long couponRemainCount = NumberUtils.toLong(productContent.getString("coupon_remain_count"));
+        Long couponTotalCount = ProductValueHelper.getCouponTotalCount(productContent);
         // 券后价
         Long promotionPrice = ProductValueHelper.calVeApiPromotionPrice(productContent);
 
         promotionModel.setCoupon(coupon);
         promotionModel.setPromotionPrice(promotionPrice);
         promotionModel.setCouponRemainCount(couponRemainCount);
+        promotionModel.setCouponTotalCount(couponTotalCount);
 
         model.setPromotion(promotionModel);
     }
@@ -175,6 +182,8 @@ public class DktProductEsStageService extends AbstractProductEsStage<ProductEsCo
         UnionProductModel model = innerContext.getModel();
         DtkGoodsListResponse.ItemInfo itemInfo = innerContext.getItemInfo();
         JSONObject productContent = innerContext.getUnionProductContent();
+
+        String shopTitle = ProductValueHelper.getShopTitle(productContent);
 
         ShopModel shopModel = new ShopModel();
         String brandName = itemInfo.getBrandName();;
@@ -200,7 +209,7 @@ public class DktProductEsStageService extends AbstractProductEsStage<ProductEsCo
         shopModel.setFans(fans);
         shopModel.setShopDsr(shopDsr);
         shopModel.setBrandName(brandName);
-        shopModel.setShopName(shopName);
+        shopModel.setShopName(shopTitle);
         shopModel.setShopLevel(shopLevel);
 
         model.setShop(shopModel);

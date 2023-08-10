@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jeesite.modules.cat.dao.MaocheTaskDao">
+	
+	<!-- 查询数据 -->
+	<select id="getPage" resultType="MaocheTaskDO">
+		SELECT *
+		FROM maoche_task
+		ORDER BY create_date DESC limit #{offset},#{pageSize}
+	</select>
+
+	<!-- 查询总数 -->
+	<select id="getTotal" resultType="java.lang.Integer">
+		SELECT count(1)
+		FROM maoche_task
+	</select>
+
+
+	<update id="finishTask">
+		UPDATE maoche_task
+		SET status = "FINISHED",
+		finished_date = #{finishedDate}
+		<where>
+			id = #{id}
+		</where>
+	</update>
+</mapper>

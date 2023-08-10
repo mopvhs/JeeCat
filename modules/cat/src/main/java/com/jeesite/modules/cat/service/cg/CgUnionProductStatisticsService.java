@@ -88,7 +88,7 @@ public class CgUnionProductStatisticsService {
     @Resource
     private QwChatroomInfoService qwChatroomInfoService;
 
-    private static final String UNIQUE_ID = "3dd41c9e0df2aab04cb8f1c1afc359b8.py";
+    public static final String UNIQUE_ID = "3dd41c9e0df2aab04cb8f1c1afc359b8.py";
 
     @Resource
     private QwService qwService;

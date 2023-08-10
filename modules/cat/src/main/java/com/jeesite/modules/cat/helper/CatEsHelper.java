@@ -93,6 +93,10 @@ public class CatEsHelper {
         }
         Long volume = ProductValueHelper.getVolume(jsonObject);
         String title = ProductValueHelper.getTitle(jsonObject);
+        String itemId = ProductValueHelper.getItemId(jsonObject);
+        String shopTitle = ProductValueHelper.getShopTitle(jsonObject);
+        String productImage = ProductValueHelper.getProductImage(jsonObject);
+        Long couponTotalCount = ProductValueHelper.getCouponTotalCount(jsonObject);
 
         long coupon = ProductValueHelper.getCouponAmount(jsonObject);
         long zkFinalPrice = ProductValueHelper.getZkFinalPrice(jsonObject);
@@ -147,6 +151,10 @@ public class CatEsHelper {
         index.setId(item.getUiid());
         index.setVolume(volume);
         index.setTitle(title);
+        index.setItemId(itemId);
+        index.setShopTitle(shopTitle);
+        index.setCouponTotalCount(couponTotalCount);
+        index.setProductImage(productImage);
         index.setCoupon(coupon);
         index.setReservePrice(zkFinalPrice);
         index.setItemDescription(itemDescription);
@@ -175,6 +183,8 @@ public class CatEsHelper {
             index.setCidTwos(productCategory.getCid2s());
             index.setCidThirds(productCategory.getCid3s());
         }
+
+        index.setCustomBenefit(item.getCustomBenefit());
 
         // 补充标签
 //        String data = "{\"brand\":\"贝贝\",\"secondbrand\":\"\",\"product\":\"纸巾\",\"object\":[],\"season\":[],\"model\":[],\"material\":[],\"attribute\":[\"贝贝\",\"乳霜\"]}\n";
@@ -225,7 +235,7 @@ public class CatEsHelper {
         List<PriceChartSkuBaseTO> priceChartSkuBase = null;
         if (priceChartDO != null) {
             JSONObject jsonObject = JsonUtils.toJsonObject(priceChartDO.getOrigContent());
-            log.info("price chart id:{}, chart id:{}", index.getId(), priceChartDO.getUiid());
+//            log.info("price chart id:{}, chart id:{}", index.getId(), priceChartDO.getUiid());
             if (jsonObject != null) {
                 priceChartSkuBase = ProductValueHelper.getPriceChartSkuBase(jsonObject);
                 priceChartMinPrice = ProductValueHelper.getPriceChartMinPrice(priceChartSkuBase);
@@ -270,18 +280,22 @@ public class CatEsHelper {
         index.setId(model.getId());
         index.setVolume(model.getVolume());
         index.setTitle(model.getTitle());
+        index.setItemId(model.getItemId());
+        index.setProductImage(model.getMainPic());
         index.setBenefitDesc(model.getBenefitDesc());
-        index.setCoupon(promotion.getCoupon());
         index.setReservePrice(model.getReservePrice());
+        index.setCoupon(promotion.getCoupon());
+        index.setCouponRemainCount(promotion.getCouponRemainCount());
+        index.setCouponTotalCount(promotion.getCouponTotalCount());
         index.setItemDescription(model.getItemDescription());
         index.setCommissionRate(model.getCommissionRate());
         index.setShopDsr(shop.getShopDsr());
+        index.setShopTitle(shop.getShopName());
         index.setAuditStatus(model.getAuditStatus());
         index.setQualityStatus(model.getQualityStatus());
 
         index.setActivity(new ArrayList<>());
         index.setTkTotalSales(null);
-        index.setCouponRemainCount(promotion.getCouponRemainCount());
         // 猫车分
         Map<String, String> calCatDsr = CalCatDsrUtils.calCatDsr(score.getDsrScore(), model.getVolume(), shop.getShopLevel(), shop.getFans(), model.getCommissionRate());
         String catDsrTips = calCatDsr.get("tips");
@@ -297,6 +311,7 @@ public class CatEsHelper {
         index.setPropsProductName(model.getPropsProductName());
         index.setPropsBrand(model.getPropsBrand());
         index.setRates(model.getRates());
+        index.setCustomBenefit(model.getCustomBenefit());
 
         // 类目
         if (category != null) {

@@ -284,9 +284,80 @@ public class DateTimeUtils {
 	}
 
 	public static void main(String[] args) {
-		int currentHour = LocalTime.now().getHour();
-		System.out.println(currentHour);
+
+		int hour = 1;
+		int min = 1;
+
+
+		Date date = buildDate(hour, min, 0);
+
+		System.out.println(date.toString());
 	}
 
+	/**
+	 * 获取小时
+	 *
+	 * @param n
+	 * @return
+	 */
+	public static long getHour(Date n) {
+		Calendar c = Calendar.getInstance();
+
+		c.setTimeInMillis(n.getTime());
+
+		return c.get(Calendar.HOUR);
+	}
+
+	/**
+	 * 获取分钟
+	 *
+	 * @param n
+	 * @return
+	 */
+	public static int getMin(Date n) {
+		Calendar c = Calendar.getInstance();
+		c.setTimeInMillis(n.getTime());
+
+		return c.get(Calendar.MINUTE);
+	}
+
+	/**
+	 * 获取分钟
+	 *
+	 * @param n
+	 * @return
+	 */
+	public static int getSecond(Date n) {
+		Calendar c = Calendar.getInstance();
+		c.setTimeInMillis(n.getTime());
+
+		return c.get(Calendar.SECOND);
+	}
+
+
+	/**
+	 * 获取某天00:00:00时间
+	 *
+	 * @param hour
+	 * @param minute
+	 * @return
+	 */
+	public static Date buildDate(int hour, int minute, int second) {
+		Calendar now = Calendar.getInstance();
+		now.setTime(now.getTime());
+		now.set(Calendar.HOUR_OF_DAY, hour);
+		now.set(Calendar.MINUTE, minute);
+		now.set(Calendar.SECOND, second);
+
+		return now.getTime();
+	}
+
+	public static Date getTodyDate(Date time) {
+
+		Calendar c = Calendar.getInstance();
+		c.setTimeInMillis(time.getTime());
+
+		return buildDate(c.get(Calendar.HOUR), c.get(Calendar.MINUTE), c.get(Calendar.SECOND));
+	}
 
 }

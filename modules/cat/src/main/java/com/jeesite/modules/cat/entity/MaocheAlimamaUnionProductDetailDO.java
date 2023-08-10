@@ -17,7 +17,7 @@ import com.jeesite.common.mybatis.mapper.query.QueryType;
  * @version 2023-05-28
  */
 @Table(name="maoche_alimama_union_product_detail", alias="a", label="maoche_alimama_union_product_detail信息", columns={
-		@Column(name="id", attrName="id", label="iid", isPK=true),
+		@Column(name="id", attrName="id", label="id", isPK=true),
 		@Column(name="iid", attrName="iid", label="iid"),
 		@Column(name="item_id", attrName="itemId", label="item_id"),
 		@Column(name="item_id_suffix", attrName="itemIdSuffix", label="item_id_suffix"),
@@ -100,5 +100,9 @@ public class MaocheAlimamaUnionProductDetailDO extends DataEntity<MaocheAlimamaU
 	public void setItemIdSuffix_in(String[] ids) {
 		this.sqlMap.getWhere().and("item_id_suffix", QueryType.IN, ids);
 	}
-	
+
+	public void setIid_in(String[] ids) {
+		this.sqlMap.getWhere().and("iid", QueryType.IN, ids);
+	}
+
 }

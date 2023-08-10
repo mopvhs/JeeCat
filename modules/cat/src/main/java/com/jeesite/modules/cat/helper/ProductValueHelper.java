@@ -42,6 +42,16 @@ public class ProductValueHelper {
         return title;
     }
 
+    public static String getItemId(JSONObject content) {
+        if (content == null) {
+            return "";
+        }
+
+        String itemId = content.getString("item_id");
+
+        return itemId;
+    }
+
     /**
      * 30天销量
      * @param content
@@ -101,6 +111,44 @@ public class ProductValueHelper {
         return PriceHelper.formatPrice(obj);
     }
 
+    public static String getProductImage(JSONObject jsonObject) {
+        if (jsonObject == null) {
+            return null;
+        }
+        String smallImage = jsonObject.getString("pict_url");
+        if (StringUtils.isNotBlank(smallImage)) {
+            return smallImage;
+        }
+        smallImage = getSmallImage(jsonObject.get("small_images"));
+        if (StringUtils.isNotBlank(smallImage)) {
+            return smallImage;
+        }
+        smallImage = getSmallImage(jsonObject.get("smallImages"));
+        if (StringUtils.isNotBlank(smallImage)) {
+            return smallImage;
+        }
+
+        return jsonObject.getString("white_image");
+    }
+
+    private static String getSmallImage(Object object) {
+        if (object == null) {
+            return null;
+        }
+        if (object instanceof JSONObject obj) {
+            JSONArray jsonArray = obj.getJSONArray("string");
+            if (jsonArray != null && jsonArray.size() > 0) {
+                return jsonArray.getString(0) + "_180x180.jpg";
+            }
+        } else if (object instanceof JSONArray obj) {
+            if (obj.size() > 0) {
+                return obj.getString(0) + "_180x180.jpg";
+            }
+        }
+
+        return "";
+    }
+
     /**
      * 商品描述
      * @param jsonObject
@@ -144,6 +192,32 @@ public class ProductValueHelper {
         }
 
         return NumberUtils.toLong(shopDsr);
+    }
+
+    /**
+     * 店铺dsr
+     * @param jsonObject
+     * @return
+     */
+    public static long getCouponTotalCount(JSONObject jsonObject) {
+        Object couponTotalCount = jsonObject.get("coupon_total_count");
+        if (couponTotalCount == null) {
+            return 0;
+        }
+
+        return NumberUtils.toLong(String.valueOf(couponTotalCount));
+    }
+
+    /**
+     * 店铺title
+     * @param jsonObject
+     * @return
+     */
+    public static String getShopTitle(JSONObject jsonObject) {
+        String shopTitle = jsonObject.getString("shop_title");
+
+
+        return shopTitle;
     }
 
     /**

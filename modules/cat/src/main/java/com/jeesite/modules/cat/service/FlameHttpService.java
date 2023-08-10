@@ -15,12 +15,15 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.RequestBuilder;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
+import org.apache.http.entity.mime.MultipartEntityBuilder;
+import org.apache.http.entity.mime.content.FileBody;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import java.io.File;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
@@ -80,7 +83,32 @@ public class FlameHttpService {
             HttpEntity entity = response.getEntity();
             resp = EntityUtils.toString(entity, "UTF-8");
         } catch (Exception e) {
-            log.error("doPost 请求失败 url {}, stringEntity {} ", url, JsonUtils.toJSONString(params), e);
+            log.error("doFormPost 请求失败 url {}, stringEntity {} ", url, JsonUtils.toJSONString(params), e);
+        }
+
+        return resp;
+    }
+
+    public String doUploadFilePost(String url, File file) {
+
+        HttpPost post = new HttpPost(url);
+        post.addHeader("Content-type", "image/png; multipart/form-data; Charset=utf-8");
+
+        FileBody fileBody = new FileBody(file);
+
+        HttpEntity requestEntity = MultipartEntityBuilder.create()
+                .addPart("file", fileBody)
+                .build();
+        post.setEntity(requestEntity);
+
+        String resp = null;
+        try {
+            CloseableHttpResponse response = httpClient.execute(post);
+
+            HttpEntity entity = response.getEntity();
+            resp = EntityUtils.toString(entity, "UTF-8");
+        } catch (Exception e) {
+            log.error("doUploadFilePost 请求失败 url {}", url, e);
         }
 
         return resp;

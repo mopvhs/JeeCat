@@ -36,4 +36,7 @@ public class ProductAuditRequest {
      */
     private UnionProductTagTO tag;
 
+
+    private String customBenefit;
+
 }

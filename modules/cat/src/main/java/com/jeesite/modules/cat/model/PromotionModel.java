@@ -14,6 +14,9 @@ public class PromotionModel implements Serializable {
     // 优惠券数量
     private Long couponRemainCount;
 
+    // 总数量
+    private Long couponTotalCount;
+
     // 优惠券面额
     private Long coupon;
 

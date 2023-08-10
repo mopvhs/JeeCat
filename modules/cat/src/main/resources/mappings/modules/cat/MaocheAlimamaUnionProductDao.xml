@@ -45,6 +45,27 @@
 		level_one_category_name,
 		status,
 		sale_status_date,
+		status,
+		custom_benefit
+	</sql>
+
+	<sql id="Simple_Not_Content_Column_List">
+		id,
+		iid,
+		item_id,
+		item_id_suffix,
+		audit_status,
+		quality_status,
+		sale_status,
+		sync_mark,
+		data_source,
+		maoche_inner_id,
+		create_time,
+		update_time,
+		sync_time,
+		level_one_category_name,
+		status,
+		sale_status_date,
 		status
 	</sql>
 
@@ -86,6 +107,18 @@
 	<select id="listSimpleByIds" resultType="MaocheAlimamaUnionProductDO">
 		SELECT
 		<include refid="Simple_Column_List"/>
+		FROM maoche_alimama_union_product
+		<where>
+			id in
+			<foreach collection="ids" item="id" close=")" open="(" separator=",">
+				#{id}
+			</foreach>
+		</where>
+	</select>
+
+	<select id="listSimpleNotContentByIds" resultType="MaocheAlimamaUnionProductDO">
+		SELECT
+		<include refid="Simple_Not_Content_Column_List"/>
 		FROM maoche_alimama_union_product
 		<where>
 			id in
@@ -141,6 +174,20 @@
 		maoche_alimama_union_product
 		<set>
 			status = #{status}
+		</set>
+		<where>
+			id in
+			<foreach collection="ids" item="id" close=")" open="(" separator=",">
+				#{id}
+			</foreach>
+		</where>
+	</update>
+
+	<update id="updateCustomBenefit">
+		update
+		maoche_alimama_union_product
+		<set>
+			custom_benefit = #{customBenefit}
 		</set>
 		<where>
 			id in

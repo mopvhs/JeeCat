@@ -206,4 +206,10 @@ public class MaocheAlimamaUnionProductService extends CrudService<MaocheAlimamaU
 		return i > 0;
 	}
 
+	// 修改利益点
+	public boolean updateCustomBenefit(List<Long> ids, String customBenefit) {
+		int i = dao.updateCustomBenefit(ids, customBenefit);
+		return i > 0;
+	}
+
 }

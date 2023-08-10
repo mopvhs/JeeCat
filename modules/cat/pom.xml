@@ -39,6 +39,12 @@
 			<groupId>org.elasticsearch.client</groupId>
 			<artifactId>elasticsearch-rest-high-level-client</artifactId>
 			<version>7.10.1</version>
+			<exclusions>
+				<exclusion>
+					<artifactId>elasticsearch</artifactId>
+					<groupId>org.elasticsearch</groupId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 
 		<dependency>
@@ -47,17 +53,6 @@
 			<version>7.10.1</version>
 		</dependency>
 
-<!--		<dependency>-->
-<!--			<groupId>co.elastic.clients</groupId>-->
-<!--			<artifactId>elasticsearch-java</artifactId>-->
-<!--			<version>8.7.0</version>-->
-<!--			<exclusions>-->
-<!--				<exclusion>-->
-<!--					<artifactId>jakarta.json-api</artifactId>-->
-<!--					<groupId>jakarta.json</groupId>-->
-<!--				</exclusion>-->
-<!--			</exclusions>-->
-<!--		</dependency>-->
 		<dependency>
 			<artifactId>jakarta.json-api</artifactId>
 			<groupId>jakarta.json</groupId>

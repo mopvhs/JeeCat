@@ -43,6 +43,7 @@ import com.jeesite.modules.cgcat.dto.ProductCategoryVO;
 import com.jeesite.modules.cgcat.dto.ProductRobotResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -210,7 +211,8 @@ public class CgProductPushController {
     @RequestMapping(value = "/product/push/detail")
     @ResponseBody
     public Page<UnionProductTO> productWarehouseDetail(@RequestBody CatUserMessagePushTO messagePushTO, HttpServletRequest request, HttpServletResponse response) {
-
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
         Page<UnionProductTO> page = new Page<>(request, response);
         if (messagePushTO == null) {
             return page;
@@ -240,10 +242,10 @@ public class CgProductPushController {
         cgUserRcmdService.setHistoryKeyword(messagePushTO.getOpenId(), keyword);
 
         CatUnionProductCondition condition = new CatUnionProductCondition();
+        condition.setId(messagePushTO.getId());
         condition.setTitle(keyword);
         condition.setSaleStatus(SaleStatusEnum.ON_SHELF.getStatus());
         condition.setAuditStatus(AuditStatusEnum.PASS.getStatus());
-//        condition.setHadRates(true);
         condition.setSorts(sorts);
 
         if (messagePushTO.getOnlyCoupon() != null && messagePushTO.getOnlyCoupon().equals(1)) {
@@ -268,9 +270,13 @@ public class CgProductPushController {
             condition.setCategoryNames(categoryNames);
         }
 
+        long esStart = System.currentTimeMillis();
         SearchSourceBuilder source = cgUnionProductService.searchSource(condition, null, cgUnionProductService::commonSort, null, from, size);
         ElasticSearchData<CarAlimamaUnionProductIndex, CatProductBucketTO> searchData = cgUnionProductService.search(source);
+        long esSearchEnd = System.currentTimeMillis();
+        long esSearchTime = esSearchEnd - esStart;
 
+        long backupTime = 0;
         boolean backup = false;
         // 首页，并且检索不出来商品的时候，检索的商品源改为选品库的
         if ((searchData == null || searchData.getTotal() == 0) && from == 0) {
@@ -278,6 +284,8 @@ public class CgProductPushController {
             condition.setSaleStatus(SaleStatusEnum.INIT.getStatus());
             source = cgUnionProductService.searchSource(condition, null, cgUnionProductService::commonSort, null, from, 20);
             searchData = cgUnionProductService.search(source);
+
+            backupTime = System.currentTimeMillis() - esSearchEnd;
 
             backup = true;
         }
@@ -289,7 +297,10 @@ public class CgProductPushController {
 
         long total = searchData.getTotal();
 
+        long convertTime = System.currentTimeMillis();
         List<UnionProductTO> productTOs = cgUnionProductService.listProductInfo(searchData);
+        long convertTakeTime = System.currentTimeMillis() - convertTime;
+
         // 过滤无效额商品
         if (CollectionUtils.isNotEmpty(productTOs)) {
             productTOs = productTOs.stream().filter(i -> StringUtils.isNotBlank(i.getImgUrl())).collect(Collectors.toList());
@@ -301,6 +312,15 @@ public class CgProductPushController {
         }
 
         Page<UnionProductTO> toPage = new Page<>(page.getPageNo() + 1, pageSize, total, productTOs);
+
+        stopWatch.stop();
+        long time = stopWatch.getTime();
+        if (time >= 1000) {
+            log.info("productWarehouseDetail time:{}," +
+                    " esSearchTime:{}ms," +
+                    " backupTime:{}ms," +
+                    " convertTakeTime:{} ms", stopWatch.toString(), esSearchTime, backupTime, convertTakeTime);
+        }
 
         return toPage;
     }
