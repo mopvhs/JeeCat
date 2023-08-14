@@ -2,10 +2,11 @@ package com.jeesite.modules.cat.enums.task;
 
 public enum PushTypeEnum {
 
-    NOW("立即发布"),
+    YOU_HAO_JIA("有好价"),
 
-    // 定时
-    SCHEDULE("定时发布"),
+    YOU_HAO_CHE("有豪车"),
+
+    YOU_YANG_MAO("有羊毛"),
     ;
 
     private String desc;
@@ -18,9 +19,9 @@ public enum PushTypeEnum {
         return desc;
     }
 
-    public static PushTypeEnum getByDesc(String desc) {
+    public static PushTypeEnum getByName(String name) {
         for (PushTypeEnum pushTypeEnum : PushTypeEnum.values()) {
-            if (pushTypeEnum.getDesc().equals(desc)) {
+            if (pushTypeEnum.name().equals(name)) {
                 return pushTypeEnum;
             }
         }

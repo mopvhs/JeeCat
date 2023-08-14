@@ -21,6 +21,8 @@ public interface MaochePushTaskDao extends CrudDao<MaochePushTaskDO> {
 
     int updateStatusById(@Param("id") String id, @Param("oldStatus") String oldStatus, @Param("newStatus") String newStatus);
 
+    int updateStatusPublishDate(@Param("ids") List<String> ids, @Param("status") String status, @Param("publishDate") String publishDate);
+
     List<MaochePushTaskDO> queryByStatus(@Param("status") String status, @Param("publishDate") String publishDate, @Param("limit") int limit);
 	
 }

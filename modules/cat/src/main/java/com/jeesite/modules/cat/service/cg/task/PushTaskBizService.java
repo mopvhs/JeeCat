@@ -6,6 +6,7 @@ import com.jeesite.common.utils.JsonUtils;
 import com.jeesite.modules.cat.entity.MaochePushTaskDO;
 import com.jeesite.modules.cat.entity.MaocheTaskDO;
 import com.jeesite.modules.cat.entity.QwChatroomInfoDO;
+import com.jeesite.modules.cat.enums.task.PushTypeEnum;
 import com.jeesite.modules.cat.enums.task.TaskStatusEnum;
 import com.jeesite.modules.cat.enums.task.TaskSwitchEnum;
 import com.jeesite.modules.cat.model.task.content.PushTaskContentDetail;
@@ -15,16 +16,15 @@ import com.jeesite.modules.cat.service.QwChatroomInfoService;
 import com.jeesite.modules.cat.service.message.QwService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.poi.ss.formula.functions.T;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -65,10 +65,8 @@ public class PushTaskBizService {
             return;
         }
 
-        List<String> taskIds = list.stream().map(MaochePushTaskDO::getTaskId).distinct().toList();
-        MaocheTaskDO query = new MaocheTaskDO();
-        query.setId_in(taskIds.toArray(new String[0]));
-        List<MaocheTaskDO> tasks = maocheTaskService.findList(query);
+        List<String> taskIds = list.stream().map(MaochePushTaskDO::getTaskId).filter(Objects::nonNull).distinct().toList();
+        List<MaocheTaskDO> tasks = maocheTaskService.listByIds(taskIds);
         Map<String, MaocheTaskDO> taskMap = tasks.stream().collect(Collectors.toMap(MaocheTaskDO::getId, Function.identity(), (a, b) -> b));
 
         // 2. 遍历任务，推送
@@ -100,7 +98,14 @@ public class PushTaskBizService {
                 log.error("推送内容异常，为空， push task id：{}", taskDO.getId());
                 continue;
             }
-            img = "https://www.baidu.com/img/flexible/logo/pc/result@2.png";
+
+            // 加上类型
+            String pushType = taskDO.getPushType();
+            PushTypeEnum pushTypeEnum = PushTypeEnum.getByName(pushType);
+            if (pushTypeEnum != null) {
+                text = pushTypeEnum.getDesc() + "\n" + text;
+            }
+
             // 先更新状态
             maochePushTaskService.updateStatus(new ArrayList<>(Collections.singleton(taskDO.getId())), TaskStatusEnum.PUSHING.name());
             taskDO.setStatus(TaskStatusEnum.PUSHING.name());
@@ -162,16 +167,16 @@ public class PushTaskBizService {
 
         return msg;
     }
-    private Map<String, Object> picMap(String path, String rid) {
+    private Map<String, Object> picMap(String img, String rid) {
         Map<String, Object> msg = new HashMap<>();
         Map<String, Object> data = new HashMap<>();
 
         data.put("conversation_id", rid);
-        data.put("path", path);
         data.put("request_key", "AAAAAA");
 
         msg.put("data", data);
         msg.put("type", 5003);
+        msg.put("url", img);
 
         return msg;
     }

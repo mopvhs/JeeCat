@@ -1,7 +1,11 @@
 package com.jeesite.modules.cat.service;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 import com.jeesite.common.lang.StringUtils;
 import com.jeesite.common.utils.DateTimeUtils;
@@ -89,6 +93,15 @@ public class MaochePushTaskService extends CrudService<MaochePushTaskDao, Maoche
 		return dao.findList(maochePushTaskDO);
 	}
 
+	public int updateStatus(String id, TaskStatusEnum status) {
+
+		if (StringUtils.isBlank(id) || status == null) {
+			return 0;
+		}
+
+		return dao.updateStatus(new ArrayList<>(Collections.singleton(id)), status.name());
+	}
+
 	public int updateStatus(List<String> ids, String status) {
 
 		if (CollectionUtils.isEmpty(ids)) {
@@ -122,6 +135,22 @@ public class MaochePushTaskService extends CrudService<MaochePushTaskDao, Maoche
 
 
 		return dao.updateStatusById(id, oldStatusEnum.name(), newStatusEnum.name());
+	}
+
+	public int updateStatus(List<String> ids, String status, Date publishDate) {
+
+		if (CollectionUtils.isEmpty(ids)) {
+			return 0;
+		}
+
+		TaskStatusEnum statusEnum = TaskStatusEnum.getByName(status);
+		if (statusEnum == null) {
+			return 0;
+		}
+
+		ids = ids.stream().filter(Objects::nonNull).distinct().collect(Collectors.toList());
+
+		return dao.updateStatusPublishDate(ids, statusEnum.name(), DateTimeUtils.getStringDate(publishDate));
 	}
 
 	public boolean finishPushTask(MaochePushTaskDO taskDO) {

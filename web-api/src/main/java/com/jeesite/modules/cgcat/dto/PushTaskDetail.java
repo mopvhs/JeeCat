@@ -17,9 +17,15 @@ public class PushTaskDetail implements Serializable {
 
     private String status;
 
+    private String title;
+
+    private String subTitle;
+
     private UnionProductTO product;
 
-    private String content;
+    private String detail;
+
+    private String img;
 
     private Date finishedDate;
 

@@ -192,4 +192,10 @@ public class CatUnionProductCondition implements Serializable {
     private String prefixSkuCompareDesc;
     @EsItemAspect(queryType = "existsQuery", field = "priceChartSkuBases.compareDesc")
     private Boolean hadSkuCompareDesc;
+
+    /**
+     * 0 无
+     * 1 只看有券
+     */
+    private Integer onlyCoupon;
 }

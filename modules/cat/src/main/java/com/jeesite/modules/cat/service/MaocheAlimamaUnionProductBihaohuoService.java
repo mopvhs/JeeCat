@@ -2,9 +2,11 @@ package com.jeesite.modules.cat.service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.Lists;
+import com.jeesite.common.lang.StringUtils;
 import com.jeesite.common.utils.JsonUtils;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductPriceChartDO;
 import lombok.extern.slf4j.Slf4j;
@@ -91,17 +93,22 @@ public class MaocheAlimamaUnionProductBihaohuoService extends CrudService<Maoche
 		if (CollectionUtils.isEmpty(iids)) {
 			return new ArrayList<>();
 		}
-		iids = iids.stream().distinct().collect(Collectors.toList());
+		iids = iids.stream().filter(StringUtils::isNotBlank).distinct().collect(Collectors.toList());
 
 		List<MaocheAlimamaUnionProductBihaohuoDO> words = new ArrayList<>();
 		// 循环拿
 		List<List<String>> partition = Lists.partition(iids, 20);
 		for (List<String> p : partition) {
 			try {
-				List<MaocheAlimamaUnionProductBihaohuoDO> list = dao.listLatestChartPrices(p);
-				if (CollectionUtils.isEmpty(list)) {
+				List<Long> ids = dao.listLatestChartPricesId(p);
+
+				if (CollectionUtils.isEmpty(ids)) {
 					continue;
 				}
+				MaocheAlimamaUnionProductBihaohuoDO query = new MaocheAlimamaUnionProductBihaohuoDO();
+				query.setUiid_in(ids);
+				List<MaocheAlimamaUnionProductBihaohuoDO> list = dao.findList(query);
+
 				words.addAll(list);
 			} catch (Exception e) {
 				log.error("listLatestChartPrices 异常 iids:{}", JsonUtils.toJSONString(p), e);

@@ -17,7 +17,7 @@ import com.jeesite.common.ueditor.define.State;
 
 public class FileManager {
 
-	public static final String USERFILES_BASE_URL = "/userfiles/";
+	public static final String USERFILES_BASE_URL = "/var/www/assets/";
 	
 	private String dir = null;
 	private String rootPath = null;

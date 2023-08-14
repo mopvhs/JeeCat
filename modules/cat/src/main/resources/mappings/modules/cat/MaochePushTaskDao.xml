@@ -33,6 +33,19 @@
 		</where>
 	</update>
 
+	<update id="updateStatusPublishDate">
+		UPDATE maoche_push_task
+		SET
+			status = #{status},
+			publish_date = #{publishDate}
+		<where>
+			id in
+			<foreach collection="ids" item="id" close=")" open="(" separator=",">
+				#{id}
+			</foreach>
+		</where>
+	</update>
+
 	<select id="queryByStatus" resultType="MaochePushTaskDO">
 		select * from maoche_push_task
 		<where>

@@ -2,6 +2,8 @@ package com.jeesite.modules.cat.entity;
 
 import javax.validation.constraints.Size;
 import java.util.Date;
+import java.util.List;
+
 import com.jeesite.common.mybatis.annotation.JoinTable;
 import com.jeesite.common.mybatis.annotation.JoinTable.Type;
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -10,6 +12,7 @@ import com.jeesite.common.entity.DataEntity;
 import com.jeesite.common.mybatis.annotation.Column;
 import com.jeesite.common.mybatis.annotation.Table;
 import com.jeesite.common.mybatis.mapper.query.QueryType;
+import com.jeesite.common.mybatis.mapper.query.QueryWhere;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
@@ -157,6 +160,10 @@ public class MaocheAlimamaUnionProductBihaohuoDO extends DataEntity<MaocheAlimam
 
 	public void setSyncDate(Date syncDate) {
 		this.syncDate = syncDate;
+	}
+
+	public void setUiid_in(List<Long> ids) {
+		this.sqlMap.getWhere().and("id", QueryType.IN, ids);
 	}
 	
 }

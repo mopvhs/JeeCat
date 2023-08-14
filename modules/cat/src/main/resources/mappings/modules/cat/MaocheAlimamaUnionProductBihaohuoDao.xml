@@ -12,23 +12,15 @@
 		ORDER BY ${sqlMap.order.toSql()}
 	</select> -->
 
-	<select id="listLatestChartPrices" resultType="MaocheAlimamaUnionProductBihaohuoDO">
-		select
-		*
-		from
-		maoche_alimama_union_product_bihaohuo
+	<select id="listLatestChartPricesId" resultType="java.lang.Long">
+		select max(id) as id
+		from maoche_alimama_union_product_bihaohuo
 		<where>
-			id in (
-			select max(id)
-			from maoche_alimama_union_product_bihaohuo
-			<where>
-				iid in
-				<foreach collection="iids" item="iid" close=")" open="(" separator=",">
-					#{iid}
-				</foreach>
-				group by iid
-			</where>
-			)
+			iid in
+			<foreach collection="iids" item="iid" close=")" open="(" separator=",">
+				#{iid}
+			</foreach>
+			group by iid
 		</where>
 	</select>
 </mapper>

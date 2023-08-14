@@ -32,6 +32,7 @@ import com.jeesite.modules.cat.service.cg.task.PushTaskBizService;
 import com.jeesite.modules.cgcat.dto.PushTaskDetail;
 import com.jeesite.modules.cgcat.dto.PushTaskEditRequest;
 import com.jeesite.modules.cgcat.dto.PushTaskResponse;
+import com.jeesite.modules.cgcat.dto.TaskDetail;
 import com.jeesite.modules.cgcat.dto.TaskEditRequest;
 import com.jeesite.modules.cgcat.dto.TaskRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -44,6 +45,7 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -90,7 +92,6 @@ public class CgMaocheTaskController {
             return page;
         }
 
-
         Page<MaocheTaskDO> toPage = new Page<>(page.getPageNo() + 1, page.getPageSize(), total, servicePage);
 
         return toPage;
@@ -102,12 +103,12 @@ public class CgMaocheTaskController {
     public Result<String> createTask(TaskRequest request) {
 
         if (request == null) {
-            return null;
+            return Result.ERROR(500, "参数错误");
         }
 
         List<Long> ids = request.getProductIds();
         if (CollectionUtils.isEmpty(ids)) {
-            return null;
+            return Result.ERROR(500, "参数错误");
         }
         ids = ids.stream().distinct().collect(Collectors.toList());
 
@@ -117,7 +118,7 @@ public class CgMaocheTaskController {
         // 1. 索引数据
         ElasticSearchData<CarAlimamaUnionProductIndex, CatProductBucketTO> searchData = cgUnionProductService.searchProduct(condition, null, 0, ids.size());
         if (searchData == null || CollectionUtils.isEmpty(searchData.getDocuments())) {
-            return null;
+            return Result.ERROR(401, "商品不存在");
         }
         CarAlimamaUnionProductIndex index = searchData.getDocuments().get(0);
         // 猫粮 - 零食罐 价格 - 价格
@@ -137,7 +138,7 @@ public class CgMaocheTaskController {
         task.setSwitchDate(new Date());
         task.setTimeType(TimeTypeEnum.NOW.name());
         task.setPublishDate(new Date());
-        task.setContent(JsonUtils.toJSONString());
+        task.setContent(JsonUtils.toJSONString(content));
         task.setStatus(TaskStatusEnum.NORMAL.name());
         task.setCreateBy("admin");
         task.setUpdateBy("admin");
@@ -147,7 +148,7 @@ public class CgMaocheTaskController {
         maocheTaskService.save(task);
 
         if (StringUtils.isBlank(task.getId())) {
-            return null;
+            return Result.ERROR(402, "任务创建失败");
         }
 
         List<MaochePushTaskDO> pushTasks = new ArrayList<>();
@@ -165,7 +166,7 @@ public class CgMaocheTaskController {
                 pushTaskDO.setTaskId(task.getId());
                 pushTaskDO.setResourceId(String.valueOf(id));
                 pushTaskDO.setResourceType("PRODUCT");
-                pushTaskDO.setPushType(PushTypeEnum.SCHEDULE.name());
+                pushTaskDO.setPushType("");
                 pushTaskDO.setPublishDate(new Date());
                 pushTaskDO.setStatus(TaskStatusEnum.INIT.name());
 
@@ -189,7 +190,7 @@ public class CgMaocheTaskController {
     }
 
     // 获取任务详情
-    @RequestMapping(value = "/push/task/detail")
+    @RequestMapping(value = "/push/task/detail/get")
     @ResponseBody
     public Result<?> taskDetail(TaskRequest request) {
         if (request == null || StringUtils.isBlank(request.getTaskId())) {
@@ -201,6 +202,12 @@ public class CgMaocheTaskController {
         query.setTaskId(request.getTaskId());
         List<MaochePushTaskDO> pushTasks = maochePushTaskService.queryList(query);
         if (CollectionUtils.isEmpty(pushTasks)) {
+            return Result.ERROR(404, "推送任务不存在");
+        }
+
+        // 任务
+        MaocheTaskDO task = maocheTaskService.get(request.getTaskId());
+        if (task == null) {
             return Result.ERROR(404, "任务不存在");
         }
 
@@ -229,8 +236,14 @@ public class CgMaocheTaskController {
             if (productTO == null) {
                 continue;
             }
+
+            if (TaskStatusEnum.DELETE.name().equals(push.getStatus())) {
+                continue;
+            }
             PushTaskDetail detail = new PushTaskDetail();
             detail.setId(push.getId());
+            detail.setTitle(push.getTitle());
+            detail.setSubTitle(push.getSubTitle());
             detail.setStatus(push.getStatus());
             detail.setProduct(productTO);
             detail.setFinishedDate(push.getFinishedDate());
@@ -240,14 +253,22 @@ public class CgMaocheTaskController {
             PushTaskContentDetail taskContent = JsonUtils.toReferenceType(push.getContent(), new TypeReference<PushTaskContentDetail>() {
             });
             if (taskContent != null) {
-                detail.setContent(taskContent.getDetail());
+                detail.setDetail(taskContent.getDetail());
+                detail.setImg(taskContent.getImg());
             }
 
             pushTaskDetails.add(detail);
         }
 
+        TaskDetail taskDetail = new TaskDetail();
+        taskDetail.setTitle(task.getTitle());
+        taskDetail.setSubTitle(task.getSubTitle());
+        taskDetail.setTimeType(task.getTimeType());
+        taskDetail.setPublishDate(task.getPublishDate());
+
         PushTaskResponse response = new PushTaskResponse();
         response.setTaskId(request.getTaskId());
+        response.setTask(taskDetail);
         response.setDetails(pushTaskDetails);
 
         return Result.OK(response);
@@ -294,7 +315,7 @@ public class CgMaocheTaskController {
         query.setId(request.getId());
         MaochePushTaskDO pushTask = maochePushTaskService.get(query);
         if (pushTask == null) {
-            return Result.ERROR(404, "推送任务不存在");
+            return Result.ERROR(404, "推送任务不存在，查询不到具体的推送任务");
         }
 
         String content = pushTask.getContent();
@@ -306,9 +327,10 @@ public class CgMaocheTaskController {
             });
         }
 
-        pushTask.setTitle(request.getTitle());
-//        pushTask.setPushType(request.getPushType());
-//        pushTask.setPublishDate(request.getPublishDate());
+        taskContent.setDetail(request.getDetail());
+        taskContent.setImg(request.getImg());
+
+        pushTask.setPushType(request.getPushType());
         pushTask.setContent(JsonUtils.toJSONString(taskContent));
 
         maochePushTaskService.update(pushTask);
@@ -349,8 +371,10 @@ public class CgMaocheTaskController {
         content.append("整段复制后打开🍑查车，长按我头像@我+产品名~");
 
         PushTaskContentDetail detail = new PushTaskContentDetail();
-
+        // 发送文本
         detail.setDetail(content.toString());
+        // 发送的图片地址
+        detail.setImg(index.getProductImage());
 
         return detail;
     }
@@ -394,9 +418,7 @@ public class CgMaocheTaskController {
             return Result.ERROR(404, "推送任务不存在");
         }
 
-        pushTask.setStatus(TaskStatusEnum.DELETE.name());
-
-        maochePushTaskService.updateStatus(pushTask);
+        maochePushTaskService.updateStatus(pushTask.getId(), TaskStatusEnum.DELETE);
 
         return Result.OK("更新成功");
     }
@@ -433,23 +455,17 @@ public class CgMaocheTaskController {
 
         // 过滤已经删除的任务和已经完成的任务
         List<MaochePushTaskDO> taskDOS = pushtaskList.stream()
-                .filter(i -> !TaskStatusEnum.STOP.name().equals(i.getStatus()) && !TaskStatusEnum.FINISHED.name().equals(i.getStatus()))
+                .filter(i -> !TaskStatusEnum.DELETE.name().equals(i.getStatus()) && !TaskStatusEnum.FINISHED.name().equals(i.getStatus()))
                 .toList();
 
         if (CollectionUtils.isEmpty(taskDOS)) {
-            return Result.ERROR(404, "推送任务不存在");
+            return Result.ERROR(404, "有效推送任务不存在");
         }
 
         // 如果是关闭的话，直接关闭
         if (TaskSwitchEnum.CLOSE == switchEnum) {
-            task.setTaskSwitch(TaskSwitchEnum.CLOSE.name());
-            maocheTaskService.updateStatus(task);
+            maocheTaskService.updateStatusSwitch(task.getId(), TaskStatusEnum.STOP, TaskSwitchEnum.CLOSE);
             // 把所有的都改成停止
-            for (MaochePushTaskDO push : taskDOS) {
-                push.setStatus(TaskStatusEnum.STOP.name());
-                // 更新
-                maochePushTaskService.update(push);
-            }
             List<String> pushIds = taskDOS.stream().map(MaochePushTaskDO::getId).toList();
             maochePushTaskService.updateStatus(pushIds, TaskStatusEnum.STOP.name());
 
@@ -464,11 +480,8 @@ public class CgMaocheTaskController {
             // 获取到时 分
             Date time = DateTimeUtils.getTodyDate(publishDate);
             for (MaochePushTaskDO push : taskDOS) {
-                push.setStatus(TaskStatusEnum.NORMAL.name());
-                push.setPublishDate(time);
-
                 // 更新
-                maochePushTaskService.update(push);
+                maochePushTaskService.updateStatus(new ArrayList<>(Collections.singletonList(push.getId())), TaskStatusEnum.NORMAL.name(), time);
 
                 time = new Date(time.getTime() + 86400000L);
             }
@@ -478,19 +491,12 @@ public class CgMaocheTaskController {
             if (task.getTimeType().equals(TimeTypeEnum.SCHEDULE.name())) {
                 time = request.getPublishDate();
             }
-            for (MaochePushTaskDO push : taskDOS) {
-                push.setStatus(TaskStatusEnum.NORMAL.name());
-                push.setPublishDate(time);
 
-                // 更新
-                maochePushTaskService.update(push);
-            }
+            List<String> ids = taskDOS.stream().map(MaochePushTaskDO::getId).collect(Collectors.toList());
+            maochePushTaskService.updateStatus(ids, TaskStatusEnum.NORMAL.name(), time);
         }
 
-        task.setTaskSwitch(request.getTaskSwitch());
-        task.setStatus(TaskStatusEnum.NORMAL.name());
-        maocheTaskService.update(task);
-
+        maocheTaskService.openTask(task.getId());
         return Result.OK("更新成功");
     }
 

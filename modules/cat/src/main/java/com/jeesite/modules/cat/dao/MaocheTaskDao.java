@@ -15,9 +15,15 @@ import java.util.List;
 @MyBatisDao
 public interface MaocheTaskDao extends CrudDao<MaocheTaskDO> {
 
+    List<MaocheTaskDO> listByIds(@Param("ids") List<String> ids);
+
     List<MaocheTaskDO> getPage(int offset, int pageSize);
 
     int getTotal();
 
     int finishTask(@Param("id") String id, @Param("finishedDate") String finishedDate);
+
+    int openTask(@Param("id") String id);
+
+    int updateStatusSwitch(@Param("id") String id, @Param("status") String status, @Param("taskSwitch") String taskSwitch);
 }

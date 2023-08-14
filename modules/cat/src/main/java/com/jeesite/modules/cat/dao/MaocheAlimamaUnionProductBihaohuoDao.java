@@ -16,6 +16,6 @@ import java.util.List;
 @MyBatisDao
 public interface MaocheAlimamaUnionProductBihaohuoDao extends CrudDao<MaocheAlimamaUnionProductBihaohuoDO> {
 
-    List<MaocheAlimamaUnionProductBihaohuoDO> listLatestChartPrices(@Param("iids") List<String> iids);
+    List<Long> listLatestChartPricesId(@Param("iids") List<String> iids);
 
 }

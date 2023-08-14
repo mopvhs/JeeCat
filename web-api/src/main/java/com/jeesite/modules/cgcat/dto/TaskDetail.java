@@ -7,26 +7,31 @@ import java.io.Serializable;
 import java.util.Date;
 
 @Data
-public class TaskEditRequest implements Serializable {
+public class TaskDetail implements Serializable {
 
     @Serial
-    private static final long serialVersionUID = -6778366001072499403L;
+    private static final long serialVersionUID = 8839472228226038841L;
 
-    private String id;
-
+    /**
+     * 任务名称
+     */
     private String title;
 
-    // 开关状态
-    private String taskSwitch;
+    /**
+     * 推送名称
+     */
+    private String subTitle;
+
+    /**
+     * 发布方式
+     * {@link com.jeesite.modules.cat.enums.task.TimeTypeEnum}
+     */
+    private String timeType;
 
     /**
      * 发布时间
      */
     private Date publishDate;
 
-    /**
-     * 发布时间类型
-     * {@link com.jeesite.modules.cat.enums.task.TimeTypeEnum}
-     */
-    private String timeType;
+
 }

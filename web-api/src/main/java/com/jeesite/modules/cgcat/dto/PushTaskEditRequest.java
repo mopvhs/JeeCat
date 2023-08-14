@@ -15,15 +15,12 @@ public class PushTaskEditRequest implements Serializable {
 
     private String id;
 
-    private String title;
-
-    private String status;
+    /**
+     * {@link com.jeesite.modules.cat.enums.task.PushTypeEnum}
+     */
+    private String pushType;
 
     private String detail;
 
-//    private Date finishedDate;
-
-//    private Date publishDate;
-
-//    private String pushType;
+    private String img;
 }

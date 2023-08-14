@@ -1,5 +1,6 @@
 package com.jeesite.modules.cat.service;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -7,6 +8,8 @@ import com.jeesite.common.lang.StringUtils;
 import com.jeesite.common.utils.DateTimeUtils;
 import com.jeesite.modules.cat.entity.MaochePushTaskDO;
 import com.jeesite.modules.cat.enums.task.TaskStatusEnum;
+import com.jeesite.modules.cat.enums.task.TaskSwitchEnum;
+import org.apache.commons.collections.CollectionUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -105,6 +108,33 @@ public class MaocheTaskService extends CrudService<MaocheTaskDao, MaocheTaskDO> 
 		return dao.getTotal();
 	}
 
+	public boolean updateStatusSwitch(String id, TaskStatusEnum statusEnum, TaskSwitchEnum taskSwitchEnum) {
+		if (StringUtils.isBlank(id) || statusEnum == null || taskSwitchEnum == null) {
+			return false;
+		}
+
+		return dao.updateStatusSwitch(id, statusEnum.name(), taskSwitchEnum.name()) > 0;
+	}
+
+	public boolean openTask(String id) {
+		if (StringUtils.isBlank(id)) {
+			return false;
+		}
+
+		MaocheTaskDO query = new MaocheTaskDO();
+		query.setId(id);
+		MaocheTaskDO taskDO = dao.get(query);
+		TaskStatusEnum statusEnum = TaskStatusEnum.getByName(taskDO.getStatus());
+		if (statusEnum == null) {
+			return false;
+		}
+		if (statusEnum == TaskStatusEnum.FINISHED || statusEnum == TaskStatusEnum.EXCEPTION || statusEnum == TaskStatusEnum.DELETE) {
+			return false;
+		}
+
+		return dao.openTask(taskDO.getId()) > 0;
+	}
+
 	public boolean finishTask(String id) {
 		if (StringUtils.isBlank(id)) {
 			return false;
@@ -123,6 +153,14 @@ public class MaocheTaskService extends CrudService<MaocheTaskDao, MaocheTaskDO> 
 		}
 
 		return dao.finishTask(taskDO.getId(), DateTimeUtils.getStringDate(new Date())) > 0;
+	}
+
+	public List<MaocheTaskDO> listByIds(List<String> ids) {
+		if (CollectionUtils.isEmpty(ids)) {
+			return new ArrayList<>();
+		}
+
+		return dao.listByIds(ids);
 	}
 	
 }

@@ -14,5 +14,7 @@ public class PushTaskResponse implements Serializable {
 
     private String taskId;
 
+    private TaskDetail task;
+
     private List<PushTaskDetail> details;
 }

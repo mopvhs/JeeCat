@@ -164,6 +164,11 @@ public class CgProductController {
         // 选品库都是审核通过的商品
         condition.setAuditStatus(AuditStatusEnum.PASS.getStatus());
 
+        if (condition.getOnlyCoupon() != null && condition.getOnlyCoupon().equals(1)) {
+            condition.setGteCoupon(1L);
+            condition.setGteCouponRemainCount(1L);
+        }
+
         // 类目兼容处理
         List<String> relationRootNames = maocheCategoryMappingService.getRelationRootName(condition.getLevelOneCategoryName());
         if (CollectionUtils.isNotEmpty(relationRootNames)) {
@@ -459,7 +464,7 @@ public class CgProductController {
         return Result.OK("入库完成，但存在上架失败商品，原因是：详情数据为空 失败商品id为：" + JsonUtils.toJSONString(noUpdateIds));
     }
 
-    // 审核状态变更
+    // 利益点
     @RequestMapping(value = "/product/custom/benefit/edit")
     @ResponseBody
     public Result<Object> editProductCustomBenefit(@RequestBody ProductAuditRequest request) {

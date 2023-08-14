@@ -1,6 +1,15 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.jeesite.modules.cat.dao.MaocheTaskDao">
+
+	<select id="listByIds" resultType="MaocheTaskDO">
+		SELECT *
+		from maoche_task
+		WHERE id IN
+		<foreach collection="ids" item="id" open="(" separator="," close=")">
+			#{id}
+		</foreach>
+	</select>
 	
 	<!-- 查询数据 -->
 	<select id="getPage" resultType="MaocheTaskDO">
@@ -20,6 +29,24 @@
 		UPDATE maoche_task
 		SET status = "FINISHED",
 		finished_date = #{finishedDate}
+		<where>
+			id = #{id}
+		</where>
+	</update>
+
+	<update id="openTask">
+		UPDATE maoche_task
+		SET status = "NORMAL",
+		task_switch = "OPEN"
+		<where>
+			id = #{id}
+		</where>
+	</update>
+
+	<update id="updateStatusSwitch">
+		UPDATE maoche_task
+		SET status = #{status},
+		task_switch = #{taskSwitch}
 		<where>
 			id = #{id}
 		</where>
