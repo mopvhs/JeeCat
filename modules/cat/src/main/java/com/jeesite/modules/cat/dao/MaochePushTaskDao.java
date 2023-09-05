@@ -3,6 +3,7 @@ package com.jeesite.modules.cat.dao;
 import com.jeesite.common.dao.CrudDao;
 import com.jeesite.common.mybatis.annotation.MyBatisDao;
 import com.jeesite.modules.cat.entity.MaochePushTaskDO;
+import com.jeesite.modules.cat.entity.meta.TaskStatusCount;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
@@ -24,5 +25,7 @@ public interface MaochePushTaskDao extends CrudDao<MaochePushTaskDO> {
     int updateStatusPublishDate(@Param("ids") List<String> ids, @Param("status") String status, @Param("publishDate") String publishDate);
 
     List<MaochePushTaskDO> queryByStatus(@Param("status") String status, @Param("publishDate") String publishDate, @Param("limit") int limit);
+
+    List<TaskStatusCount> countResourceStatus(@Param("resourceIds") List<String> resourceIds, @Param("resourceType") String resourceType, @Param("status") String status);
 	
 }

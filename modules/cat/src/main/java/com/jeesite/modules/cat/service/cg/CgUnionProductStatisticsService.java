@@ -45,9 +45,11 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -254,12 +256,15 @@ public class CgUnionProductStatisticsService {
 
         // 获取所有的群
         List<QwChatroomInfoDO> qwChatroomInfoDOS = qwChatroomInfoService.listByOwnerId("1688856684429282");
-
+        Set<String> filter = new HashSet<>();
         try {
             for (QwChatroomInfoDO qwChatroomInfoDO : qwChatroomInfoDOS) {
 //                if (!qwChatroomInfoDO.getId().equals("68")) {
 //                    continue;
 //                }
+                if (!filter.add(qwChatroomInfoDO.getRoomChatId())) {
+                    continue;
+                }
                 String roomChatId = qwChatroomInfoDO.getRoomChatId();
                 qwService.send(UNIQUE_ID, textMap(header, roomChatId));
                 Thread.sleep(3500);
@@ -613,12 +618,15 @@ public class CgUnionProductStatisticsService {
 
         // 获取所有的群
         List<QwChatroomInfoDO> qwChatroomInfoDOS = qwChatroomInfoService.listByOwnerId("1688856684429282");
-
+        Set<String> filter = new HashSet<>();
         try {
             for (QwChatroomInfoDO qwChatroomInfoDO : qwChatroomInfoDOS) {
 //                if (!qwChatroomInfoDO.getId().equals("68")) {
 //                    continue;
 //                }
+                if (!filter.add(qwChatroomInfoDO.getRoomChatId())) {
+                    continue;
+                }
                 String roomChatId = qwChatroomInfoDO.getRoomChatId();
                 qwService.send(UNIQUE_ID, textMap(header, roomChatId));
                 Thread.sleep(3500);

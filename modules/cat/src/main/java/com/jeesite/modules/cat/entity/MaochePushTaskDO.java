@@ -31,7 +31,7 @@ import com.jeesite.common.shiro.realms.IiIiIiiIiiii;
 		@Column(name="resource_type", attrName="resourceType", label="资源类型"),
 		@Column(includeEntity=DataEntity.class),
 		@Column(name="content", attrName="content", label="内容"),
-	}, orderBy="a.update_date DESC"
+	}, orderBy="a.id ASC"
 )
 public class MaochePushTaskDO extends DataEntity<MaochePushTaskDO> {
 	
@@ -145,5 +145,9 @@ public class MaochePushTaskDO extends DataEntity<MaochePushTaskDO> {
 	public void setPublishDate_lte(Date date) {
 		this.sqlMap.getWhere().and("publish_date", QueryType.LTE, date);
 	}
-	
+
+	public void setTaskId_in(String[] taskIds) {
+		this.sqlMap.getWhere().and("task_id", QueryType.IN, taskIds);
+	}
+
 }

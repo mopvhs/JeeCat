@@ -12,9 +12,12 @@ import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductDetailDO;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionTitleKeywordDO;
 import com.jeesite.modules.cat.entity.MaocheCategoryMappingDO;
 import com.jeesite.modules.cat.entity.MaocheCategoryProductRelDO;
+import com.jeesite.modules.cat.entity.MaochePushTaskDO;
+import com.jeesite.modules.cat.entity.meta.TaskStatusCount;
 import com.jeesite.modules.cat.enums.AuditStatusEnum;
 import com.jeesite.modules.cat.enums.CatActivityEnum;
 import com.jeesite.modules.cat.enums.SaleStatusEnum;
+import com.jeesite.modules.cat.enums.task.TaskStatusEnum;
 import com.jeesite.modules.cat.es.config.es7.ElasticSearch7Service;
 import com.jeesite.modules.cat.es.config.model.ElasticSearchData;
 import com.jeesite.modules.cat.helper.CatAggHelper;
@@ -33,6 +36,7 @@ import com.jeesite.modules.cat.service.MaocheAlimamaUnionProductService;
 import com.jeesite.modules.cat.service.MaocheCategoryMappingService;
 import com.jeesite.modules.cat.service.MaocheCategoryProductRelService;
 import com.jeesite.modules.cat.service.MaocheCategoryService;
+import com.jeesite.modules.cat.service.MaochePushTaskService;
 import com.jeesite.modules.cat.service.cg.CgUnionProductService;
 import com.jeesite.modules.cgcat.dto.ProductCategoryVO;
 import lombok.extern.slf4j.Slf4j;
@@ -89,6 +93,9 @@ public class CgProductController {
 
     @Resource
     private MaocheCategoryMappingService maocheCategoryMappingService;
+
+    @Resource
+    private MaochePushTaskService maochePushTaskService;
 
 
     // 商品库
@@ -188,6 +195,25 @@ public class CgProductController {
         }
         long total = searchData.getTotal();
         List<UnionProductTO> productTOs = cgUnionProductService.listProductInfo(searchData);
+
+        // 获取到商品id
+        List<Long> productIds = productTOs.stream().map(UnionProductTO::getId).toList();
+        // 通过商品id查询任务信息
+        List<TaskStatusCount> countList = maochePushTaskService.countResourceStatus(productIds, "PRODUCT", TaskStatusEnum.FINISHED);
+        Map<String, TaskStatusCount> countMap = new HashMap<>();
+        if (CollectionUtils.isNotEmpty(countList)) {
+            countMap = countList.stream().collect(Collectors.toMap(TaskStatusCount::getResourceId, Function.identity(), (o1, o2) -> o1));
+        }
+
+        for (UnionProductTO product : productTOs) {
+            TaskStatusCount statusCount = countMap.get(String.valueOf(product.getId()));
+            long count = 0;
+            if (statusCount != null && statusCount.getCnt() != null) {
+                count = statusCount.getCnt();
+            }
+            product.setPushNum(count);
+        }
+
         Page<UnionProductTO> toPage = new Page<>(page.getPageNo() + 1, page.getPageSize(), total, productTOs);
 
         return toPage;

@@ -255,7 +255,7 @@ public class CgProductPushController {
 
         if (messagePushTO.getOnlyPriceChart() != null && messagePushTO.getOnlyPriceChart().equals(1)) {
             condition.setPriceChart(1L);
-            condition.setGtePriceChartSyncTime(DateTimeUtils.earliestTimeToday(System.currentTimeMillis()) - 86400000L);
+//            condition.setGtePriceChartSyncTime(DateTimeUtils.earliestTimeToday(System.currentTimeMillis()) - 86400000L);
         }
 
         long cidOne = NumberUtils.toLong(messagePushTO.getCidOne());
@@ -475,9 +475,12 @@ public class CgProductPushController {
             return Result.ERROR(404, "参数错误");
         }
 
-        String apiUrl = cgUnionProductService.getEApiUrl("V73687541H40026415", request.getItemId(), "mm_30153430_909250463_109464700418");
+        Result<String> eApiUrl = cgUnionProductService.getEApiUrl("V73687541H40026415", request.getItemId(), "mm_30153430_909250463_109464700418");
+        if (!Result.isOK(eApiUrl)) {
+            return eApiUrl;
+        }
 
-        return Result.OK(apiUrl);
+        return Result.OK(eApiUrl.getResult());
     }
 
     // 历史查询记录

@@ -8,6 +8,7 @@ import com.google.common.collect.Lists;
 import com.jeesite.common.lang.NumberUtils;
 import com.jeesite.common.lang.StringUtils;
 import com.jeesite.common.utils.JsonUtils;
+import com.jeesite.common.web.Result;
 import com.jeesite.modules.cat.common.MtxHttpClientUtils;
 import com.jeesite.modules.cat.dao.MaocheAlimamaUnionProductDao;
 import com.jeesite.modules.cat.dao.MaocheAlimamaUnionTitleKeywordDao;
@@ -421,7 +422,7 @@ public class CgUnionProductService {
     }
 
     // 获取转链链接
-    public String getEApiUrl(String vekey, String itemId, String pid) {
+    public Result<String> getEApiUrl(String vekey, String itemId, String pid) {
         CloseableHttpClient httpClient = MtxHttpClientUtils.getHttpsClient();
 
         String method = "GET";
@@ -435,6 +436,7 @@ public class CgUnionProductService {
         builder.setUri(url);
 
         String res = "";
+        String errorMsg = "查询失败";
         try {
             CloseableHttpResponse response = httpClient.execute(builder.build());
             HttpEntity entity = response.getEntity();
@@ -446,6 +448,14 @@ public class CgUnionProductService {
                 if (data != null) {
                     res = data.getString("tbk_pwd");
                 }
+                Object o = jsonObject.get("msg");
+                if (o instanceof String) {
+                    errorMsg = (String) o;
+                }
+            }
+            // 说明错误了
+            if (StringUtils.isBlank(res)) {
+                return Result.ERROR(500, errorMsg);
             }
         } catch (Exception e) {
             log.error("getAuthUrl 获取授权地址失败", e);
@@ -460,7 +470,7 @@ public class CgUnionProductService {
             res += "/ CA21,)/ AC01";
         }
 
-        return res;
+        return Result.OK(res);
     }
 
     /**

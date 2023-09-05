@@ -162,5 +162,23 @@ public class MaocheTaskService extends CrudService<MaocheTaskDao, MaocheTaskDO> 
 
 		return dao.listByIds(ids);
 	}
+
+	public boolean createTask(MaocheTaskDO task) {
+		if (task == null) {
+			return false;
+		}
+
+		task.setCreateBy("admin");
+		task.setUpdateBy("admin");
+		task.setCreateDate(new Date());
+		task.setUpdateDate(new Date());
+		task.setStatus(TaskStatusEnum.NORMAL.name());
+		task.setTaskSwitch(TaskSwitchEnum.CLOSE.name());
+		task.setSwitchDate(null);
+
+		super.save(task);
+
+		return StringUtils.isNotBlank(task.getId());
+	}
 	
 }

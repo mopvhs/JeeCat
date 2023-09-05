@@ -285,13 +285,17 @@ public class DateTimeUtils {
 
 	public static void main(String[] args) {
 
-		int hour = 1;
-		int min = 1;
 
-
-		Date date = buildDate(hour, min, 0);
-
-		System.out.println(date.toString());
+		String date = "2023-08-17 00:00:00";
+		Date time = getTodyDate(new Date(1692201600000L));
+		// 从第二天开始
+		time = new Date(time.getTime() + 86400000L);
+		System.out.println(getStringDate(time));
+		for (int i = 0; i < 4; i++) {
+			// 从第二天开始
+			time = new Date(time.getTime() + 86400000L);
+			System.out.println(getStringDate(time));
+		}
 	}
 
 	/**
@@ -300,12 +304,12 @@ public class DateTimeUtils {
 	 * @param n
 	 * @return
 	 */
-	public static long getHour(Date n) {
+	public static long getHourOfDay(Date n) {
 		Calendar c = Calendar.getInstance();
 
 		c.setTimeInMillis(n.getTime());
 
-		return c.get(Calendar.HOUR);
+		return c.get(Calendar.HOUR_OF_DAY);
 	}
 
 	/**
@@ -334,30 +338,19 @@ public class DateTimeUtils {
 		return c.get(Calendar.SECOND);
 	}
 
-
-	/**
-	 * 获取某天00:00:00时间
-	 *
-	 * @param hour
-	 * @param minute
-	 * @return
-	 */
-	public static Date buildDate(int hour, int minute, int second) {
-		Calendar now = Calendar.getInstance();
-		now.setTime(now.getTime());
-		now.set(Calendar.HOUR_OF_DAY, hour);
-		now.set(Calendar.MINUTE, minute);
-		now.set(Calendar.SECOND, second);
-
-		return now.getTime();
-	}
-
 	public static Date getTodyDate(Date time) {
 
 		Calendar c = Calendar.getInstance();
 		c.setTimeInMillis(time.getTime());
 
-		return buildDate(c.get(Calendar.HOUR), c.get(Calendar.MINUTE), c.get(Calendar.SECOND));
+
+		Calendar now = Calendar.getInstance();
+		now.setTime(now.getTime());
+		now.set(Calendar.HOUR_OF_DAY, c.get(Calendar.HOUR_OF_DAY));
+		now.set(Calendar.MINUTE, c.get(Calendar.MINUTE));
+		now.set(Calendar.SECOND, c.get(Calendar.SECOND));
+
+		return now.getTime();
 	}
 
 }

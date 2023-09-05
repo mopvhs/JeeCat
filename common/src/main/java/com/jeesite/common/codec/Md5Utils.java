@@ -9,13 +9,17 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.RandomAccessFile;
 import java.io.UnsupportedEncodingException;
+import java.net.URL;
 
 import com.jeesite.common.lang.StringUtils;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FileUtils;
 
 /**
  * MD5不可逆加密工具类
  * @author ThinkGem
  */
+@Slf4j
 public class Md5Utils {
 
 	private static final String MD5 = "MD5";
@@ -70,6 +74,51 @@ public class Md5Utils {
 	 */
 	public static String md5File(File file) {
 		return md5File(file, -1);
+	}
+
+	/**
+	 * 读取图片的MD5值
+	 */
+	public static String md5Image(String image) {
+
+//		StringBuilder result = new StringBuilder();
+//
+//		try {
+//			URL imgUrl = new URL(image);
+//			InputStream inputStream = imgUrl.openStream();
+//			byte[] imageBytes = inputStream.readAllBytes();
+//
+//			byte[] bytes = Md5Utils.md5(imageBytes);
+//			for (int i = 0; i < bytes.length; i++) {
+//				String tmp = Integer.toHexString(bytes[i] & 0xFF);
+//				if (tmp.length() == 1) {
+//					result = new StringBuilder("0" + tmp);
+//				} else {
+//					result.append(tmp);
+//				}
+//			}
+//
+//		} catch (Exception e) {
+//			log.error("获取图片MD5值失败:{}", image, e);
+//		}
+
+		File file = null;
+		try {
+			String key = System.currentTimeMillis() + ".png";
+			String tempPart = "/tmp/" + key;
+			URL url = new URL(image);
+			file = new File(tempPart);
+			FileUtils.copyInputStreamToFile(url.openStream(), file);
+			return Md5Utils.md5File(file);
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			if (file != null) {
+				file.delete();
+			}
+		}
+
+		return null;
 	}
 	
 	/**

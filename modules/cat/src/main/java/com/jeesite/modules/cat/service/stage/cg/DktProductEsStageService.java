@@ -129,7 +129,7 @@ public class DktProductEsStageService extends AbstractProductEsStage<ProductEsCo
         model.setBenefitDesc(itemInfo.getDesc());
         model.setItemDescription(itemDescription);
         // 商品主图
-        model.setMainPic(itemInfo.getMainPic());
+        model.setMainPic(ProductValueHelper.getProductImage(productContent));
         model.setReservePrice(reservePrice);
         model.setOriginalPrice(originalPrice);
         model.setCommissionRate(commissionRate);

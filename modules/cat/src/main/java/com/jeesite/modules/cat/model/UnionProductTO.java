@@ -138,4 +138,10 @@ public class UnionProductTO implements Serializable {
 
     // 自定义标签(new)
     private List<ProductTagTO> productTags;
+
+    // 自定义利益点
+    private String customBenefit;
+
+    // 已完成的任务推送次数
+    private Long pushNum;
 }

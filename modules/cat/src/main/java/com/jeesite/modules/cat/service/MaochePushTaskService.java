@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 
 import com.jeesite.common.lang.StringUtils;
 import com.jeesite.common.utils.DateTimeUtils;
+import com.jeesite.modules.cat.entity.meta.TaskStatusCount;
 import com.jeesite.modules.cat.enums.task.TaskStatusEnum;
 import org.apache.commons.collections.CollectionUtils;
 import org.beetl.ext.fn.StringUtil;
@@ -150,7 +151,9 @@ public class MaochePushTaskService extends CrudService<MaochePushTaskDao, Maoche
 
 		ids = ids.stream().filter(Objects::nonNull).distinct().collect(Collectors.toList());
 
-		return dao.updateStatusPublishDate(ids, statusEnum.name(), DateTimeUtils.getStringDate(publishDate));
+		String date = DateTimeUtils.getStringDate(publishDate);
+
+		return dao.updateStatusPublishDate(ids, statusEnum.name(), date);
 	}
 
 	public boolean finishPushTask(MaochePushTaskDO taskDO) {
@@ -168,5 +171,30 @@ public class MaochePushTaskService extends CrudService<MaochePushTaskDao, Maoche
 		}
 
 		return dao.finishPushTask(taskDO.getId(), DateTimeUtils.getStringDate(new Date())) > 0;
+	}
+
+	public List<MaochePushTaskDO> getByTaskIds(List<String> taskIds) {
+		if (CollectionUtils.isEmpty(taskIds)) {
+			return new ArrayList<>();
+		}
+		taskIds = taskIds.stream().distinct().collect(Collectors.toList());
+
+		MaochePushTaskDO query = new MaochePushTaskDO();
+		query.setTaskId_in(taskIds.toArray(new String[0]));
+
+		return dao.findList(query);
+	}
+
+	public List<TaskStatusCount> countResourceStatus(List<Long> resourceIds, String resourceType, TaskStatusEnum statusEnum) {
+		if (CollectionUtils.isEmpty(resourceIds) || StringUtils.isBlank(resourceType) || statusEnum == null) {
+			return new ArrayList<>();
+		}
+		resourceIds = resourceIds.stream().distinct().collect(Collectors.toList());
+
+//		List<String> tempIds = resourceIds.stream().map(i -> "'" + i + "'").toList();
+//		List<String> tempIds = resourceIds.stream().map(i -> "\"" + i + "\"").toList();
+		List<String> tempIds = resourceIds.stream().map(String::valueOf).toList();
+
+		return dao.countResourceStatus(tempIds, resourceType, statusEnum.name());
 	}
 }

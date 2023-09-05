@@ -67,4 +67,22 @@
 			status = "PUSHING"
 		</where>
 	</update>
+
+	<select id="countResourceStatus" resultType="com.jeesite.modules.cat.entity.meta.TaskStatusCount">
+		select
+			resource_id as resourceId,
+			resource_type as resourceType,
+			count(resource_id) as cnt
+		from maoche_push_task
+		where
+			status = #{status}
+			and
+			resource_type = #{resourceType}
+			and
+			resource_id in
+			<foreach collection="resourceIds" item="resourceId" close=")" open="(" separator=",">
+				#{resourceId}
+			</foreach>
+			group by resource_id
+	</select>
 </mapper>

@@ -15,4 +15,11 @@ public class PushTaskContentDetail implements Serializable {
 
     private String img;
 
+    public PushTaskContentDetail() {
+    }
+
+    public PushTaskContentDetail(String detail, String img) {
+        this.detail = detail;
+        this.img = img;
+    }
 }

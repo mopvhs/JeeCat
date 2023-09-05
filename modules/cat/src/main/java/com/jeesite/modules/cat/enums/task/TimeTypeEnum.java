@@ -9,6 +9,9 @@ public enum TimeTypeEnum {
 
     // 每日定时
     DAILY_SCHEDULE("每日定时发布"),
+
+    // 重复任务的每日定时
+    REPEAT_DAILY_SCHEDULE("重复的任务每日定时发布"),
     ;
 
     private String desc;
@@ -21,9 +24,9 @@ public enum TimeTypeEnum {
         return desc;
     }
 
-    public static TimeTypeEnum getByDesc(String desc) {
+    public static TimeTypeEnum getByName(String name) {
         for (TimeTypeEnum timeTypeEnum : TimeTypeEnum.values()) {
-            if (timeTypeEnum.getDesc().equals(desc)) {
+            if (timeTypeEnum.name().equals(name)) {
                 return timeTypeEnum;
             }
         }

@@ -10,7 +10,9 @@ public enum TaskStatusEnum {
 
     STOP("停止"),
 
-    FINISHED("完成"),
+    FINISHED("已发布"),
+
+    WAITING("待发布"),
 
     PUSHING("发布中"),
 

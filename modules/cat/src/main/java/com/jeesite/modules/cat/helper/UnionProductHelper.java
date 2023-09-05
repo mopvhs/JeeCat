@@ -179,6 +179,8 @@ public class UnionProductHelper {
 
             fillPriceInfo(product, index);
 
+            product.setCustomBenefit(index.getCustomBenefit());
+
             products.add(product);
         }
 

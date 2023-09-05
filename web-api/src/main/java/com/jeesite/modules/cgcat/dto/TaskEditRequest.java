@@ -16,6 +16,8 @@ public class TaskEditRequest implements Serializable {
 
     private String title;
 
+    private String subTitle;
+
     // 开关状态
     private String taskSwitch;
 

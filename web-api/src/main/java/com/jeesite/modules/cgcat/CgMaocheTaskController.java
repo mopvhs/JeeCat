@@ -10,7 +10,7 @@ import com.jeesite.common.web.Result;
 import com.jeesite.modules.cat.dao.MaocheAlimamaUnionProductDao;
 import com.jeesite.modules.cat.entity.MaochePushTaskDO;
 import com.jeesite.modules.cat.entity.MaocheTaskDO;
-import com.jeesite.modules.cat.enums.task.PushTypeEnum;
+import com.jeesite.modules.cat.enums.task.TaskResourceTypeEnum;
 import com.jeesite.modules.cat.enums.task.TaskStatusEnum;
 import com.jeesite.modules.cat.enums.task.TaskSwitchEnum;
 import com.jeesite.modules.cat.enums.task.TaskTypeEnum;
@@ -24,17 +24,20 @@ import com.jeesite.modules.cat.model.PriceChartSkuBaseTO;
 import com.jeesite.modules.cat.model.UnionProductTO;
 import com.jeesite.modules.cat.model.task.content.PushTaskContent;
 import com.jeesite.modules.cat.model.task.content.PushTaskContentDetail;
+import com.jeesite.modules.cat.model.task.dto.TaskRequest;
 import com.jeesite.modules.cat.service.MaocheAlimamaUnionProductService;
 import com.jeesite.modules.cat.service.MaochePushTaskService;
 import com.jeesite.modules.cat.service.MaocheTaskService;
 import com.jeesite.modules.cat.service.cg.CgUnionProductService;
 import com.jeesite.modules.cat.service.cg.task.PushTaskBizService;
+import com.jeesite.modules.cat.service.cg.task.PushTaskCreateService;
+import com.jeesite.modules.cat.service.cg.task.TaskSearchBizService;
 import com.jeesite.modules.cgcat.dto.PushTaskDetail;
 import com.jeesite.modules.cgcat.dto.PushTaskEditRequest;
 import com.jeesite.modules.cgcat.dto.PushTaskResponse;
+import com.jeesite.modules.cgcat.dto.TaskDTO;
 import com.jeesite.modules.cgcat.dto.TaskDetail;
 import com.jeesite.modules.cgcat.dto.TaskEditRequest;
-import com.jeesite.modules.cgcat.dto.TaskRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.stereotype.Controller;
@@ -75,11 +78,17 @@ public class CgMaocheTaskController {
     @Resource
     private MaocheTaskService maocheTaskService;
 
+    @Resource
+    private PushTaskCreateService pushTaskCreateService;
+
+    @Resource
+    private TaskSearchBizService taskSearchBizService;
+
     @RequestMapping(value = "/push/task/list")
     @ResponseBody
-    public Page<MaocheTaskDO> taskList(HttpServletRequest request, HttpServletResponse response) {
+    public Page<TaskDTO> taskList(HttpServletRequest request, HttpServletResponse response) {
 
-        Page<MaocheTaskDO> page = new Page<>(request, response);
+        Page<TaskDTO> page = new Page<>(request, response);
 
 //        int from = (page.getPageNo() - 1) * page.getPageSize();
 
@@ -88,105 +97,77 @@ public class CgMaocheTaskController {
 
         List<MaocheTaskDO> servicePage = maocheTaskService.getPage(page.getPageNo(), size);
 
-        if (servicePage == null) {
+        if (CollectionUtils.isEmpty(servicePage)) {
             return page;
         }
 
-        Page<MaocheTaskDO> toPage = new Page<>(page.getPageNo() + 1, page.getPageSize(), total, servicePage);
+        List<String> taskIds = servicePage.stream().map(MaocheTaskDO::getId).toList();
+        // 查询推送任务
+        List<MaochePushTaskDO> pushTaskDOS = Optional.ofNullable(maochePushTaskService.getByTaskIds(taskIds)).orElse(new ArrayList<>());
+        // 分桶
+        Map<String, List<MaochePushTaskDO>> taskMap = pushTaskDOS.stream().collect(Collectors.groupingBy(MaochePushTaskDO::getTaskId));
+
+        List<TaskDTO> taskDTOs = convert(servicePage);
+        for (TaskDTO dto : taskDTOs) {
+            int finishedNum = 0;    // 完成数量
+            int pushNum = 0;    // 推送数量
+            String status = dto.getStatus();
+            List<MaochePushTaskDO> pushTasks = taskMap.get(dto.getId());
+            if (CollectionUtils.isNotEmpty(pushTasks)) {
+                finishedNum = (int) pushTasks.stream().filter(pushTaskDO -> TaskStatusEnum.FINISHED.name().equals(pushTaskDO.getStatus())).count();
+                pushNum = (int) pushTasks.stream().filter(pushTaskDO -> !TaskStatusEnum.DELETE.name().equals(pushTaskDO.getStatus())).count();
+                if (finishedNum == 0) {
+                    status = TaskStatusEnum.WAITING.name();
+                } else if (finishedNum < pushNum) {
+                    status = TaskStatusEnum.PUSHING.name();
+                } else if (finishedNum == pushNum) {
+                    status = TaskStatusEnum.FINISHED.name();
+                }
+            }
+            if (!TaskSwitchEnum.OPEN.name().equals(dto.getTaskSwitch())) {
+                status = TaskStatusEnum.INIT.name();
+            }
+            dto.setStatus(status);
+            dto.setFinishedNum(finishedNum);
+            dto.setPushNum(pushNum);
+        }
+
+        Page<TaskDTO> toPage = new Page<>(page.getPageNo() + 1, page.getPageSize(), total, taskDTOs);
 
         return toPage;
+    }
+
+    public static List<TaskDTO> convert(List<MaocheTaskDO> taskDOS) {
+        if (CollectionUtils.isEmpty(taskDOS)) {
+            return Collections.emptyList();
+        }
+
+        List<TaskDTO> taskDTOS = new ArrayList<>(taskDOS.size());
+        for (MaocheTaskDO taskDO : taskDOS) {
+            TaskDTO taskDTO = new TaskDTO();
+            taskDTO.setId(taskDO.getId());
+            taskDTO.setTitle(taskDO.getTitle());
+            taskDTO.setSubTitle(taskDO.getSubTitle());
+            taskDTO.setTaskType(taskDO.getTaskType());
+            taskDTO.setStatus(taskDO.getStatus());
+            taskDTO.setTaskSwitch(taskDO.getTaskSwitch());
+            taskDTO.setTimeType(taskDO.getTimeType());
+            taskDTO.setPublishDate(taskDO.getPublishDate());
+            taskDTOS.add(taskDTO);
+        }
+        return taskDTOS;
     }
 
     // 推送任务创建
     @RequestMapping(value = "/push/task/create")
     @ResponseBody
-    public Result<String> createTask(TaskRequest request) {
+    public Result<?> createTask(TaskRequest request) {
 
         if (request == null) {
-            return Result.ERROR(500, "参数错误");
+            return Result.ERROR(500, "参数错误。");
         }
 
-        List<Long> ids = request.getProductIds();
-        if (CollectionUtils.isEmpty(ids)) {
-            return Result.ERROR(500, "参数错误");
-        }
-        ids = ids.stream().distinct().collect(Collectors.toList());
-
-        CatUnionProductCondition condition = new CatUnionProductCondition();
-        condition.setIds(ids);
-
-        // 1. 索引数据
-        ElasticSearchData<CarAlimamaUnionProductIndex, CatProductBucketTO> searchData = cgUnionProductService.searchProduct(condition, null, 0, ids.size());
-        if (searchData == null || CollectionUtils.isEmpty(searchData.getDocuments())) {
-            return Result.ERROR(401, "商品不存在");
-        }
-        CarAlimamaUnionProductIndex index = searchData.getDocuments().get(0);
-        // 猫粮 - 零食罐 价格 - 价格
-        String title = getTaskTitle(searchData.getDocuments());
-
-        Map<Long, CarAlimamaUnionProductIndex> productIndexMap = searchData.getDocuments().stream().collect(Collectors.toMap(CarAlimamaUnionProductIndex::getId, Function.identity(), (k1, k2) -> k1));
-
-        PushTaskContent content = new PushTaskContent();
-        content.setIds(ids);
-
-        // 创建任务
-        MaocheTaskDO task = new MaocheTaskDO();
-        task.setTitle(title);
-        task.setTaskSwitch(TaskSwitchEnum.CLOSE.name());
-        task.setSubTitle("");
-        task.setTaskType(TaskTypeEnum.PUSH.name());
-        task.setSwitchDate(new Date());
-        task.setTimeType(TimeTypeEnum.NOW.name());
-        task.setPublishDate(new Date());
-        task.setContent(JsonUtils.toJSONString(content));
-        task.setStatus(TaskStatusEnum.NORMAL.name());
-        task.setCreateBy("admin");
-        task.setUpdateBy("admin");
-        task.setCreateDate(new Date());
-        task.setUpdateDate(new Date());
-
-        maocheTaskService.save(task);
-
-        if (StringUtils.isBlank(task.getId())) {
-            return Result.ERROR(402, "任务创建失败");
-        }
-
-        List<MaochePushTaskDO> pushTasks = new ArrayList<>();
-        // 创建子任务
-        for (Long id : ids) {
-            CarAlimamaUnionProductIndex productIndex = productIndexMap.get(id);
-            if (productIndex == null) {
-                continue;
-            }
-
-            try {
-                MaochePushTaskDO pushTaskDO = new MaochePushTaskDO();
-                pushTaskDO.setTitle(productIndex.getTitle());
-                pushTaskDO.setSubTitle("");
-                pushTaskDO.setTaskId(task.getId());
-                pushTaskDO.setResourceId(String.valueOf(id));
-                pushTaskDO.setResourceType("PRODUCT");
-                pushTaskDO.setPushType("");
-                pushTaskDO.setPublishDate(new Date());
-                pushTaskDO.setStatus(TaskStatusEnum.INIT.name());
-
-                pushTaskDO.setCreateBy("admin");
-                pushTaskDO.setUpdateBy("admin");
-                pushTaskDO.setCreateDate(new Date());
-                pushTaskDO.setUpdateDate(new Date());
-
-                // 创建发送内容
-                pushTaskDO.setContent(JsonUtils.toJSONString(buildPushTaskContentDetail(index)));
-                maochePushTaskService.save(pushTaskDO);
-
-                pushTasks.add(pushTaskDO);
-
-            } catch (Exception e) {
-                log.error("创建子任务失败，id:{}", id, e);
-            }
-        }
-
-        return Result.OK("创建完成");
+        return pushTaskCreateService.createTask(request);
     }
 
     // 获取任务详情
@@ -211,53 +192,40 @@ public class CgMaocheTaskController {
             return Result.ERROR(404, "任务不存在");
         }
 
-        List<Long> ids = pushTasks.stream().map(MaochePushTaskDO::getResourceId).map(Long::valueOf).collect(Collectors.toList());
-
-        CatUnionProductCondition condition = new CatUnionProductCondition();
-        condition.setIds(ids);
-        // 1. 索引数据
-        ElasticSearchData<CarAlimamaUnionProductIndex, CatProductBucketTO> searchData = cgUnionProductService.searchProduct(condition, null, 0, ids.size());
-        if (searchData == null || CollectionUtils.isEmpty(searchData.getDocuments())) {
-            return null;
-        }
-        List<UnionProductTO> productTOs = cgUnionProductService.listProductInfo(searchData);
-        if (CollectionUtils.isEmpty(productTOs)) {
-            return null;
-        }
-
+        List<UnionProductTO> productTOs = Optional.ofNullable(taskSearchBizService.getPushTaskProducts(pushTasks)).orElse(new ArrayList<>());
         Map<Long, UnionProductTO> productTOMap = productTOs.stream().collect(Collectors.toMap(UnionProductTO::getId, Function.identity(), (k1, k2) -> k1));
-        List<com.jeesite.modules.cgcat.dto.PushTaskDetail> details = new ArrayList<>();
 
+        String content = task.getContent();
+        PushTaskContent taskContent = JsonUtils.toReferenceType(content, new TypeReference<PushTaskContent>() {
+        });
         List<PushTaskDetail> pushTaskDetails = new ArrayList<>();
-        for (MaochePushTaskDO push : pushTasks) {
-            long productId = NumberUtils.toLong(push.getResourceId());
-            UnionProductTO productTO = productTOMap.get(productId);
+        if (taskContent != null && CollectionUtils.isNotEmpty(taskContent.getIds())) {
+            Map<String, List<MaochePushTaskDO>> listMap = pushTasks.stream().collect(Collectors.groupingBy(MaochePushTaskDO::getResourceId));
+            for (Long id : taskContent.getIds()) {
+                List<MaochePushTaskDO> maochePushTaskDOS = listMap.get(String.valueOf(id));
+                if (CollectionUtils.isEmpty(maochePushTaskDOS)) {
+                    continue;
+                }
+                for (MaochePushTaskDO push : maochePushTaskDOS) {
+                    long productId = NumberUtils.toLong(push.getResourceId());
+                    UnionProductTO productTO = productTOMap.get(productId);
 
-            if (productTO == null) {
-                continue;
+                    if (TaskStatusEnum.DELETE.name().equals(push.getStatus())) {
+                        continue;
+                    }
+                    PushTaskDetail detail = PushTaskDetail.convert(push);
+                    detail.setProduct(productTO);
+                    pushTaskDetails.add(detail);
+                }
             }
-
-            if (TaskStatusEnum.DELETE.name().equals(push.getStatus())) {
-                continue;
+        } else {
+            for (MaochePushTaskDO push : pushTasks) {
+                if (TaskStatusEnum.DELETE.name().equals(push.getStatus())) {
+                    continue;
+                }
+                PushTaskDetail detail = PushTaskDetail.convert(push);
+                pushTaskDetails.add(detail);
             }
-            PushTaskDetail detail = new PushTaskDetail();
-            detail.setId(push.getId());
-            detail.setTitle(push.getTitle());
-            detail.setSubTitle(push.getSubTitle());
-            detail.setStatus(push.getStatus());
-            detail.setProduct(productTO);
-            detail.setFinishedDate(push.getFinishedDate());
-            detail.setPublishDate(push.getPublishDate());
-            detail.setPushType(push.getPushType());
-
-            PushTaskContentDetail taskContent = JsonUtils.toReferenceType(push.getContent(), new TypeReference<PushTaskContentDetail>() {
-            });
-            if (taskContent != null) {
-                detail.setDetail(taskContent.getDetail());
-                detail.setImg(taskContent.getImg());
-            }
-
-            pushTaskDetails.add(detail);
         }
 
         TaskDetail taskDetail = new TaskDetail();
@@ -290,10 +258,25 @@ public class CgMaocheTaskController {
         if (task == null) {
             return Result.ERROR(404, "任务不存在");
         }
+        // 获取时间
+        if (TaskSwitchEnum.OPEN.name().equals(task.getTaskSwitch())) {
+            return Result.ERROR(500, "已经启用的任务不允许编辑");
+        }
 
+        // 修改推送类型的时候，需要校验是否是改变为每日重复任务
+        if (!task.getTimeType().equals(request.getTimeType())) {
+            // 如果任务本身是每日重复任务，不允许修改
+            if (TimeTypeEnum.REPEAT_DAILY_SCHEDULE.name().equals(task.getTimeType())) {
+                return Result.ERROR(500, "【每日重复任务】不允许修改任务类型");
+            }
+            if (request.getTimeType().equals(TimeTypeEnum.REPEAT_DAILY_SCHEDULE.name())) {
+                return Result.ERROR(500, "不允许修改任务类型为【每日重复任务】类型");
+            }
+        }
 
         task.setTitle(request.getTitle());
         task.setTimeType(request.getTimeType());
+        task.setSubTitle(request.getSubTitle());
         task.setPublishDate(request.getPublishDate());
 
         maocheTaskService.update(task);
@@ -338,69 +321,7 @@ public class CgMaocheTaskController {
         return Result.OK("更新成功");
     }
 
-    private PushTaskContentDetail buildPushTaskContentDetail(CarAlimamaUnionProductIndex index) {
-        StringBuilder content = new StringBuilder();
 
-        content.append(index.getTitle()).append("\n");
-
-        content.append("日常\uD83D\uDCB0").append(PriceHelper.formatPrice(index.getReservePrice(), ".00", ""))
-                .append("，到手价\uD83D\uDCB0").append(PriceHelper.formatPrice(index.getPromotionPrice(), ".00", "")).append("\n");
-
-        List<PriceChartSkuBaseTO> priceChartSkuBases = index.getPriceChartSkuBases();
-        if (CollectionUtils.isNotEmpty(priceChartSkuBases)) {
-
-            List<String> compareDescList = new ArrayList<>();
-            for (PriceChartSkuBaseTO skuBaseTO : priceChartSkuBases) {
-                if (skuBaseTO == null || StringUtils.isBlank(skuBaseTO.getCompareDesc())) {
-                    continue;
-                }
-                compareDescList.add(skuBaseTO.getCompareDesc());
-            }
-            content.append(StringUtils.join(compareDescList, " ")).append("\n");
-        }
-
-        if (StringUtils.isNotBlank(index.getItemDescription())) {
-            content.append(index.getItemDescription()).append("\n");
-        }
-
-        // 淘宝口令
-        String apiUrl = cgUnionProductService.getEApiUrl("V73687541H40026415", index.getItemId(), "mm_30153430_909250463_109464700418");
-
-        content.append(apiUrl).append("\n");
-
-        content.append("整段复制后打开🍑查车，长按我头像@我+产品名~");
-
-        PushTaskContentDetail detail = new PushTaskContentDetail();
-        // 发送文本
-        detail.setDetail(content.toString());
-        // 发送的图片地址
-        detail.setImg(index.getProductImage());
-
-        return detail;
-    }
-
-    private static String getTaskTitle(List<CarAlimamaUnionProductIndex> indices) {
-        // 猫粮 - 零食罐 价格 - 价格
-        String titleFormat = "%s - %s %s-%s";
-
-        if (CollectionUtils.isEmpty(indices)) {
-            return "";
-        }
-        CarAlimamaUnionProductIndex index = indices.get(0);
-        long minPrice = index.getPromotionPrice();
-        long maxPrice = index.getPromotionPrice();
-        for (CarAlimamaUnionProductIndex item : indices) {
-            if (minPrice > item.getPromotionPrice()) {
-                minPrice = item.getPromotionPrice();
-            }
-            if (maxPrice < item.getPromotionPrice()) {
-                maxPrice = item.getPromotionPrice();
-            }
-        }
-
-        return String.format(titleFormat, index.getLevelOneCategoryName(), index.getCategoryName(), PriceHelper.formatPrice(minPrice, ".00", ""), PriceHelper.formatPrice(maxPrice, ".00", ""));
-
-    }
 
     // 获取任务详情
     @RequestMapping(value = "/push/task/delete")
@@ -479,17 +400,50 @@ public class CgMaocheTaskController {
             Date publishDate = task.getPublishDate();
             // 获取到时 分
             Date time = DateTimeUtils.getTodyDate(publishDate);
-            for (MaochePushTaskDO push : taskDOS) {
-                // 更新
-                maochePushTaskService.updateStatus(new ArrayList<>(Collections.singletonList(push.getId())), TaskStatusEnum.NORMAL.name(), time);
+            // 从第二天开始
+            time = new Date(time.getTime() + 86400000L);
+            String content = task.getContent();
+            PushTaskContent taskContent = JsonUtils.toReferenceType(content, new TypeReference<PushTaskContent>() {
+            });
+            if (taskContent != null && CollectionUtils.isNotEmpty(taskContent.getIds())) {
+                Map<String, List<MaochePushTaskDO>> listMap = taskDOS.stream().collect(Collectors.groupingBy(MaochePushTaskDO::getResourceId));
+                for (Long id : taskContent.getIds()) {
+                    List<MaochePushTaskDO> maochePushTaskDOS = listMap.get(String.valueOf(id));
+                    if (CollectionUtils.isEmpty(maochePushTaskDOS)) {
+                        continue;
+                    }
+                    for (MaochePushTaskDO push : maochePushTaskDOS) {
+                        // 更新
+                        maochePushTaskService.updateStatus(new ArrayList<>(Collections.singletonList(push.getId())), TaskStatusEnum.NORMAL.name(), time);
 
-                time = new Date(time.getTime() + 86400000L);
+                        time = new Date(time.getTime() + 86400000L);
+                    }
+                }
+            } else {
+                for (MaochePushTaskDO push : taskDOS) {
+                    // 更新
+                    maochePushTaskService.updateStatus(new ArrayList<>(Collections.singletonList(push.getId())), TaskStatusEnum.NORMAL.name(), time);
+
+                    time = new Date(time.getTime() + 86400000L);
+                }
             }
+        } else if (task.getTimeType().equals(TimeTypeEnum.REPEAT_DAILY_SCHEDULE.name())) {
+            // 获取发布时间
+            Date publishDate = task.getPublishDate();
+            // 获取到时 分
+            Date time = DateTimeUtils.getTodyDate(publishDate);
+            // 从第二天开始
+            time = new Date(time.getTime() + 86400000L);
+            if (CollectionUtils.isNotEmpty(taskDOS)) {
+                List<String> ids = taskDOS.stream().map(MaochePushTaskDO::getId).collect(Collectors.toList());
+                maochePushTaskService.updateStatus(ids, TaskStatusEnum.NORMAL.name(), time);
+            }
+
         } else {
 
             Date time = new Date();
             if (task.getTimeType().equals(TimeTypeEnum.SCHEDULE.name())) {
-                time = request.getPublishDate();
+                time = task.getPublishDate();
             }
 
             List<String> ids = taskDOS.stream().map(MaochePushTaskDO::getId).collect(Collectors.toList());
@@ -511,6 +465,5 @@ public class CgMaocheTaskController {
         pushTaskBizService.push();
         return Result.OK("更新成功");
     }
-
 
 }
