@@ -1,7 +1,10 @@
 package com.jeesite.modules.cat.service.cg;
 
+import com.alibaba.fastjson.JSONObject;
+import com.jeesite.common.lang.StringUtils;
 import com.jeesite.common.utils.JsonUtils;
 import com.jeesite.modules.cat.dao.MaocheAlimamaUnionProductDao;
+import com.jeesite.modules.cat.entity.CsOpLogDO;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductDO;
 import com.jeesite.modules.cat.entity.MaocheCategoryMappingDO;
 import com.jeesite.modules.cat.enums.AuditStatusEnum;
@@ -12,8 +15,9 @@ import com.jeesite.modules.cat.enums.SaleStatusEnum;
 import com.jeesite.modules.cat.es.config.es7.ElasticSearch7Service;
 import com.jeesite.modules.cat.es.config.model.ElasticSearchData;
 import com.jeesite.modules.cat.helper.CatRobotHelper;
+import com.jeesite.modules.cat.helper.ProductValueHelper;
 import com.jeesite.modules.cat.model.CarAlimamaUnionProductIndex;
-import com.jeesite.modules.cat.model.CatUnionProductCondition;
+import com.jeesite.modules.cat.service.CsOpLogService;
 import com.jeesite.modules.cat.service.MaocheAlimamaUnionProductService;
 import com.jeesite.modules.cat.service.MaocheCategoryMappingService;
 import com.jeesite.modules.cat.service.message.DingDingService;
@@ -28,7 +32,10 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -49,6 +56,9 @@ public class AutoProductService {
 
     @Resource
     private DingDingService dingDingService;
+
+    @Resource
+    private CsOpLogService csOpLogService;
 
     @Resource
     private MaocheCategoryMappingService maocheCategoryMappingService;
@@ -216,21 +226,30 @@ public class AutoProductService {
         return queryBuilder;
     }
 
+    /**
+     * 跑接口的品只局限于“上架中”的品，需要将上架中的商品：
+     * 1.先下架佣金≤1.49的品（约1000件）
+     * 2.再下架月销量≤99的品（约4000件）
+     * 已下架的品仍在选品库中，如需推送，仍然可以点击建立推送任务
+     */
     public void autoOfflineProduct() {
-        // 每分钟处理50个
-        int size = 50;
+        // 每分钟处理10个
+        int size = 10;
         BoolQueryBuilder queryBuilder = new BoolQueryBuilder();
         queryBuilder.must(QueryBuilders.termQuery("saleStatus", SaleStatusEnum.ON_SHELF.getStatus()));
         queryBuilder.must(QueryBuilders.termQuery("auditStatus", AuditStatusEnum.PASS.getStatus()));
         queryBuilder.must(QueryBuilders.termQuery("levelOneCategoryName", "宠物/宠物食品及用品"));
         queryBuilder.mustNot(QueryBuilders.termQuery("qualityStatus", QualityStatusEnum.GOLD.getStatus()));
         BoolQueryBuilder shouldBuilder = new BoolQueryBuilder();
-        // 每次更新数据，dsr≤4.8的商品，销量低于100的，任意命中一个均自动下架
-        RangeQueryBuilder rangeQuery = QueryBuilders.rangeQuery("shopDsr");
-        rangeQuery.lt(48000);
+
+        long conditionCommissionRate = 149;
+        long conditionVolume = 99;
+
+        RangeQueryBuilder rangeQuery = QueryBuilders.rangeQuery("commissionRate");
+        rangeQuery.lte(conditionCommissionRate);
         shouldBuilder.should(rangeQuery);
         RangeQueryBuilder volumeRange = QueryBuilders.rangeQuery("volume");
-        volumeRange.lt(100);
+        volumeRange.lte(conditionVolume);
         shouldBuilder.should(volumeRange);
         queryBuilder.must(shouldBuilder);
 
@@ -252,7 +271,57 @@ public class AutoProductService {
         // 批量更新
         List<Long> ids = documents.stream().map(CarAlimamaUnionProductIndex::getId).collect(Collectors.toList());
 
-        int row = maocheAlimamaUnionProductDao.updateSaleStatus(ids, SaleStatusEnum.OFF_SHELF.getStatus(), null);
+        // 查询数据库，核对信息
+        List<MaocheAlimamaUnionProductDO> productDOS = maocheAlimamaUnionProductDao.listByIds(ids);
+        if (CollectionUtils.isEmpty(productDOS)) {
+            return;
+        }
+
+        Map<Long, MaocheAlimamaUnionProductDO> productMap = productDOS.stream().collect(Collectors.toMap(MaocheAlimamaUnionProductDO::getUiid, Function.identity(), (k1, k2) -> k1));
+
+        List<Long> offShelfIds = new ArrayList<>();
+        for (MaocheAlimamaUnionProductDO productDO : productDOS) {
+            String origContent = productDO.getOrigContent();
+            if (StringUtils.isBlank(origContent)) {
+                continue;
+            }
+            JSONObject jsonObject = JSONObject.parseObject(origContent);
+            // 佣金
+            long commissionRate = ProductValueHelper.getCommissionRate(jsonObject);
+            // 月销量
+            long volume = ProductValueHelper.getVolume(jsonObject);
+            if (commissionRate <= conditionCommissionRate || volume <= conditionVolume) {
+                offShelfIds.add(productDO.getUiid());
+            }
+        }
+        if (CollectionUtils.isEmpty(offShelfIds)) {
+            return;
+        }
+
+        // 写日志表
+        for (Long id : offShelfIds) {
+            MaocheAlimamaUnionProductDO unionProductDO = productMap.get(id);
+            if (unionProductDO == null) {
+                continue;
+            }
+            CsOpLogDO item = new CsOpLogDO();
+            item.setResourceId(unionProductDO.getId());
+            item.setResourceType("maoche_product");
+            item.setOpType("product_auto_offline");
+            item.setBizType("maoche");
+            item.setDescribe("普通商品自动下架");
+            item.setOrigionContent(unionProductDO.getOrigContent());
+            item.setChangeContent("");
+            item.setCreateDate(new Date());
+            item.setUpdateDate(new Date());
+            item.setCreateBy("system");
+            item.setUpdateBy("system");
+            item.setRemarks("");
+
+            csOpLogService.save(item);
+        }
+
+        int row = maocheAlimamaUnionProductDao.updateSaleStatus(offShelfIds, SaleStatusEnum.OFF_SHELF.getStatus(), null);
 
         if (row <= 0) {
             return;

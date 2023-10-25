@@ -11,8 +11,8 @@ import org.springframework.context.annotation.DependsOn;
 
 import javax.annotation.Resource;
 
-@AutoConfiguration
-@DependsOn("dtkConsumer")
+//@AutoConfiguration
+//@DependsOn("dtkConsumer")
 public class CatDtkFetchConfig {
 
     @Resource

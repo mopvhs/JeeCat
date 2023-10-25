@@ -1,6 +1,6 @@
 package com.jeesite.modules.cat.service.message;
 
-import com.ctc.wstx.shaded.msv_core.util.Uri;
+import com.alibaba.fastjson.JSONObject;
 import com.jeesite.common.codec.Md5Utils;
 import com.jeesite.common.lang.StringUtils;
 import com.jeesite.common.utils.JsonUtils;
@@ -9,24 +9,18 @@ import com.jeesite.modules.cat.service.FlameHttpService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.springframework.stereotype.Component;
-import org.springframework.util.Base64Utils;
 
 import javax.annotation.Resource;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.net.URL;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
  * 企业微信消息服务
+ * url https://developer.work.weixin.qq.com/document/path/99110
  */
 @Slf4j
 @Component
@@ -91,6 +85,23 @@ public class QyWeiXinService {
             params.put("msgtype", "image");
             params.put("image", imageMap);
             String doPost = flameHttpService.doPost(url, JsonUtils.toJSONString(params));
+            // 解析错误信息
+            try {
+                JSONObject res = JSONObject.parseObject(doPost);
+                if (res != null) {
+                    Object o = res.get("errcode");
+                    if (o instanceof Integer) {
+                        int code = (Integer) o;
+                        if (code > 0) {
+                            String errmsg = (String) res.get("errmsg");
+                            return Result.ERROR(code, errmsg);
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                log.error("发送图片失败 img:{}, webHook:{}", img, webHook, e);
+                return Result.ERROR(500, "解析异常");
+            }
             return Result.OK(doPost);
         } catch (Exception e) {
             log.error("发送图片失败 img:{}, webHook:{}", img, webHook, e);
@@ -99,7 +110,8 @@ public class QyWeiXinService {
     }
 
     public static void main(String[] args) {
-        String img = "https://img.alicdn.com/bao/uploaded/i3/2128031955/O1CN01j46Cx81QJRAr5qh8Y_!!0-item_pic.jpg";
+        String img = "https://img.alicdn.com/bao/uploaded/i1/1879335580/O1CN01bxRJzY1r5guygOori_!!1879335580.jpg_500x500.jpg";
+        String img2 = "https://img.alicdn.com/bao/uploaded/i1/1879335580/O1CN01bxRJzY1r5guygOori_!!1879335580.jpg_300x300.jpg";
         try {
             URL imgUrl = new URL(img);
             InputStream inputStream = imgUrl.openStream();

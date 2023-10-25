@@ -71,7 +71,7 @@
 
 	<select id="findAll" resultType="MaocheAlimamaUnionProductDO">
 		SELECT
-		<include refid="Simple_Column_List"/>
+			id
 		FROM maoche_alimama_union_product
 		<where>
 			id > #{id}

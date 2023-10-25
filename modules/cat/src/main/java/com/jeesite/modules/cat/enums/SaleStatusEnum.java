@@ -9,7 +9,9 @@ public enum SaleStatusEnum {
     ON_SHELF(1L, "上架完成"),
 
     PREPARE_SHELF(2L, "上架筹备中"),
-    OFF_SHELF(1001L, "已下架");
+    OFF_SHELF(1001L, "已下架"),
+    AUTO_OFF_SHELF(10001L, "自动下架"),
+    ;
 
     private Long status;
 

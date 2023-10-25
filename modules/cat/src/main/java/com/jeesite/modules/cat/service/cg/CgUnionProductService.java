@@ -2,10 +2,7 @@ package com.jeesite.modules.cat.service.cg;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
-import com.dtk.fetch.client.DtkFetchClient;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.google.common.collect.Lists;
-import com.jeesite.common.lang.NumberUtils;
 import com.jeesite.common.lang.StringUtils;
 import com.jeesite.common.utils.JsonUtils;
 import com.jeesite.common.web.Result;
@@ -16,11 +13,8 @@ import com.jeesite.modules.cat.entity.MaocheAlimamaUnionGoodPriceDO;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductBihaohuoDO;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductDO;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductDetailDO;
-import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductPriceChartDO;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionTitleKeywordDO;
-import com.jeesite.modules.cat.entity.MaocheCategoryDO;
 import com.jeesite.modules.cat.entity.MaocheCategoryMappingDO;
-import com.jeesite.modules.cat.entity.MaocheCategoryProductRelDO;
 import com.jeesite.modules.cat.entity.MaocheDataokeProductDO;
 import com.jeesite.modules.cat.enums.ElasticSearchIndexEnum;
 import com.jeesite.modules.cat.enums.ProductDataSource;
@@ -28,19 +22,15 @@ import com.jeesite.modules.cat.es.config.es7.ElasticSearch7Service;
 import com.jeesite.modules.cat.es.config.model.ElasticSearchData;
 import com.jeesite.modules.cat.helper.CatEsHelper;
 import com.jeesite.modules.cat.helper.CatRobotHelper;
-import com.jeesite.modules.cat.helper.CategoryHelper;
 import com.jeesite.modules.cat.helper.UnionProductHelper;
 import com.jeesite.modules.cat.model.CarAlimamaUnionProductIndex;
 import com.jeesite.modules.cat.model.CatProductBucketTO;
 import com.jeesite.modules.cat.model.CatUnionProductCondition;
-import com.jeesite.modules.cat.model.CategoryTree;
-import com.jeesite.modules.cat.model.ProductCategoryModel;
 import com.jeesite.modules.cat.model.UnionProductModel;
 import com.jeesite.modules.cat.model.UnionProductTO;
 import com.jeesite.modules.cat.service.MaocheAlimamaUnionGoodPriceService;
 import com.jeesite.modules.cat.service.MaocheAlimamaUnionProductBihaohuoService;
 import com.jeesite.modules.cat.service.MaocheAlimamaUnionProductDetailService;
-import com.jeesite.modules.cat.service.MaocheAlimamaUnionProductPriceChartService;
 import com.jeesite.modules.cat.service.MaocheAlimamaUnionTitleKeywordService;
 import com.jeesite.modules.cat.service.MaocheCategoryMappingService;
 import com.jeesite.modules.cat.service.MaocheCategoryProductRelService;
@@ -51,7 +41,7 @@ import com.jeesite.modules.cat.service.stage.cg.ProductEsFactory;
 import com.jeesite.modules.cat.service.stage.cg.ProductEsStage;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang3.time.StopWatch;
+import org.apache.commons.collections.MapUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.config.CookieSpecs;
 import org.apache.http.client.config.RequestConfig;
@@ -59,10 +49,8 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.RequestBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.util.EntityUtils;
-import org.checkerframework.checker.units.qual.C;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.query.TermsQueryBuilder;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
@@ -78,9 +66,9 @@ import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
-import javax.sql.DataSource;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -427,7 +415,7 @@ public class CgUnionProductService {
 
         String method = "GET";
         // API网址
-        String url = "http://api.veapi.cn/tbk/hcapi_v2?vekey=%s&para=%s&pid=%s&";
+        String url = "http://api.veapi.cn/tbk/hcapi_v2?vekey=%s&para=%s&pid=%s&deepcoupon=1";
         url = String.format(url, vekey, itemId, pid);
 
         RequestBuilder builder = RequestBuilder.create(method);
@@ -468,6 +456,66 @@ public class CgUnionProductService {
             res = res.replace("￥", ")");
 
             res += "/ CA21,)/ AC01";
+        }
+
+        return Result.OK(res);
+    }
+
+    public Result<String> getContentEApiUrl(String vekey, String content, String pid, Map<String, Object> extraMap) {
+        CloseableHttpClient httpClient = MtxHttpClientUtils.getHttpsClient();
+        String res = "";
+        String errorMsg = "查询失败";
+        try {
+            String encode = URLEncoder.encode(content, StandardCharsets.UTF_8);
+            String method = "GET";
+            // API网址
+            String url = "http://api.veapi.cn/tbk/hcapi_v2?vekey=%s&para=%s&pid=%s&";
+            url = String.format(url, vekey, encode, pid);
+
+            if (MapUtils.isNotEmpty(extraMap)) {
+                String extraUrl = "";
+                for (Map.Entry<String, Object> entry : extraMap.entrySet()) {
+                    extraUrl += "&" + entry.getKey() + "=" + entry.getValue();
+                }
+                url += extraUrl;
+            }
+
+            RequestBuilder builder = RequestBuilder.create(method);
+            RequestConfig configBuilder = RequestConfig.custom().setCookieSpec(CookieSpecs.STANDARD).build();
+            builder.setConfig(configBuilder);
+            builder.setUri(url);
+
+
+            CloseableHttpResponse response = httpClient.execute(builder.build());
+            HttpEntity entity = response.getEntity();
+            String resp = EntityUtils.toString(entity, "UTF-8");
+
+            JSONObject jsonObject = JSONObject.parseObject(resp);
+            if (jsonObject != null) {
+                JSONObject data = jsonObject.getJSONObject("data");
+                if (data != null) {
+                    res = data.getString("tbk_pwd");
+                }
+                Object o = jsonObject.get("msg");
+                if (o instanceof String) {
+                    errorMsg = (String) o;
+                }
+            }
+            // 说明错误了
+            if (StringUtils.isBlank(res)) {
+                return Result.ERROR(500, errorMsg);
+            }
+
+            if (StringUtils.isNotBlank(res)) {
+                // 替换掉一个￥
+                res = "(" + res.substring(1);
+                // 替换第二个￥
+                res = res.replace("￥", ")");
+
+                res += "/ CA21,)/ AC01";
+            }
+        } catch (Exception e) {
+            log.error("getAuthUrl 获取授权地址失败", e);
         }
 
         return Result.OK(res);

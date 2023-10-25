@@ -15,6 +15,7 @@ import com.jeesite.modules.cat.model.task.content.PushTaskContentDetail;
 import com.jeesite.modules.cat.service.MaochePushTaskService;
 import com.jeesite.modules.cat.service.MaocheTaskService;
 import com.jeesite.modules.cat.service.QwChatroomInfoService;
+import com.jeesite.modules.cat.service.message.DingDingService;
 import com.jeesite.modules.cat.service.message.QwService;
 import com.jeesite.modules.cat.service.message.QyWeiXinService;
 import lombok.extern.slf4j.Slf4j;
@@ -51,6 +52,9 @@ public class PushTaskBizService {
 
     @Resource
     private QyWeiXinService qyWeiXinService;
+
+    @Resource
+    private DingDingService dingDingService;
 
     public void push() {
         log.info("【推送】推送数据入队列成功");
@@ -135,7 +139,19 @@ public class PushTaskBizService {
     private void send(String content, String img) {
         if (StringUtils.isNotBlank(img)) {
             Result<String> imgRes = qyWeiXinService.sendImage(img, "d64fcde3-8555-4e05-8ce4-529b7c50a966");
-            log.info("imgRes: {}", imgRes);
+            log.info("首次发送图片，img:{}, imgRes: {}",img, imgRes);
+            if (!Result.isOK(imgRes)) {
+                // 判断错误码，40009，表示图片过大，需要压缩
+                if (imgRes.getCode() != null && imgRes.getCode() == 40009) {
+                    img += "_500x500.jpg";
+                    // 重新发送
+                    imgRes = qyWeiXinService.sendImage(img, "d64fcde3-8555-4e05-8ce4-529b7c50a966");
+                    log.info("二次发送图片，img:{}, imgRes: {}",img, imgRes);
+                }
+            }
+            if (!Result.isOK(imgRes)) {
+                dingDingService.sendDingDingMsg("图片发送失败，img: " + img + ", imgRes: " + imgRes);
+            }
             try {
                 Thread.sleep(3000);
             } catch (Exception e) {

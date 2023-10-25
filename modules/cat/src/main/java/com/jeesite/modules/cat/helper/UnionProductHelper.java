@@ -147,11 +147,22 @@ public class UnionProductHelper {
 
             // 有好价移除
 //            fillItemAdvantage(product, goodPriceDO);
+
+
+            List<RateDetailTO> rates = index.getRates();
+            // todo yhq
+            String belongToName = "超搜";
+            if (productDO.getStatus().equals("DELETE")) {
+                belongToName += "（已删除）";
+            }
+            if (CollectionUtils.isEmpty(rates)) {
+                belongToName += "（详情为空）";
+            }
             // 商品所属
             if (CollectionUtils.isNotEmpty(product.getActivity())) {
                 product.setBelongTo(product.getActivity());
             } else {
-                product.setBelongTo(Collections.singletonList("超搜"));
+                product.setBelongTo(Collections.singletonList(belongToName));
             }
 
             fillCustomTags(product, productDO);

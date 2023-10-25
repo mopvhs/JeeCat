@@ -7,6 +7,7 @@ import com.jeesite.common.utils.JsonUtils;
 import com.jeesite.common.web.Result;
 import com.jeesite.modules.cat.dao.MaocheAlimamaUnionProductDao;
 import com.jeesite.modules.cat.dao.MaocheAlimamaUnionTitleKeywordDao;
+import com.jeesite.modules.cat.entity.CsOpLogDO;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductDO;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductDetailDO;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionTitleKeywordDO;
@@ -31,6 +32,7 @@ import com.jeesite.modules.cat.model.ProductAuditRequest;
 import com.jeesite.modules.cat.model.ProductCategoryModel;
 import com.jeesite.modules.cat.model.UnionProductTO;
 import com.jeesite.modules.cat.model.keytitle.UnionProductTagModel;
+import com.jeesite.modules.cat.service.CsOpLogService;
 import com.jeesite.modules.cat.service.MaocheAlimamaUnionProductDetailService;
 import com.jeesite.modules.cat.service.MaocheAlimamaUnionProductService;
 import com.jeesite.modules.cat.service.MaocheCategoryMappingService;
@@ -96,6 +98,9 @@ public class CgProductController {
 
     @Resource
     private MaochePushTaskService maochePushTaskService;
+
+    @Resource
+    private CsOpLogService csOpLogService;
 
 
     // 商品库
@@ -259,6 +264,8 @@ public class CgProductController {
                 bucket.setName("上架中");
             } else if (SaleStatusEnum.OFF_SHELF.getStatus().equals(status)) {
                 bucket.setName("已下架");
+            } else if (SaleStatusEnum.AUTO_OFF_SHELF.getStatus().equals(status)) {
+                bucket.setName("自动下架");
             }
         }
         // 全部
@@ -455,21 +462,42 @@ public class CgProductController {
         List<Long> noUpdateIds = new ArrayList<>();
         // 如果是上架操作，判断是否已经爬取了评价信息
         if (request.getSaleStatus().equals(SaleStatusEnum.ON_SHELF.getStatus())) {
-            List<Long> updateIds = new ArrayList<>();
-            List<MaocheAlimamaUnionProductDetailDO> detailDOS = maocheAlimamaUnionProductDetailService.listByIids(iids);
-            Map<String, MaocheAlimamaUnionProductDetailDO> detailMap = detailDOS.stream().collect(Collectors.toMap(MaocheAlimamaUnionProductDetailDO::getIid, Function.identity(), (o1, o2) -> o1));
-            for (MaocheAlimamaUnionProductDO productDO : productDOs) {
-                Long uiid = productDO.getUiid();
-                if (detailMap.containsKey(String.valueOf(productDO.getIid()))) {
-                    updateIds.add(uiid);
-                } else {
-                    noUpdateIds.add(uiid);
-                }
-            }
-            ids = updateIds;
+//            List<Long> updateIds = new ArrayList<>();
+//            List<MaocheAlimamaUnionProductDetailDO> detailDOS = maocheAlimamaUnionProductDetailService.listByIids(iids);
+//            Map<String, MaocheAlimamaUnionProductDetailDO> detailMap = detailDOS.stream().collect(Collectors.toMap(MaocheAlimamaUnionProductDetailDO::getIid, Function.identity(), (o1, o2) -> o1));
+//            for (MaocheAlimamaUnionProductDO productDO : productDOs) {
+//                Long uiid = productDO.getUiid();
+//                if (detailMap.containsKey(String.valueOf(productDO.getIid()))) {
+//                    updateIds.add(uiid);
+//                } else {
+//                    noUpdateIds.add(uiid);
+//                }
+//            }
+//            ids = updateIds;
         }
 
         String time = onShelfDate != null ? onShelfDate.toString() : null;
+
+        // 记录日志
+        if (request.getSaleStatus().equals(SaleStatusEnum.OFF_SHELF.getStatus()) && CollectionUtils.isNotEmpty(ids)) {
+            // 写日志表
+            for (Long id : ids) {
+                CsOpLogDO item = new CsOpLogDO();
+                item.setResourceId(String.valueOf(id));
+                item.setResourceType("maoche_product");
+                item.setOpType("product_sale_status_change_offline");
+                item.setBizType("maoche");
+                item.setDescribe("普通商品操作下架");
+                item.setOrigionContent("/product/sale/status/change");
+                item.setChangeContent("");
+                item.setCreateDate(new Date());
+                item.setUpdateDate(new Date());
+                item.setCreateBy("system");
+                item.setUpdateBy("system");
+                item.setRemarks("");
+                csOpLogService.save(item);
+            }
+        }
 
         int auditStatus = 1;
         if (CollectionUtils.isNotEmpty(ids)) {

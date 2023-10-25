@@ -21,13 +21,14 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * 全量构建商品索引
  */
 @Slf4j
 @Component
-public class CgProductSyncXxlJob extends IJobHandler {
+public class CgProductDeleteSyncXxlJob extends IJobHandler {
 
     @Resource
     private ElasticSearch7Service elasticSearch7Service;
@@ -57,13 +58,13 @@ public class CgProductSyncXxlJob extends IJobHandler {
     private DingDingService dingDingService;
 
     @Override
-    @XxlJob("cgProductSyncXxlJob")
+    @XxlJob("cgProductDeleteSyncXxlJob")
     public void execute() throws Exception {
-        XxlJobHelper.log("CgProductSyncXxlJob xxl job start");
+        XxlJobHelper.log("cgProductDeleteSyncXxlJob xxl job start");
 
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
-        String status = "NORMAL";
+        String status = "DELETE";
         int total = 0;
 
         long id = 0L;
@@ -75,7 +76,6 @@ public class CgProductSyncXxlJob extends IJobHandler {
                 if (CollectionUtils.isEmpty(list)) {
                     break;
                 }
-
                 total += list.size();
                 id = list.get(list.size() - 1).getUiid();
 
@@ -83,24 +83,22 @@ public class CgProductSyncXxlJob extends IJobHandler {
                 list = maocheAlimamaUnionProductDao.listSimpleByIds(ids);
 
                 cgUnionProductService.indexEs(list, limit);
-
                 long end = System.currentTimeMillis();
                 long seconds = TimeUnit.MILLISECONDS.toSeconds(end - start);
-
-                log.info("normal sync xxl job current total :{}, single time:{}", total, seconds);
+                log.info("del sync xxl job current total :{}, single time:{}", total, seconds);
 
                 if (list.size() < limit) {
                     break;
                 }
             } catch (Exception e) {
-                dingDingService.sendParseDingDingMsg("全量同步异常 起始id:{}, 异常{}", null, id, e.getMessage());
+                dingDingService.sendParseDingDingMsg("删除商品的全量同步异常 起始id:{}, 异常{}", null, id, e.getMessage());
                 log.error(e.getMessage(), e);
             }
         }
         stopWatch.stop();
 
-        dingDingService.sendParseDingDingMsg("xxl job 全量同步索引数据完成，total:{}, 耗时：{}", null, total, stopWatch.toString());
+        dingDingService.sendParseDingDingMsg("xxl job 删除商品的全量同步索引数据完成，total:{}, 耗时：{}", null, total, stopWatch.toString());
 
-        XxlJobHelper.log("CgProductSyncXxlJob xxl job end 耗时：" + stopWatch.toString());
+        XxlJobHelper.log("cgProductDeleteSyncXxlJob xxl job end 耗时：" + stopWatch.toString());
     }
 }

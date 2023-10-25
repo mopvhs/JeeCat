@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Objects;
 
 import com.google.common.collect.Lists;
+import com.jeesite.common.lang.StringUtils;
 import com.jeesite.modules.cat.enums.AuditStatusEnum;
 import com.jeesite.modules.cat.enums.ProductDataSource;
 import com.jeesite.modules.cat.enums.SaleStatusEnum;
@@ -212,4 +213,19 @@ public class MaocheAlimamaUnionProductService extends CrudService<MaocheAlimamaU
 		return i > 0;
 	}
 
+	public List<MaocheAlimamaUnionProductDO> getByItemIdSuffix(String itemIdSuffix) {
+		if (StringUtils.isBlank(itemIdSuffix)) {
+			return new ArrayList<>();
+		}
+
+		List<MaocheAlimamaUnionProductDO> productDOs = new ArrayList<>();
+		MaocheAlimamaUnionProductDO query = new MaocheAlimamaUnionProductDO();
+		query.setItemIdSuffix(itemIdSuffix);
+		List<MaocheAlimamaUnionProductDO> items = dao.findList(query);
+		if (CollectionUtils.isNotEmpty(items)) {
+			productDOs.addAll(items);
+		}
+
+		return productDOs;
+	}
 }

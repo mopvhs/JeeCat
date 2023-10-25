@@ -15,6 +15,12 @@ import java.util.Map;
 public class CalCatDsrUtils {
 
 
+    private static final String shopDsrTimes = "0.25";
+    private static final String volumeTimes = "0.3";
+    private static final String creditLevelTimes = "0.1";
+    private static final String fansTimes = "0.2";
+    private static final String commissionRateTimes = "0.15";
+
     public static void main(String[] args) {
         Map<String, String> stringStringMap = calCatDsr(48984L, 40000L, 18L, "19.9万", 46L);
 
@@ -29,11 +35,11 @@ public class CalCatDsrUtils {
         int commissionRateFactor = getProductCommissionRateFactor(commissionRate);
 
         // 评分公式：（P1=0.3*店铺评分A +0.3*月销量C +0.1*店铺等级D+0.15*店铺粉丝数E+0.15*佣金率F ）
-        long catRate = new BigDecimal("0.3").multiply(new BigDecimal(shopDsrFactor)).longValue() +
-                new BigDecimal("0.3").multiply(new BigDecimal(volumeFactor)).longValue() +
-                new BigDecimal("0.1").multiply(new BigDecimal(creditLevelFactor)).longValue() +
-                new BigDecimal("0.1").multiply(new BigDecimal(fansFactor)).longValue() +
-                new BigDecimal("0.2").multiply(new BigDecimal(commissionRateFactor)).longValue();
+        long catRate = new BigDecimal(shopDsrTimes).multiply(new BigDecimal(shopDsrFactor)).longValue() +
+                new BigDecimal(volumeTimes).multiply(new BigDecimal(volumeFactor)).longValue() +
+                new BigDecimal(creditLevelTimes).multiply(new BigDecimal(creditLevelFactor)).longValue() +
+                new BigDecimal(fansTimes).multiply(new BigDecimal(fansFactor)).longValue() +
+                new BigDecimal(commissionRateTimes).multiply(new BigDecimal(commissionRateFactor)).longValue();
         Long catDsr = Math.min(catRate, 50000);
 
         StringBuilder tips = new StringBuilder();
@@ -43,11 +49,11 @@ public class CalCatDsrUtils {
         tips.append("店铺粉丝数：").append(fans).append("\n");
         tips.append("佣金率：").append(commissionRate).append("\n\n");
         // （P1=0.3*4.7 +0.3*4.7 +0.1*4.6+0.15*4.8+0.15*4.75 ）=4.72
-        tips.append("(P1=0.3*").append(factorString(shopDsrFactor)).append("+")
-                .append("0.3*").append(factorString(volumeFactor)).append("+")
-                .append("0.1*").append(factorString(creditLevelFactor)).append("+")
-                .append("0.1*").append(factorString(fansFactor)).append("+")
-                .append("0.2*").append(factorString(commissionRateFactor)).append(")=").append(factorString(catDsr.intValue()));
+        tips.append("(P1=").append(shopDsrTimes).append("*").append(factorString(shopDsrFactor)).append("+")
+                .append(volumeTimes).append("*").append(factorString(volumeFactor)).append("+")
+                .append(creditLevelTimes).append("*").append(factorString(creditLevelFactor)).append("+")
+                .append(fansTimes).append("*").append(factorString(fansFactor)).append("+")
+                .append(commissionRateTimes).append("*").append(factorString(commissionRateFactor)).append(")=").append(factorString(catDsr.intValue()));
 
         Map<String, String> res = new HashMap<>();
         res.put("catDsr", String.valueOf(catDsr));

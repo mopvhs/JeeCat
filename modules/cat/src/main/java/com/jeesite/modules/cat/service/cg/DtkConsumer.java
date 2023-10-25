@@ -27,7 +27,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Slf4j
-@Component
+//@Component
 public class DtkConsumer implements IDtkConsumer {
 
     @Resource
