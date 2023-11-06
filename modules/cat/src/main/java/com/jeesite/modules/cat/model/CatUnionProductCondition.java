@@ -51,7 +51,8 @@ public class CatUnionProductCondition implements Serializable {
     // 宝贝描述（推荐理由）
     @EsItemAspect(queryType = "matchQuery")
     private String itemDescription;
-//    private String itemId;
+    @EsItemAspect
+    private String itemIdSuffix;
 //    private String itemUrl;
 //    private Integer levelOneCategoryId;
     @EsItemAspect

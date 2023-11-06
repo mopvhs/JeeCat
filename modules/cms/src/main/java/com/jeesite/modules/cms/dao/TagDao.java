@@ -7,6 +7,9 @@ package com.jeesite.modules.cms.dao;
 import com.jeesite.common.dao.CrudDao;
 import com.jeesite.common.mybatis.annotation.MyBatisDao;
 import com.jeesite.modules.cms.entity.Tag;
+import org.apache.ibatis.annotations.Param;
+
+import java.util.List;
 
 /**
  * 内容标签DAO接口
@@ -15,5 +18,4 @@ import com.jeesite.modules.cms.entity.Tag;
  */
 @MyBatisDao
 public interface TagDao extends CrudDao<Tag> {
-	
 }

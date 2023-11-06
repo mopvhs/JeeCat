@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jeesite.modules.cat.dao.MaochePushTaskRuleDao">
+	
+	<!-- 查询数据
+	<select id="findList" resultType="MaochePushTaskRuleDO">
+		SELECT ${sqlMap.column.toSql()}
+		FROM ${sqlMap.table.toSql()}
+		<where>
+			${sqlMap.where.toSql()}
+		</where>
+		ORDER BY ${sqlMap.order.toSql()}
+	</select> -->
+
+	<update id="updateRule">
+
+		UPDATE maoche_push_task_rule
+		<set>
+			<if test="brand != null">brand = #{brand},</if>
+			<if test="productName != null">product_name = #{productName},</if>
+			<if test="keyword != null">keyword = #{keyword},</if>
+			<if test="categoryId != null">category_id = #{categoryId},</if>
+			<if test="categoryName != null">category_name = #{categoryName},</if>
+			<if test="levelOneCategoryId != null">level_one_category_id = #{levelOneCategoryId},</if>
+			<if test="levelOneCategoryName != null">level_one_category_name = #{levelOneCategoryName},</if>
+			<if test="star != null">star = #{star},</if>
+			<if test="description != null">description = #{description},</if>
+			<if test="polling != null">polling = #{polling},</if>
+			<if test="specifications != null">specifications = #{specifications},</if>
+			<if test="status != null">status = #{status},</if>
+			<if test="createBy != null">create_by = #{createBy},</if>
+			<if test="updateBy != null">update_by = #{updateBy},</if>
+			<if test="createDate != null">create_date = #{createDate},</if>
+			<if test="updateDate != null">update_date = #{updateDate},</if>
+			<if test="remarks != null">remarks = #{remarks},</if>
+		</set>
+		WHERE id = #{id}
+
+	</update>
+
+	<insert id="add" useGeneratedKeys="true" keyProperty="id"
+			parameterType="com.jeesite.modules.cat.entity.MaochePushTaskRuleDO">
+		INSERT INTO maoche_push_task_rule (brand, product_name, keyword, category_id,
+		category_name, level_one_category_id, level_one_category_name, star,
+		description, polling, specifications, status, create_by,
+		update_by, create_date, update_date, remarks)
+		VALUES
+		(#{brand}, #{productName}, #{keyword}, #{categoryId}, #{categoryName},
+		#{levelOneCategoryId}, #{levelOneCategoryName}, #{star}, #{description},
+		#{polling}, #{specifications}, #{status}, #{createBy}, #{updateBy},
+		#{createDate}, #{updateDate}, #{remarks});
+
+	</insert>
+
+	<select id="likeKeyword" resultType="MaochePushTaskRuleDO">
+		SELECT
+			*
+		FROM maoche_push_task_rule
+		<where>
+			keyword like CONCAT('%', #{keyword}, '%')
+		</where>
+
+	</select>
+	
+</mapper>

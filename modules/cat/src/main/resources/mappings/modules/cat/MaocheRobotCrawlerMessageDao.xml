@@ -21,5 +21,19 @@
 		</where>
 		ORDER BY id asc limit #{limit}
 	</select>
+
+	<select id="startById" resultType="MaocheRobotCrawlerMessageDO">
+		SELECT *
+		FROM maoche_robot_crawler_message
+		<where>
+			id <![CDATA[>]]> #{id}
+			and
+			aff_type in
+			<foreach collection="affTypes" item="affType" open="(" separator="," close=")">
+				#{affType}
+			</foreach>
+		</where>
+		ORDER BY id asc limit #{limit}
+	</select>
 	
 </mapper>

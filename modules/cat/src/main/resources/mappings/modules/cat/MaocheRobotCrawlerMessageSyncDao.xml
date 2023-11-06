@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jeesite.modules.cat.dao.MaocheRobotCrawlerMessageSyncDao">
+	
+	<!-- 查询数据
+	<select id="findList" resultType="MaocheRobotCrawlerMessageSyncDO">
+		SELECT ${sqlMap.column.toSql()}
+		FROM ${sqlMap.table.toSql()}
+		<where>
+			${sqlMap.where.toSql()}
+		</where>
+		ORDER BY ${sqlMap.order.toSql()}
+	</select> -->
+
+	<insert id="add" useGeneratedKeys="true" keyProperty="id"
+			parameterType="com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageSyncDO">
+
+		INSERT INTO maoche_robot_crawler_message_sync
+		(robot_msg_id, msg, wx_time, processed, aff_type,
+		resource_ids, unique_hash, status, create_by, update_by,
+		create_date, update_date, remarks)
+		VALUES
+		(#{robotMsgId}, #{msg}, #{wxTime}, #{processed}, #{affType},
+		#{resourceIds}, #{uniqueHash}, #{status}, #{createBy}, #{updateBy},
+		#{createDate},#{updateDate},#{remarks})
+
+	</insert>
+
+	<update id="updateById">
+
+		update maoche_robot_crawler_message_sync
+		<set>
+			<if test="processed != null">
+				processed = #{processed},
+			</if>
+			<if test="uniqueHash != null">
+				unique_hash = #{uniqueHash},
+			</if>
+		</set>
+
+		<where>
+			id = #{uiid}
+		</where>
+	</update>
+</mapper>

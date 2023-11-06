@@ -19,7 +19,7 @@ import java.util.Date;
  * @version 2023-04-30
  */
 @Table(name="maoche_robot_crawler_message", alias="a", label="信息采集表信息", columns={
-		@Column(name="id", attrName="id", label="id", isPK=true),
+		@Column(name="id", attrName="iid", label="id", isPK=true),
 		@Column(name="fromgid", attrName="fromgid", label="发消息的群标识"),
 		@Column(name="fromid", attrName="fromid", label="发消息的用户标识"),
 		@Column(name="toid", attrName="toid", label="收消息的用户标识"),
@@ -35,6 +35,7 @@ import java.util.Date;
 		@Column(name="create_time", attrName="createTime", label="create_time"),
 		@Column(name="update_time", attrName="updateTime", label="update_time"),
 		@Column(name="aff_type", attrName="affType", label="aff_type"),
+		@Column(name="unique_hash", attrName="uniqueHash", label="unique_hash"),
 	}, orderBy="a.id DESC"
 )
 public class MaocheRobotCrawlerMessageDO extends DataEntity<MaocheRobotCrawlerMessageDO> {
@@ -53,12 +54,13 @@ public class MaocheRobotCrawlerMessageDO extends DataEntity<MaocheRobotCrawlerMe
 	private String msgsvrid;		// 微信消息id
 	private String fromtype;		// 微信fromtype
 	private String msgtype;		// 微信msgtype
-	private String time;		// 微信time
+	private Date time;		// 微信time
 	private String remark;		// 备用字段
 	private Date createTime;		// create_time
 	private Date updateTime;		// update_time
 	private Long processed;
 	private String affType;
+	private String uniqueHash;
 
 	/**
 	 * 重载默认方法，主键类型互转，方便操作
@@ -164,11 +166,11 @@ public class MaocheRobotCrawlerMessageDO extends DataEntity<MaocheRobotCrawlerMe
 	
 	@NotBlank(message="微信time不能为空")
 	@Size(min=0, max=256, message="微信time长度不能超过 256 个字符")
-	public String getTime() {
+	public Date getTime() {
 		return time;
 	}
 
-	public void setTime(String time) {
+	public void setTime(Date time) {
 		this.time = time;
 	}
 	
@@ -231,5 +233,13 @@ public class MaocheRobotCrawlerMessageDO extends DataEntity<MaocheRobotCrawlerMe
 
 	public void setAffType(String affType) {
 		this.affType = affType;
+	}
+
+	public String getUniqueHash() {
+		return uniqueHash;
+	}
+
+	public void setUniqueHash(String uniqueHash) {
+		this.uniqueHash = uniqueHash;
 	}
 }

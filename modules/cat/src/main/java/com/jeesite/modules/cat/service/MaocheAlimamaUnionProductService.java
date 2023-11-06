@@ -213,7 +213,7 @@ public class MaocheAlimamaUnionProductService extends CrudService<MaocheAlimamaU
 		return i > 0;
 	}
 
-	public List<MaocheAlimamaUnionProductDO> getByItemIdSuffix(String itemIdSuffix) {
+	public List<MaocheAlimamaUnionProductDO> getByItemIdSuffix(String itemIdSuffix, String status) {
 		if (StringUtils.isBlank(itemIdSuffix)) {
 			return new ArrayList<>();
 		}
@@ -221,6 +221,7 @@ public class MaocheAlimamaUnionProductService extends CrudService<MaocheAlimamaU
 		List<MaocheAlimamaUnionProductDO> productDOs = new ArrayList<>();
 		MaocheAlimamaUnionProductDO query = new MaocheAlimamaUnionProductDO();
 		query.setItemIdSuffix(itemIdSuffix);
+		query.setStatus(status);
 		List<MaocheAlimamaUnionProductDO> items = dao.findList(query);
 		if (CollectionUtils.isNotEmpty(items)) {
 			productDOs.addAll(items);

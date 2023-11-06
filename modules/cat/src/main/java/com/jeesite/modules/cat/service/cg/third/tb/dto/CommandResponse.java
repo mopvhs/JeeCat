@@ -72,8 +72,9 @@ public class CommandResponse implements Serializable {
     @JsonProperty("superior_brand")
     private String superiorBrand;
 
-    @JsonProperty("small_images")
-    private List<String> smallImages;
+    // 暂时移除，后续需要再加
+//    @JsonProperty("small_images")
+//    private List<String> smallImages;
 
     @JsonProperty("short_title")
     private String shortTitle;

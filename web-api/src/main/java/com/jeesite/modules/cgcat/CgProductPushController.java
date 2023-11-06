@@ -449,23 +449,6 @@ public class CgProductPushController {
         return "完成";
     }
 
-    public static void main(String[] args) {
-//        String input = "这是一条@猫车 的测试消息。";
-//
-//        String regex = "@[\\u4e00-\\u9fa5A-Za-z]+\\s";
-//        Pattern pattern = Pattern.compile(regex);
-//        Matcher matcher = pattern.matcher(input);
-//
-//        while (matcher.find()) {
-//            System.out.println(matcher.group());
-//        }
-
-        Random random = new Random();
-        for (int i = 0; i < 10; i++) {
-            System.out.println(random.nextInt(2));
-        }
-    }
-
     // 分享口令
     @RequestMapping(value = "/product/share/command/get")
     @ResponseBody

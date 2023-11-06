@@ -1,0 +1,166 @@
+<% layout('/layouts/default.html', {title: '信息采集商品表管理', libs: ['dataGrid']}){ %>
+<div class="main-content">
+	<div class="box box-main">
+		<div class="box-header">
+			<div class="box-title">
+				<i class="fa icon-notebook"></i> ${text('信息采集商品表管理')}
+			</div>
+			<div class="box-tools pull-right">
+				<a href="#" class="btn btn-default" id="btnSearch" title="${text('查询')}"><i class="fa fa-filter"></i> ${text('查询')}</a>
+				<% if(hasPermi('cat:maocheRobotCrawlerMessageProductDO:edit')){ %>
+					<a href="${ctx}/cat/maocheRobotCrawlerMessageProductDO/form" class="btn btn-default btnTool" title="${text('新增信息采集商品表')}"><i class="fa fa-plus"></i> ${text('新增')}</a>
+				<% } %>
+				<a href="#" class="btn btn-default" id="btnSetting" title="${text('设置')}"><i class="fa fa-navicon"></i></a>
+			</div>
+		</div>
+		<div class="box-body">
+			<#form:form id="searchForm" model="${maocheRobotCrawlerMessageProductDO}" action="${ctx}/cat/maocheRobotCrawlerMessageProductDO/listData" method="post" class="form-inline hide"
+					data-page-no="${parameter.pageNo}" data-page-size="${parameter.pageSize}" data-order-by="${parameter.orderBy}">
+				<div class="form-group">
+					<label class="control-label">${text('机器人抓取消息id')}：</label>
+					<div class="control-inline">
+						<#form:input path="robotMsgId" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('机器人抓取消息的sync表的id')}：</label>
+					<div class="control-inline">
+						<#form:input path="msgId" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('jd / tb')}：</label>
+					<div class="control-inline">
+						<#form:input path="affType" maxlength="32" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('资源id')}：</label>
+					<div class="control-inline">
+						<#form:input path="resourceId" maxlength="64" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('内部资源id')}：</label>
+					<div class="control-inline">
+						<#form:input path="innerId" maxlength="64" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('消息内容 口令信息采集 不会很长')}：</label>
+					<div class="control-inline">
+						<#form:input path="apiContent" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('类目')}：</label>
+					<div class="control-inline">
+						<#form:input path="category" maxlength="64" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('标题')}：</label>
+					<div class="control-inline">
+						<#form:input path="title" maxlength="256" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('短标题')}：</label>
+					<div class="control-inline">
+						<#form:input path="shortTitle" maxlength="256" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('店铺分')}：</label>
+					<div class="control-inline">
+						<#form:input path="shopDsr" maxlength="256" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('店铺名称')}：</label>
+					<div class="control-inline">
+						<#form:input path="shopName" maxlength="256" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('商家id')}：</label>
+					<div class="control-inline">
+						<#form:input path="sellerId" maxlength="256" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('价格')}：</label>
+					<div class="control-inline">
+						<#form:input path="price" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('销量')}：</label>
+					<div class="control-inline">
+						<#form:input path="volume" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('NORMAL / DELETE')}：</label>
+					<div class="control-inline width-120">
+						<#form:select path="status" dictType="sys_search_status" blankOption="true" class="form-control isQuick"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('备注信息')}：</label>
+					<div class="control-inline">
+						<#form:input path="remarks" maxlength="256" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<button type="submit" class="btn btn-primary btn-sm">${text('查询')}</button>
+					<button type="reset" class="btn btn-default btn-sm isQuick">${text('重置')}</button>
+				</div>
+			</#form:form>
+			<table id="dataGrid"></table>
+			<div id="dataGridPage"></div>
+		</div>
+	</div>
+</div>
+<% } %>
+<script>
+// 初始化DataGrid对象
+$('#dataGrid').dataGrid({
+	searchForm: $("#searchForm"),
+	columnModel: [
+		{header:'${text("机器人抓取消息id")}', name:'robotMsgId', index:'a.robot_msg_id', width:150, align:"left", frozen:true, formatter: function(val, obj, row, act){
+			return '<a href="${ctx}/cat/maocheRobotCrawlerMessageProductDO/form?id='+row.id+'" class="btnList" data-title="${text("编辑信息采集商品表")}">'+(val||row.id)+'</a>';
+		}},
+		{header:'${text("机器人抓取消息的sync表的id")}', name:'msgId', index:'a.msg_id', width:150, align:"center"},
+		{header:'${text("jd / tb")}', name:'affType', index:'a.aff_type', width:150, align:"left"},
+		{header:'${text("资源id")}', name:'resourceId', index:'a.resource_id', width:150, align:"left"},
+		{header:'${text("内部资源id")}', name:'innerId', index:'a.inner_id', width:150, align:"left"},
+		{header:'${text("消息内容 口令信息采集 不会很长")}', name:'apiContent', index:'a.api_content', width:150, align:"left"},
+		{header:'${text("类目")}', name:'category', index:'a.category', width:150, align:"left"},
+		{header:'${text("标题")}', name:'title', index:'a.title', width:150, align:"left"},
+		{header:'${text("短标题")}', name:'shortTitle', index:'a.short_title', width:150, align:"left"},
+		{header:'${text("店铺分")}', name:'shopDsr', index:'a.shop_dsr', width:150, align:"left"},
+		{header:'${text("店铺名称")}', name:'shopName', index:'a.shop_name', width:150, align:"left"},
+		{header:'${text("商家id")}', name:'sellerId', index:'a.seller_id', width:150, align:"left"},
+		{header:'${text("价格")}', name:'price', index:'a.price', width:150, align:"center"},
+		{header:'${text("销量")}', name:'volume', index:'a.volume', width:150, align:"center"},
+		{header:'${text("NORMAL / DELETE")}', name:'status', index:'a.status', width:150, align:"center", formatter: function(val, obj, row, act){
+			return js.getDictLabel(${@DictUtils.getDictListJson('sys_search_status')}, val, '${text("未知")}', true);
+		}},
+		{header:'${text("更新时间")}', name:'updateDate', index:'a.update_date', width:150, align:"center"},
+		{header:'${text("备注信息")}', name:'remarks', index:'a.remarks', width:150, align:"left"},
+		{header:'${text("操作")}', name:'actions', width:120, formatter: function(val, obj, row, act){
+			var actions = [];
+			//<% if(hasPermi('cat:maocheRobotCrawlerMessageProductDO:edit')){ %>
+				actions.push('<a href="${ctx}/cat/maocheRobotCrawlerMessageProductDO/form?id='+row.id+'" class="btnList" title="${text("编辑信息采集商品表")}"><i class="fa fa-pencil"></i></a>&nbsp;');
+				actions.push('<a href="${ctx}/cat/maocheRobotCrawlerMessageProductDO/delete?id='+row.id+'" class="btnList" title="${text("删除信息采集商品表")}" data-confirm="${text("确认要删除该信息采集商品表吗？")}"><i class="fa fa-trash-o"></i></a>&nbsp;');
+			//<% } %>
+			return actions.join('');
+		}}
+	],
+	// 加载成功后执行事件
+	ajaxSuccess: function(data){
+		
+	}
+});
+</script>

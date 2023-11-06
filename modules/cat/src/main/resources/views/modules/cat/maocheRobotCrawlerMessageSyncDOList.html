@@ -1,0 +1,118 @@
+<% layout('/layouts/default.html', {title: '信息采集表管理', libs: ['dataGrid']}){ %>
+<div class="main-content">
+	<div class="box box-main">
+		<div class="box-header">
+			<div class="box-title">
+				<i class="fa icon-notebook"></i> ${text('信息采集表管理')}
+			</div>
+			<div class="box-tools pull-right">
+				<a href="#" class="btn btn-default" id="btnSearch" title="${text('查询')}"><i class="fa fa-filter"></i> ${text('查询')}</a>
+				<% if(hasPermi('cat:maocheRobotCrawlerMessageSyncDO:edit')){ %>
+					<a href="${ctx}/cat/maocheRobotCrawlerMessageSyncDO/form" class="btn btn-default btnTool" title="${text('新增信息采集表')}"><i class="fa fa-plus"></i> ${text('新增')}</a>
+				<% } %>
+				<a href="#" class="btn btn-default" id="btnSetting" title="${text('设置')}"><i class="fa fa-navicon"></i></a>
+			</div>
+		</div>
+		<div class="box-body">
+			<#form:form id="searchForm" model="${maocheRobotCrawlerMessageSyncDO}" action="${ctx}/cat/maocheRobotCrawlerMessageSyncDO/listData" method="post" class="form-inline hide"
+					data-page-no="${parameter.pageNo}" data-page-size="${parameter.pageSize}" data-order-by="${parameter.orderBy}">
+				<div class="form-group">
+					<label class="control-label">${text('机器人抓取消息id')}：</label>
+					<div class="control-inline">
+						<#form:input path="robotMsgId" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('消息内容 口令信息采集 不会很长')}：</label>
+					<div class="control-inline">
+						<#form:input path="msg" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('微信time')}：</label>
+					<div class="control-inline">
+						<#form:input path="wxTime" readonly="true" maxlength="20" class="form-control laydate width-datetime"
+							dataFormat="datetime" data-type="datetime" data-format="yyyy-MM-dd HH:mm"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('0 未处理 1 已处理')}：</label>
+					<div class="control-inline">
+						<#form:input path="processed" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('jd / tb')}：</label>
+					<div class="control-inline">
+						<#form:input path="affType" maxlength="128" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('资源id')}：</label>
+					<div class="control-inline">
+						<#form:input path="resourceIds" maxlength="2048" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('hash')}：</label>
+					<div class="control-inline">
+						<#form:input path="uniqueHash" maxlength="128" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('NORMAL / DELETE')}：</label>
+					<div class="control-inline width-120">
+						<#form:select path="status" dictType="sys_search_status" blankOption="true" class="form-control isQuick"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('备注信息')}：</label>
+					<div class="control-inline">
+						<#form:input path="remarks" maxlength="256" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<button type="submit" class="btn btn-primary btn-sm">${text('查询')}</button>
+					<button type="reset" class="btn btn-default btn-sm isQuick">${text('重置')}</button>
+				</div>
+			</#form:form>
+			<table id="dataGrid"></table>
+			<div id="dataGridPage"></div>
+		</div>
+	</div>
+</div>
+<% } %>
+<script>
+// 初始化DataGrid对象
+$('#dataGrid').dataGrid({
+	searchForm: $("#searchForm"),
+	columnModel: [
+		{header:'${text("机器人抓取消息id")}', name:'robotMsgId', index:'a.robot_msg_id', width:150, align:"left", frozen:true, formatter: function(val, obj, row, act){
+			return '<a href="${ctx}/cat/maocheRobotCrawlerMessageSyncDO/form?id='+row.id+'" class="btnList" data-title="${text("编辑信息采集表")}">'+(val||row.id)+'</a>';
+		}},
+		{header:'${text("消息内容 口令信息采集 不会很长")}', name:'msg', index:'a.msg', width:150, align:"left"},
+		{header:'${text("微信time")}', name:'wxTime', index:'a.wx_time', width:150, align:"center"},
+		{header:'${text("0 未处理 1 已处理")}', name:'processed', index:'a.processed', width:150, align:"center"},
+		{header:'${text("jd / tb")}', name:'affType', index:'a.aff_type', width:150, align:"left"},
+		{header:'${text("资源id")}', name:'resourceIds', index:'a.resource_ids', width:150, align:"left"},
+		{header:'${text("hash")}', name:'uniqueHash', index:'a.unique_hash', width:150, align:"left"},
+		{header:'${text("NORMAL / DELETE")}', name:'status', index:'a.status', width:150, align:"center", formatter: function(val, obj, row, act){
+			return js.getDictLabel(${@DictUtils.getDictListJson('sys_search_status')}, val, '${text("未知")}', true);
+		}},
+		{header:'${text("更新时间")}', name:'updateDate', index:'a.update_date', width:150, align:"center"},
+		{header:'${text("备注信息")}', name:'remarks', index:'a.remarks', width:150, align:"left"},
+		{header:'${text("操作")}', name:'actions', width:120, formatter: function(val, obj, row, act){
+			var actions = [];
+			//<% if(hasPermi('cat:maocheRobotCrawlerMessageSyncDO:edit')){ %>
+				actions.push('<a href="${ctx}/cat/maocheRobotCrawlerMessageSyncDO/form?id='+row.id+'" class="btnList" title="${text("编辑信息采集表")}"><i class="fa fa-pencil"></i></a>&nbsp;');
+				actions.push('<a href="${ctx}/cat/maocheRobotCrawlerMessageSyncDO/delete?id='+row.id+'" class="btnList" title="${text("删除信息采集表")}" data-confirm="${text("确认要删除该信息采集表吗？")}"><i class="fa fa-trash-o"></i></a>&nbsp;');
+			//<% } %>
+			return actions.join('');
+		}}
+	],
+	// 加载成功后执行事件
+	ajaxSuccess: function(data){
+		
+	}
+});
+</script>

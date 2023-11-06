@@ -160,8 +160,6 @@ public class ElasticSearch7Service {
                                                  Function<String, R> converter,
                                                  Function<Aggregations, Map<String, List<A>>> bucketConverter) {
 
-//        searchSourceBuilder.sort("_score", SortOrder.DESC);
-
         SearchRequest searchRequest = new SearchRequest();
         searchRequest.indices(indexEnum.getIndex());
         searchRequest.types(indexEnum.getType());

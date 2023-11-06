@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jeesite.modules.cat.dao.MaocheRobotCrawlerMessageProductDao">
+	
+	<!-- 查询数据
+	<select id="findList" resultType="MaocheRobotCrawlerMessageProductDO">
+		SELECT ${sqlMap.column.toSql()}
+		FROM ${sqlMap.table.toSql()}
+		<where>
+			${sqlMap.where.toSql()}
+		</where>
+		ORDER BY ${sqlMap.order.toSql()}
+	</select> -->
+
+	<insert id="add" useGeneratedKeys="true" keyProperty="id"
+			parameterType="com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageProductDO">
+
+		INSERT INTO maoche_robot_crawler_message_product
+		(robot_msg_id, msg_id, aff_type, resource_id, inner_id,
+		api_content, category, title, short_title, shop_dsr,
+		shop_name, seller_id, price, volume, status,
+		create_by, update_by, create_date, update_date, remarks, pict_url, commission_rate)
+		VALUES
+		(#{robotMsgId},#{msgId},#{affType},#{resourceId},#{innerId},
+		#{apiContent},#{category},#{title},#{shortTitle},#{shopDsr},
+		#{shopName},#{sellerId},#{price},#{volume},#{status},
+		#{createBy},#{updateBy},#{createDate},#{updateDate},#{remarks}, #{pictUrl}, #{commissionRate});
+	</insert>
+	
+</mapper>

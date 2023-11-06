@@ -461,66 +461,6 @@ public class CgUnionProductService {
         return Result.OK(res);
     }
 
-    public Result<String> getContentEApiUrl(String vekey, String content, String pid, Map<String, Object> extraMap) {
-        CloseableHttpClient httpClient = MtxHttpClientUtils.getHttpsClient();
-        String res = "";
-        String errorMsg = "查询失败";
-        try {
-            String encode = URLEncoder.encode(content, StandardCharsets.UTF_8);
-            String method = "GET";
-            // API网址
-            String url = "http://api.veapi.cn/tbk/hcapi_v2?vekey=%s&para=%s&pid=%s&";
-            url = String.format(url, vekey, encode, pid);
-
-            if (MapUtils.isNotEmpty(extraMap)) {
-                String extraUrl = "";
-                for (Map.Entry<String, Object> entry : extraMap.entrySet()) {
-                    extraUrl += "&" + entry.getKey() + "=" + entry.getValue();
-                }
-                url += extraUrl;
-            }
-
-            RequestBuilder builder = RequestBuilder.create(method);
-            RequestConfig configBuilder = RequestConfig.custom().setCookieSpec(CookieSpecs.STANDARD).build();
-            builder.setConfig(configBuilder);
-            builder.setUri(url);
-
-
-            CloseableHttpResponse response = httpClient.execute(builder.build());
-            HttpEntity entity = response.getEntity();
-            String resp = EntityUtils.toString(entity, "UTF-8");
-
-            JSONObject jsonObject = JSONObject.parseObject(resp);
-            if (jsonObject != null) {
-                JSONObject data = jsonObject.getJSONObject("data");
-                if (data != null) {
-                    res = data.getString("tbk_pwd");
-                }
-                Object o = jsonObject.get("msg");
-                if (o instanceof String) {
-                    errorMsg = (String) o;
-                }
-            }
-            // 说明错误了
-            if (StringUtils.isBlank(res)) {
-                return Result.ERROR(500, errorMsg);
-            }
-
-            if (StringUtils.isNotBlank(res)) {
-                // 替换掉一个￥
-                res = "(" + res.substring(1);
-                // 替换第二个￥
-                res = res.replace("￥", ")");
-
-                res += "/ CA21,)/ AC01";
-            }
-        } catch (Exception e) {
-            log.error("getAuthUrl 获取授权地址失败", e);
-        }
-
-        return Result.OK(res);
-    }
-
     /**
      * https://www.veapi.cn/apidoc/tongyongjiekou/70
      * 从用户提供的电商平台的标题中，提取精准产品词，和相关的品牌词、规格、材质等属性。从而准确理解用户搜索意图。

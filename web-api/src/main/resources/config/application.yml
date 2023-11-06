@@ -63,9 +63,9 @@ jdbc:
   pool:
 
     # 初始化连接数
-    init: 1
+    init: 20
     # 最小连接数
-    minIdle: 3
+    minIdle: 20
     # 最大连接数
     maxActive: 1000
 
@@ -76,9 +76,11 @@ jdbc:
   ds2:
     type: mysql
     driver: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://106.52.146.81:6607/maoche?useSSL=false&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=CONVERT_TO_NULL&serverTimezone=Asia/Shanghai
+#    url: jdbc:mysql://106.52.146.81:6607/maoche?useSSL=false&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=CONVERT_TO_NULL&serverTimezone=Asia/Shanghai
+    url: jdbc:mysql://82.157.6.8:6607/maoche?useSSL=false&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=CONVERT_TO_NULL&serverTimezone=Asia/Shanghai
     username: root
-    password: vXRXf#}4}Y}a8M)mfC66
+    password: vXRXf#}4}Y}a8M)mfC]9
+#    password: vXRXf#}4}Y}a8M)mfC66
     testSql: SELECT 1
     # 其它数据源支持密码加密
     encrypt:

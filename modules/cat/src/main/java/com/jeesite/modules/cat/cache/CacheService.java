@@ -70,4 +70,8 @@ public interface CacheService {
     Long incr(String key);
 
     Long incrBy(String key, Long incrBy);
+
+    boolean setWithExpireTime(String key, String value, int seconds);
+
+    boolean delete(String key);
 }

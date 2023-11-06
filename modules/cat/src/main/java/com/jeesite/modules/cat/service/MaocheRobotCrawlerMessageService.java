@@ -1,6 +1,8 @@
 package com.jeesite.modules.cat.service;
 
 import java.util.List;
+
+import org.apache.commons.collections.CollectionUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -76,6 +78,14 @@ public class MaocheRobotCrawlerMessageService extends CrudService<MaocheRobotCra
 	@Transactional
 	public void delete(MaocheRobotCrawlerMessageDO maocheRobotCrawlerMessageDO) {
 		super.delete(maocheRobotCrawlerMessageDO);
+	}
+
+	public List<MaocheRobotCrawlerMessageDO> startById(long id, int limit, List<String> affTypes) {
+		if (CollectionUtils.isEmpty(affTypes)) {
+			return null;
+		}
+
+		return dao.startById(id, limit, affTypes);
 	}
 	
 }

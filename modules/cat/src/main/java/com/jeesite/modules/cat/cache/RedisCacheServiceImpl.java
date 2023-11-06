@@ -232,4 +232,20 @@ public class RedisCacheServiceImpl implements CacheService {
         }
 
     }
+
+    @Override
+    public boolean delete(String key) {
+        Jedis resource = jedisPool.getResource();
+        Long del = resource.del(key);
+
+        return del != null && del > 0;
+    }
+
+    @Override
+    public boolean setWithExpireTime(String key, String value, int seconds) {
+        Jedis resource = jedisPool.getResource();
+
+        String result = resource.setex(key, seconds, value);
+        return "OK".equalsIgnoreCase(result);
+    }
 }

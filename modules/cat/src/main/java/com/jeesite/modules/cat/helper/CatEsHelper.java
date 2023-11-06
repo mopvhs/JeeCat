@@ -53,7 +53,7 @@ public class CatEsHelper {
         index.setMsgSvrId(item.getMsgsvrid());
         index.setFromType(item.getFromtype());
         index.setMsgType(item.getMsgtype());
-        index.setTime(DateTimeUtils.getDate(item.getTime()));
+        index.setTime(item.getTime());
         index.setRemark(item.getRemark());
         index.setMsgNew(item.getMsgNew());
         index.setImageUrl(item.getImageUrl());
@@ -94,6 +94,13 @@ public class CatEsHelper {
         Long volume = ProductValueHelper.getVolume(jsonObject);
         String title = ProductValueHelper.getTitle(jsonObject);
         String itemId = ProductValueHelper.getItemId(jsonObject);
+        String itemIdSuffix = null;
+        if (StringUtils.isNotBlank(itemId)) {
+            String[] split = StringUtils.split(itemId, "-");
+            if (split != null && split.length >= 2) {
+                itemIdSuffix = split[1];
+            }
+        }
         String shopTitle = ProductValueHelper.getShopTitle(jsonObject);
         String productImage = ProductValueHelper.getProductImage(jsonObject);
         Long couponTotalCount = ProductValueHelper.getCouponTotalCount(jsonObject);
@@ -152,6 +159,7 @@ public class CatEsHelper {
         index.setVolume(volume);
         index.setTitle(title);
         index.setItemId(itemId);
+        index.setItemIdSuffix(itemIdSuffix);
         index.setShopTitle(shopTitle);
         index.setCouponTotalCount(couponTotalCount);
         index.setProductImage(productImage);

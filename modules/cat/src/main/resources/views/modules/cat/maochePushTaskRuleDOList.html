@@ -1,0 +1,145 @@
+<% layout('/layouts/default.html', {title: 'maoche_push_task_rule管理', libs: ['dataGrid']}){ %>
+<div class="main-content">
+	<div class="box box-main">
+		<div class="box-header">
+			<div class="box-title">
+				<i class="fa icon-notebook"></i> ${text('maoche_push_task_rule管理')}
+			</div>
+			<div class="box-tools pull-right">
+				<a href="#" class="btn btn-default" id="btnSearch" title="${text('查询')}"><i class="fa fa-filter"></i> ${text('查询')}</a>
+				<% if(hasPermi('cat:maochePushTaskRuleDO:edit')){ %>
+					<a href="${ctx}/cat/maochePushTaskRuleDO/form" class="btn btn-default btnTool" title="${text('新增maoche_push_task_rule')}"><i class="fa fa-plus"></i> ${text('新增')}</a>
+				<% } %>
+				<a href="#" class="btn btn-default" id="btnSetting" title="${text('设置')}"><i class="fa fa-navicon"></i></a>
+			</div>
+		</div>
+		<div class="box-body">
+			<#form:form id="searchForm" model="${maochePushTaskRuleDO}" action="${ctx}/cat/maochePushTaskRuleDO/listData" method="post" class="form-inline hide"
+					data-page-no="${parameter.pageNo}" data-page-size="${parameter.pageSize}" data-order-by="${parameter.orderBy}">
+				<div class="form-group">
+					<label class="control-label">${text('brand')}：</label>
+					<div class="control-inline">
+						<#form:input path="brand" maxlength="128" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('product_name')}：</label>
+					<div class="control-inline">
+						<#form:input path="productName" maxlength="255" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('keyword')}：</label>
+					<div class="control-inline">
+						<#form:input path="keyword" maxlength="255" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('category_id')}：</label>
+					<div class="control-inline">
+						<#form:input path="categoryId" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('category_name')}：</label>
+					<div class="control-inline">
+						<#form:input path="categoryName" maxlength="255" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('level_one_category_id')}：</label>
+					<div class="control-inline">
+						<#form:input path="levelOneCategoryId" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('level_one_category_name')}：</label>
+					<div class="control-inline">
+						<#form:input path="levelOneCategoryName" maxlength="255" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('star')}：</label>
+					<div class="control-inline">
+						<#form:input path="star" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('description')}：</label>
+					<div class="control-inline">
+						<#form:input path="description" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('polling')}：</label>
+					<div class="control-inline">
+						<#form:input path="polling" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('specifications')}：</label>
+					<div class="control-inline">
+						<#form:input path="specifications" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('正常、冻结等')}：</label>
+					<div class="control-inline width-120">
+						<#form:select path="status" dictType="sys_search_status" blankOption="true" class="form-control isQuick"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('备注信息')}：</label>
+					<div class="control-inline">
+						<#form:input path="remarks" maxlength="256" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<button type="submit" class="btn btn-primary btn-sm">${text('查询')}</button>
+					<button type="reset" class="btn btn-default btn-sm isQuick">${text('重置')}</button>
+				</div>
+			</#form:form>
+			<table id="dataGrid"></table>
+			<div id="dataGridPage"></div>
+		</div>
+	</div>
+</div>
+<% } %>
+<script>
+// 初始化DataGrid对象
+$('#dataGrid').dataGrid({
+	searchForm: $("#searchForm"),
+	columnModel: [
+		{header:'${text("brand")}', name:'brand', index:'a.brand', width:150, align:"left", frozen:true, formatter: function(val, obj, row, act){
+			return '<a href="${ctx}/cat/maochePushTaskRuleDO/form?id='+row.id+'" class="btnList" data-title="${text("编辑maoche_push_task_rule")}">'+(val||row.id)+'</a>';
+		}},
+		{header:'${text("product_name")}', name:'productName', index:'a.product_name', width:150, align:"left"},
+		{header:'${text("keyword")}', name:'keyword', index:'a.keyword', width:150, align:"left"},
+		{header:'${text("category_id")}', name:'categoryId', index:'a.category_id', width:150, align:"center"},
+		{header:'${text("category_name")}', name:'categoryName', index:'a.category_name', width:150, align:"left"},
+		{header:'${text("level_one_category_id")}', name:'levelOneCategoryId', index:'a.level_one_category_id', width:150, align:"center"},
+		{header:'${text("level_one_category_name")}', name:'levelOneCategoryName', index:'a.level_one_category_name', width:150, align:"left"},
+		{header:'${text("star")}', name:'star', index:'a.star', width:150, align:"center"},
+		{header:'${text("description")}', name:'description', index:'a.description', width:150, align:"left"},
+		{header:'${text("polling")}', name:'polling', index:'a.polling', width:150, align:"center"},
+		{header:'${text("specifications")}', name:'specifications', index:'a.specifications', width:150, align:"left"},
+		{header:'${text("正常、冻结等")}', name:'status', index:'a.status', width:150, align:"center", formatter: function(val, obj, row, act){
+			return js.getDictLabel(${@DictUtils.getDictListJson('sys_search_status')}, val, '${text("未知")}', true);
+		}},
+		{header:'${text("更新时间")}', name:'updateDate', index:'a.update_date', width:150, align:"center"},
+		{header:'${text("备注信息")}', name:'remarks', index:'a.remarks', width:150, align:"left"},
+		{header:'${text("操作")}', name:'actions', width:120, formatter: function(val, obj, row, act){
+			var actions = [];
+			//<% if(hasPermi('cat:maochePushTaskRuleDO:edit')){ %>
+				actions.push('<a href="${ctx}/cat/maochePushTaskRuleDO/form?id='+row.id+'" class="btnList" title="${text("编辑maoche_push_task_rule")}"><i class="fa fa-pencil"></i></a>&nbsp;');
+				actions.push('<a href="${ctx}/cat/maochePushTaskRuleDO/delete?id='+row.id+'" class="btnList" title="${text("删除maoche_push_task_rule")}" data-confirm="${text("确认要删除该maoche_push_task_rule吗？")}"><i class="fa fa-trash-o"></i></a>&nbsp;');
+			//<% } %>
+			return actions.join('');
+		}}
+	],
+	// 加载成功后执行事件
+	ajaxSuccess: function(data){
+		
+	}
+});
+</script>

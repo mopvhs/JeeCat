@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jeesite.modules.cat.dao.MaocheSyncDataInfoDao">
+	
+	<!-- 查询数据
+	<select id="findList" resultType="MaocheSyncDataInfoDO">
+		SELECT ${sqlMap.column.toSql()}
+		FROM ${sqlMap.table.toSql()}
+		<where>
+			${sqlMap.where.toSql()}
+		</where>
+		ORDER BY ${sqlMap.order.toSql()}
+	</select> -->
+
+	<insert id="add" useGeneratedKeys="true" keyProperty="id"
+			parameterType="com.jeesite.modules.cat.entity.MaocheSyncDataInfoDO">
+
+		INSERT INTO `maoche_sync_data_info` (`sync_max_id`, `step`, `table_name`, `sync_time`, `status`, `create_by`, `create_date`, `update_by`, `update_date`, `remarks`)
+		VALUES (#{syncMaxId}, #{step}, #{tableName}, #{syncTime}, #{status}, #{createBy}, #{createDate}, #{updateBy}, #{updateDate}, #{remarks})
+
+	</insert>
+
+	<select id="getLatestOffset" resultType="MaocheSyncDataInfoDO">
+		select * from maoche_sync_data_info
+		<where>
+			table_name = #{tableName}
+		</where>
+		order by sync_time desc limit 1
+	</select>
+
+	<update id="updateOffset">
+		update maoche_sync_data_info
+		<set>
+			sync_max_id = #{offset},
+			sync_time = #{syncTime}
+		</set>
+		<where>
+			id = #{id} and
+			sync_time <![CDATA[<]]> #{syncTime}
+		</where>
+	</update>
+	
+</mapper>

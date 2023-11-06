@@ -26,7 +26,7 @@ public class DingDanXiaApiService {
      */
     public Result<JdUnionIdPromotion> jdByUnionidPromotion(String apiKey, String materialId, long unionId, long positionId) {
 
-        String url = "http://api.tbk.dingdanxia.com/jd/by_unionid_promotion?apikey=%s&materialId=%s&unionId=%d&positionId=%d";
+        String url = "http://api.tbk.dingdanxia.com/jd/by_unionid_promotion?apikey=%s&materialId=%s&unionId=%d&positionId=%d&autoSearch=true";
 
         try {
             String encode = URLEncoder.encode(materialId);

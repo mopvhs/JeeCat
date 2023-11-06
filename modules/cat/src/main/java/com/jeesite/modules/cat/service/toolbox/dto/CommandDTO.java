@@ -41,6 +41,10 @@ public class CommandDTO implements Serializable {
 
         private Long id;
 
+        private String numIid;
+
+        private String image;
+
         // 到手价
         private Long reservePrice;
 
@@ -58,6 +62,9 @@ public class CommandDTO implements Serializable {
 
         // 佣金率
         private Long commissionRate;
+
+        // 佣金率
+        private Long commission;
 
         // 店铺名称
         private String shopTitle;

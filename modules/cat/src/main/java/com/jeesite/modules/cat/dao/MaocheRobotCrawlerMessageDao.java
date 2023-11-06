@@ -14,7 +14,7 @@ import java.util.List;
  */
 @MyBatisDao(dataSourceName = "ds2")
 public interface MaocheRobotCrawlerMessageDao extends CrudDao<MaocheRobotCrawlerMessageDO> {
-
-
     List<MaocheRobotCrawlerMessageDO> findAll(@Param("id") Long id, @Param("limit") Integer limit);
+
+    List<MaocheRobotCrawlerMessageDO> startById(@Param("id") Long id, @Param("limit") Integer limit, @Param("affTypes") List<String> affTypes);
 }
