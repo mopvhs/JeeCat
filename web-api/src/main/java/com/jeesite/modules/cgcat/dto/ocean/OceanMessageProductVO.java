@@ -1,5 +1,6 @@
 package com.jeesite.modules.cgcat.dto.ocean;
 
+import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageProductDO;
 import com.jeesite.modules.cat.model.UnionProductTO;
 import com.jeesite.modules.cat.service.es.dto.MaocheMessageProductIndex;
 import lombok.Data;
@@ -55,6 +56,8 @@ public class OceanMessageProductVO implements Serializable {
 
         return dto;
     }
+
+
 
 
 }

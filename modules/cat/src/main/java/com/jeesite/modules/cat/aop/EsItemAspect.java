@@ -18,4 +18,6 @@ public @interface EsItemAspect {
     // get gt
     String rangeOp() default "";
 
+    // 是否清除空格
+    boolean needTrim() default false;
 }

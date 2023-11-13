@@ -59,7 +59,7 @@ public class CatEsHelper {
         index.setImageUrl(item.getImageUrl());
         index.setCreateTime(item.getCreateTime());
         index.setUpdateTime(item.getUpdateTime());
-        index.setProcessed(item.getProcessed());
+        index.setProcessed(0L);
 
         String affType = null;
         if (StringUtils.isNotBlank(item.getAffType())) {

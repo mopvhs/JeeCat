@@ -1,6 +1,8 @@
 package com.jeesite.modules.cgcat;
 
 
+import com.alibaba.fastjson.JSONArray;
+import com.google.common.util.concurrent.RateLimiter;
 import com.jeesite.common.collect.MapUtils;
 import com.jeesite.common.lang.NumberUtils;
 import com.jeesite.common.lang.StringUtils;
@@ -11,6 +13,8 @@ import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageDO;
 import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageProductDO;
 import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageSyncDO;
 import com.jeesite.modules.cat.entity.MaocheSyncDataInfoDO;
+import com.jeesite.modules.cat.service.FlameHttpService;
+import com.jeesite.modules.cat.service.FlameProxyHttpService;
 import com.jeesite.modules.cat.service.MaocheAlimamaUnionProductService;
 import com.jeesite.modules.cat.service.MaocheRobotCrawlerMessageProductService;
 import com.jeesite.modules.cat.service.MaocheRobotCrawlerMessageService;
@@ -19,8 +23,10 @@ import com.jeesite.modules.cat.service.MaocheSyncDataInfoService;
 import com.jeesite.modules.cat.service.cg.CgUnionProductService;
 import com.jeesite.modules.cat.service.cg.inner.InnerApiService;
 import com.jeesite.modules.cat.service.cg.third.DingDanXiaApiService;
+import com.jeesite.modules.cat.service.cg.third.VeApiService;
 import com.jeesite.modules.cat.service.cg.third.dto.JdUnionIdPromotion;
 import com.jeesite.modules.cat.service.cg.third.tb.TbApiService;
+import com.jeesite.modules.cat.service.cg.third.tb.dto.CommandResponse;
 import com.jeesite.modules.cat.service.stage.cg.ocean.OceanContext;
 import com.jeesite.modules.cat.service.stage.cg.ocean.OceanStage;
 import com.jeesite.modules.cat.service.toolbox.CommandService;
@@ -31,6 +37,11 @@ import com.jeesite.modules.cgcat.dto.CommandRequest;
 import com.jeesite.modules.cgcat.dto.TbProductRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.nodes.Node;
+import org.jsoup.select.Elements;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -47,6 +58,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Slf4j
 @Controller
@@ -94,6 +106,12 @@ public class CgToolboxController {
 
     @Resource
     private OceanStage tbOceanStage;
+
+    @Resource
+    private VeApiService veApiService;
+
+
+    private RateLimiter limiter = RateLimiter.create(1);
 
     /**
      * 口令信息替换
@@ -165,9 +183,10 @@ public class CgToolboxController {
             Result<String> result = innerApiService.syncTbProduct(request.getNumIid());
             if (!Result.isOK(result)) {
                 Long ttl = cacheService.ttl(key);
-                cacheService.setWithExpireTime(key, "1", (int) TimeUnit.SECONDS.toSeconds(10));
-
                 String message = result.getMessage();
+
+                cacheService.setWithExpireTime(key, message, (int) TimeUnit.SECONDS.toSeconds(10));
+
                 if (ttl != null && ttl > 0) {
                     message = message + "，\n请" + ttl + "秒后重试" + "\n请" + ttl + "秒后重试" + "\n请" + ttl + "秒后重试" + "\n请" + ttl + "秒后重试" + "\n请" + ttl + "秒后重试";
                 }
@@ -348,6 +367,45 @@ public class CgToolboxController {
         productDO.setRemarks("");
 
         return productDO;
+    }
+
+    @RequestMapping("/tb/search")
+    public Result<?> tbSearch(String itemId) {
+        String vekey = "V73687541H40026415";
+        String pid = "mm_30153430_909250463_109464700418";
+
+        Result<JSONArray> jsonArrayResult = veApiService.tbSearch(vekey, itemId, pid);
+
+        return jsonArrayResult;
+    }
+
+    @Resource
+    private FlameProxyHttpService flameProxyHttpService;
+
+    @RequestMapping("/tb/jiexi/iid")
+    public Result<Long> jiexiIid(String itemId) {
+        Map<String, Object> objectMap = new HashMap<>();
+        objectMap.put("detail", 1);
+        // 获取到口令详情
+        Result<CommandResponse> commonCommand = tbApiService.getCommonCommand(itemId, objectMap);
+        if (!Result.isOK(commonCommand)) {
+            return Result.ERROR(500, "获取口令详情失败");
+        }
+        CommandResponse result = commonCommand.getResult();
+//        String itemUrl = result.getItemUrl();
+        String itemUrl = result.getSclickUrl();
+
+        Result<Long> analysisTbIid = innerApiService.getAnalysisTbIid(itemUrl);
+
+        return analysisTbIid;
+    }
+
+    @RequestMapping("/tb/jiexi/item/url/iid")
+    public Result<Long> jiexiItemUrlIid(String itemUrl) {
+
+        Result<Long> analysisTbIid = innerApiService.getAnalysisTbIid(itemUrl);
+
+        return analysisTbIid;
     }
 
 

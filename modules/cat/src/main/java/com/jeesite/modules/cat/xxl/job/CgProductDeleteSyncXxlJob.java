@@ -85,7 +85,7 @@ public class CgProductDeleteSyncXxlJob extends IJobHandler {
                 cgUnionProductService.indexEs(list, limit);
                 long end = System.currentTimeMillis();
                 long seconds = TimeUnit.MILLISECONDS.toSeconds(end - start);
-                log.info("del sync xxl job current total :{}, single time:{}", total, seconds);
+//                log.info("del sync xxl job current total :{}, single time:{}", total, seconds);
 
                 if (list.size() < limit) {
                     break;

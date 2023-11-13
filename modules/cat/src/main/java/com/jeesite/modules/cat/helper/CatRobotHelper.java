@@ -187,6 +187,12 @@ public class CatRobotHelper {
             if (StringUtils.isNotBlank(annotation.field())) {
                 name = annotation.field();
             }
+            boolean needTrim = annotation.needTrim();
+            if (needTrim && value instanceof String) {
+                // 移除空格
+                value = String.valueOf(value).replace(" ", "");
+            }
+
             switch (q) {
                 case "itemQuery":
                     boolBuilder.must(QueryBuilders.termQuery(name, value));

@@ -355,6 +355,7 @@ public class CgUnionProductService {
                 });
                 list.add(data);
             } catch (Exception e) {
+                // todo yhq npe
                 log.error("index error item:{} ", JSON.toJSONString(item), e);
             }
         }
@@ -514,83 +515,8 @@ public class CgUnionProductService {
         if (CollectionUtils.isEmpty(documents)) {
             return new ArrayList<>();
         }
-        List<Long> ids = documents.stream().map(CarAlimamaUnionProductIndex::getId).toList();
 
-        long start = System.currentTimeMillis();
-//        List<MaocheAlimamaUnionProductDO> productDOs = maocheAlimamaUnionProductDao.listByIds(ids);
-//        List<MaocheAlimamaUnionProductDO> productDOs = maocheAlimamaUnionProductDao.listSimpleByIds(ids);
-        List<MaocheAlimamaUnionProductDO> productDOs = maocheAlimamaUnionProductDao.listSimpleNotContentByIds(ids);
-
-        // 获取到商品itemId
-        List<String> itemIds = UnionProductHelper.getItemIds(productDOs);
-        List<String> iids = UnionProductHelper.getIids(productDOs);
-
-        // 获取标签信息
-//        List<MaocheAlimamaUnionTitleKeywordDO> keywordDOs = maocheAlimamaUnionTitleKeywordService.listByItemIdSuffixs(itemIds);
-        List<MaocheAlimamaUnionTitleKeywordDO> keywordDOs = new ArrayList<>();
-
-        // 获取有好价信息
-//        List<MaocheAlimamaUnionGoodPriceDO> unionGoodPriceDOs = maocheAlimamaUnionGoodPriceService.listByItemIdSuffixs(itemIds, 3);
-        List<MaocheAlimamaUnionGoodPriceDO> unionGoodPriceDOs = new ArrayList<>();
-        long end = System.currentTimeMillis() - start;
-        if (end > 400) {
-            log.info("listProductInfo product price time:{}, itemIds:{}", end, JsonUtils.toJSONString(itemIds));
-        }
-
-//        List<MaocheAlimamaUnionProductPriceChartDO> priceChartDOs = maocheAlimamaUnionProductPriceChartService.listByIids(iids);
-
-        // 获取sku 详情
-//        List<MaocheAlimamaUnionProductDetailDO> productDetailDOs = maocheAlimamaUnionProductDetailService.listByItemIdSuffixs(itemIds);
-
-        // 获取大淘客的数据
-//        Map<String, MaocheDataokeProductDO> daTaoKeProductMap = getDaTaoKeProductMap(productDOs);
-
-        /*List<Long> cidOnes = new ArrayList<>();
-        // 一级类目
-        for (CarAlimamaUnionProductIndex item : documents) {
-            if (CollectionUtils.isEmpty(item.getCidOnes())) {
-                continue;
-            }
-            cidOnes.addAll(item.getCidOnes());
-        }
-        List<MaocheCategoryDO> categoryDOs = maocheCategoryService.listByIds(cidOnes);*/
-        // 商品自定义类目
-//        List<MaocheCategoryProductRelDO> maocheCategoryProductRelDOs = maocheCategoryProductRelService.listByItemIdSuffixs(itemIds);
-
-
-        List<UnionProductTO> unionProducts = UnionProductHelper.convertUnionProduct(documents,
-                productDOs,
-                keywordDOs,
-                unionGoodPriceDOs,
-                null,
-                new ArrayList<>()
-//                ,
-//                priceChartDOs
-        );
-
-        return unionProducts;
-    }
-
-    public AggregationBuilder buildWarehouseAgg(CatUnionProductCondition condition) {
-
-        BucketOrder bucketOrder = BucketOrder.count(false);
-
-        return AggregationBuilders
-                .terms("by_category")
-                .field("categoryName")
-                .order(bucketOrder)
-                .size(10);
-    }
-
-    public AggregationBuilder buildLevelOneCategoryAgg(CatUnionProductCondition condition) {
-
-        BucketOrder bucketOrder = BucketOrder.count(false);
-
-        return AggregationBuilders
-                .terms("by_level_one_category")
-                .field("levelOneCategoryName")
-                .order(bucketOrder)
-                .size(10);
+        return UnionProductHelper.convertUnionProduct(documents);
     }
 
     public AggregationBuilder buildCatMessagePushAgg(CatUnionProductCondition condition) {
@@ -680,19 +606,5 @@ public class CgUnionProductService {
                 searchSourceBuilder.sort(name, sortOrder);
             }
         }
-    }
-
-    public static void main(String[] args) {
-
-        String a1 = "该商品当前低于去年促销价";
-        String a2 = "该商品低于全网同款均价XX%";
-        String a3 = "该商品当前为近XX天最低价";
-
-        String match = "低于";
-        int i = StringUtils.indexOf(a2, match);
-        System.out.println(i);
-
-        System.out.println(a2.substring(0, i));
-        System.out.println(a2.substring(i));
     }
 }

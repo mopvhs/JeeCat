@@ -1,5 +1,7 @@
 package com.jeesite.modules.cgcat;
 
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 import com.google.common.collect.Lists;
 import com.jeesite.common.entity.Page;
 import com.jeesite.common.lang.NumberUtils;
@@ -10,6 +12,7 @@ import com.jeesite.common.utils.PatternUtils;
 import com.jeesite.common.web.Result;
 import com.jeesite.modules.cat.dao.MaocheAlimamaUnionProductDao;
 import com.jeesite.modules.cat.dao.MaocheAlimamaUnionProductPriceChartDao;
+import com.jeesite.modules.cat.entity.CsOpLogDO;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductDO;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductPriceChartDO;
 import com.jeesite.modules.cat.entity.MaocheCategoryMappingDO;
@@ -29,6 +32,8 @@ import com.jeesite.modules.cat.model.CategoryTree;
 import com.jeesite.modules.cat.model.ProductAuditRequest;
 import com.jeesite.modules.cat.model.UnionProductTO;
 import com.jeesite.modules.cat.model.dataoke.DaTaoKeResponse;
+import com.jeesite.modules.cat.service.CsOpLogService;
+import com.jeesite.modules.cat.service.MaocheAlimamaUnionProductService;
 import com.jeesite.modules.cat.service.MaocheCategoryMappingService;
 import com.jeesite.modules.cat.service.MaocheCategoryService;
 import com.jeesite.modules.cat.service.cg.AutoProductService;
@@ -36,6 +41,8 @@ import com.jeesite.modules.cat.service.cg.CgUnionProductService;
 import com.jeesite.modules.cat.service.cg.CgUnionProductStatisticsService;
 import com.jeesite.modules.cat.service.cg.CgUserRcmdService;
 import com.jeesite.modules.cat.service.cg.DaTaoKeApiService;
+import com.jeesite.modules.cat.service.cg.inner.InnerApiService;
+import com.jeesite.modules.cat.service.cg.third.VeApiService;
 import com.jeesite.modules.cat.service.helper.ProductSearchHelper;
 import com.jeesite.modules.cat.service.message.DingDingService;
 import com.jeesite.modules.cgcat.dto.HistorySearchKeywordVO;
@@ -56,6 +63,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -95,6 +103,18 @@ public class CgProductPushController {
 
     @Resource
     private AutoProductService autoProductService;
+
+    @Resource
+    private VeApiService veApiService;
+
+    @Resource
+    private CsOpLogService csOpLogService;
+
+    @Resource
+    private MaocheAlimamaUnionProductService maocheAlimamaUnionProductService;
+
+    @Resource
+    private InnerApiService innerApiService;
 
     // 微信企业 @推送商品
     @RequestMapping(value = "/product/rcmd/robot/at")
@@ -457,10 +477,65 @@ public class CgProductPushController {
         if (request == null || StringUtils.isBlank(request.getItemId())) {
             return Result.ERROR(404, "参数错误");
         }
-
-        Result<String> eApiUrl = cgUnionProductService.getEApiUrl("V73687541H40026415", request.getItemId(), "mm_30153430_909250463_109464700418");
+        String vekey = "V73687541H40026415";
+        String pid = "mm_30153430_909250463_109464700418";
+        Result<String> eApiUrl = cgUnionProductService.getEApiUrl(vekey, request.getItemId(), pid);
         if (!Result.isOK(eApiUrl)) {
-            return eApiUrl;
+            String errorMsg = "哎呀，来晚了，宝贝卖完啦！";
+
+            CatUnionProductCondition condition = new CatUnionProductCondition();
+            condition.setItemId(request.getItemId());
+
+            ElasticSearchData<CarAlimamaUnionProductIndex, CatProductBucketTO> search = cgUnionProductService.searchProduct(condition, null, 0, 1);
+            if (search == null || CollectionUtils.isEmpty(search.getDocuments())) {
+                eApiUrl.setMessage(errorMsg);
+                return eApiUrl;
+            }
+
+            List<CarAlimamaUnionProductIndex> documents = search.getDocuments();
+            CarAlimamaUnionProductIndex product = documents.get(0);
+            // 判断错误信息
+            // 该宝贝已下架或非淘客宝贝
+            String message = eApiUrl.getMessage();
+            if (StringUtils.isNotBlank(message) && message.contains("该宝贝已下架或非淘客宝贝")) {
+                Result<JSONArray> jsonArrayResult = veApiService.tbSearch(vekey, request.getItemId(), pid);
+                if (!Result.isOK(jsonArrayResult) || CollectionUtils.isEmpty(jsonArrayResult.getResult())) {
+                    List<Long> ids = Collections.singletonList(product.getId());
+                    // 下架商品
+                    int row = maocheAlimamaUnionProductDao.updateSaleStatus(ids, SaleStatusEnum.OFF_SHELF.getStatus(), null);
+                    // 日志
+                    CsOpLogDO item = new CsOpLogDO();
+                    item.setResourceId(String.valueOf(product.getId()));
+                    item.setResourceType("maoche_product");
+                    item.setOpType("shared_command_auto_off_shelf");
+                    item.setBizType("maoche");
+                    item.setDescribe("口令普通商品自动下架");
+                    item.setOrigionContent("");
+                    item.setChangeContent("操作结果:" + row);
+                    item.setCreateDate(new Date());
+                    item.setUpdateDate(new Date());
+                    item.setCreateBy("system");
+                    item.setUpdateBy("system");
+                    item.setRemarks("");
+                    csOpLogService.save(item);
+                    // 更新索引
+                    List<MaocheAlimamaUnionProductDO> productDOs = maocheAlimamaUnionProductService.listByIds(ids);
+                    cgUnionProductService.indexEs(productDOs, 10);
+                    dingDingService.sendParseDingDingMsg("口令普通商品自动下架操作完成，ids:{}", JsonUtils.toJSONString(ids));
+                    return Result.ERROR(jsonArrayResult.getCode(), errorMsg);
+                }
+                // 更新商品，重新获取口令
+                JSONObject jsonObject = jsonArrayResult.getResult().getJSONObject(0);
+                String newItemId = jsonObject.getString("item_id");
+
+                // 更新商品
+                innerApiService.syncTbProduct(newItemId);
+                eApiUrl = cgUnionProductService.getEApiUrl(vekey, newItemId, pid);
+                if (!Result.isOK(eApiUrl)) {
+                    eApiUrl.setMessage(errorMsg);
+                    return eApiUrl;
+                }
+            }
         }
 
         return Result.OK(eApiUrl.getResult());

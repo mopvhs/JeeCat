@@ -46,6 +46,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -105,7 +106,6 @@ public class OceanController {
             productCondition.setIds(ids);
             ElasticSearchData<CarAlimamaUnionProductIndex, CatProductBucketTO> products =
                     cgUnionProductService.searchProduct(productCondition, null, from, size);
-
             List<UnionProductTO> productTOs = cgUnionProductService.listProductInfo(products);
 
             productMap = productTOs.stream().collect(Collectors.toMap(UnionProductTO::getId, i -> i));
@@ -135,19 +135,10 @@ public class OceanController {
     }
 
 
-    @RequestMapping(value = "ocean/product/relation/msg/list")
-    public Page<OceanMessageVO> listRelationProductMsg(@RequestBody OceanMsgProductSearchRequest query,
+    @RequestMapping(value = "ocean/msg/search")
+    public Page<OceanMessageVO> oceanMseeageSearch(@RequestBody OceanMsgSearchRequest query,
                                                              HttpServletRequest request, HttpServletResponse response) {
         Page<OceanMessageVO> page = new Page<>(request, response);
-        if (query == null) {
-            return page;
-        }
-        MaocheRobotCrawlerMessageProductDO productQuery = new MaocheRobotCrawlerMessageProductDO();
-        productQuery.setUiid(query.getMsgProductId());
-        MaocheRobotCrawlerMessageProductDO productDO = maocheRobotCrawlerMessageProductService.get(productQuery);
-        if (productDO == null) {
-            throw new RuntimeException("未找到对应的商品");
-        }
 
         int size = page.getPageSize();
         if (size <= 0) {
@@ -156,22 +147,66 @@ public class OceanController {
         int from = (page.getPageNo() - 1) * size;
 
         // 根据商品id查询关联的商品
-        String resourceId = productDO.getResourceId();
-        String affType = productDO.getAffType();
-
         OceanMessageCondition messageCondition = new OceanMessageCondition();
-        messageCondition.setResourceIds(Collections.singletonList(resourceId));
-        messageCondition.setAffType(affType);
-        messageCondition.setSorts(Collections.singletonList("createDate desc"));
+        messageCondition.setMsg(query.getKeyword());
+        messageCondition.setAffType("tb");
 
+        // todo yhq 先简单实现
+        String sort = "createDate desc";
+        if (StringUtils.isNotBlank(query.getSort())) {
+            sort = query.getSort() + " desc";
+        }
+        messageCondition.setSorts(Collections.singletonList(sort));
         ElasticSearchData<MaocheMessageSyncIndex, Object> searchMsg = oceanSearchService.searchMsg(messageCondition, from, size);
         if (searchMsg == null || CollectionUtils.isEmpty(searchMsg.getDocuments())) {
             return page;
         }
 
         List<MaocheMessageSyncIndex> documents = searchMsg.getDocuments();
-
         List<OceanMessageVO> vos = OceanMessageVO.toVOs(documents);
+        Map<Long, OceanMessageVO> messageVOMap = vos.stream().collect(Collectors.toMap(OceanMessageVO::getId, i -> i, (a, b) -> b));
+
+        // 获取商品信息，根据msgid查询
+        List<Long> msgIds = documents.stream().map(MaocheMessageSyncIndex::getId).distinct().toList();
+        if (CollectionUtils.isEmpty(msgIds)) {
+            return page;
+        }
+        MaocheRobotCrawlerMessageProductDO queryProduct = new MaocheRobotCrawlerMessageProductDO();
+        queryProduct.setMsgId_in(msgIds);
+        queryProduct.setStatus("NORMAL");
+        List<MaocheRobotCrawlerMessageProductDO> products = maocheRobotCrawlerMessageProductService.findList(queryProduct);
+        if (CollectionUtils.isNotEmpty(products)) {
+            List<Long> innerIds = products.stream().map(i -> NumberUtils.toLong(i.getInnerId())).filter(i -> i > 0).distinct().toList();
+            // 查询索引
+            CatUnionProductCondition productCondition = new CatUnionProductCondition();
+            productCondition.setIds(innerIds);
+            ElasticSearchData<CarAlimamaUnionProductIndex, CatProductBucketTO> unionProducts =
+                    cgUnionProductService.searchProduct(productCondition, null, 0, innerIds.size());
+            List<UnionProductTO> productTOs = cgUnionProductService.listProductInfo(unionProducts);
+            Map<Long, UnionProductTO> unionProductMap = productTOs.stream().collect(Collectors.toMap(UnionProductTO::getId, i -> i, (o, n) -> n));
+
+            Map<Long, List<MaocheRobotCrawlerMessageProductDO>> productMap = products.stream().collect(Collectors.groupingBy(MaocheRobotCrawlerMessageProductDO::getMsgId));
+            for (Map.Entry<Long, List<MaocheRobotCrawlerMessageProductDO>> entry : productMap.entrySet()) {
+                Long msgId = entry.getKey();
+                OceanMessageVO oceanMessageVO = messageVOMap.get(msgId);
+
+                List<MaocheRobotCrawlerMessageProductDO> productDOs = entry.getValue();
+                List<UnionProductTO> productVOs = new ArrayList<>();
+                for (MaocheRobotCrawlerMessageProductDO productDO : productDOs) {
+                    long innerId = NumberUtils.toLong(productDO.getInnerId());
+                    UnionProductTO productTO = null;
+                    if (innerId > 0) {
+                        productTO = unionProductMap.get(innerId);
+                    } else {
+                        productTO = OceanMessageVO.convertProduct(productDO);
+                    }
+                    if (productTO != null) {
+                        productVOs.add(productTO);
+                    }
+                }
+                oceanMessageVO.setProducts(productVOs);
+            }
+        }
 
         Page<OceanMessageVO> toPage = new Page<>(page.getPageNo() + 1, page.getPageSize(), searchMsg.getTotal(), vos);
 

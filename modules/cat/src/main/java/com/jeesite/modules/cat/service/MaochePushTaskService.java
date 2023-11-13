@@ -118,7 +118,7 @@ public class MaochePushTaskService extends CrudService<MaochePushTaskDao, Maoche
 
 	public List<MaochePushTaskDO> listValidTask() {
 
-		List<MaochePushTaskDO> tasks = dao.queryByStatus(TaskStatusEnum.NORMAL.name(), DateTimeUtils.getStringDate(new Date()), 10);
+		List<MaochePushTaskDO> tasks = dao.queryByStatus(TaskStatusEnum.NORMAL.name(), DateTimeUtils.getStringDate(new Date()), 50);
 
 		return tasks;
 	}

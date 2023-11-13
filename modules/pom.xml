@@ -16,6 +16,7 @@
         <module>core</module>
         <module>cms</module>
 		<module>cat</module>
+		<module>api-sdk</module>
     </modules>
 	
 	<developers>  

@@ -87,7 +87,7 @@ public class CgProductSyncXxlJob extends IJobHandler {
                 long end = System.currentTimeMillis();
                 long seconds = TimeUnit.MILLISECONDS.toSeconds(end - start);
 
-                log.info("normal sync xxl job current total :{}, single time:{}", total, seconds);
+//                log.info("normal sync xxl job current total :{}, single time:{}", total, seconds);
 
                 if (list.size() < limit) {
                     break;

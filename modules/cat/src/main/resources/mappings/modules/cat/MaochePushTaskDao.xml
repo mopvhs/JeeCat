@@ -53,7 +53,7 @@
 			and
 			publish_date <![CDATA[ <= ]]> #{publishDate}
 			order by create_date asc
-			limit 10
+			limit #{limit}
 		</where>
 	</select>
 

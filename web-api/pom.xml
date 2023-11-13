@@ -97,6 +97,12 @@
 		</dependency>
 
 		<dependency>
+			<groupId>com.kuaidaili</groupId>
+			<artifactId>kdl</artifactId>
+			<version>0.1.2</version>
+		</dependency>
+
+		<dependency>
 			<artifactId>jakarta.json-api</artifactId>
 			<groupId>jakarta.json</groupId>
 			<version>2.1.1</version>
