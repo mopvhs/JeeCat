@@ -77,7 +77,7 @@ public class OceanMessageVO implements Serializable {
         product.setImgUrl(productDO.getPictUrl());
         product.setVolume(productDO.getVolume());
         // todo
-        product.setPushNum(-10000000000L);
+        product.setPushNum(-1L);
         product.setShopName(productDO.getShopName());
 
         return product;

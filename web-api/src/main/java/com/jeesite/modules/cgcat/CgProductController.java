@@ -360,7 +360,7 @@ public class CgProductController {
         }
 
         long time2 = System.currentTimeMillis();
-        log.info("查询类目:{}, 耗时：{}", JsonUtils.toJSONString(condition), time2 - time1);
+        log.info("查询类目:{}, 耗时：{}", JsonUtils.toJSONString(roots), time2 - time1);
 
         List<CatProductBucketTO> carProductBucketTOs = new ArrayList<>();
         Map<String, List<CatProductBucketTO>> bucketMap = searchData.getBucketMap();
@@ -387,63 +387,12 @@ public class CgProductController {
 
     @RequestMapping(value = "/product/top/category2")
     @ResponseBody
-    public Result<ProductCategoryVO> topCategory2(CatUnionProductCondition condition, HttpServletRequest request, HttpServletResponse response) {
+    public Result<String> topCategory2(CatUnionProductCondition condition, HttpServletRequest request, HttpServletResponse response) {
 
         log.info("2请求参数:{}", JsonUtils.toJSONString(condition));
-        long startTime = System.currentTimeMillis();
-        if (condition == null) {
-            return Result.ERROR(500, "参数错误");
-        }
+        cgUnionProductService.buildRootCategoryAgg(null);
 
-        condition.setLevelOneCategoryName(null);
-        if (StringUtils.isNotBlank(condition.getPrefixSkuCompareDesc())) {
-            if (condition.getPrefixSkuCompareDesc().equals("empty")) {
-                condition.setPrefixSkuCompareDesc(null);
-            } else if (condition.getPrefixSkuCompareDesc().equals("all")) {
-                condition.setPrefixSkuCompareDesc(null);
-                condition.setHadSkuCompareDesc(true);
-            }
-        }
-
-        SearchSourceBuilder source = cgUnionProductService.searchSource(condition, cgUnionProductService::buildRootCategoryAgg, null, null, 0, 0);
-        ElasticSearchData<CarAlimamaUnionProductIndex, CatProductBucketTO> searchData = cgUnionProductService.search(source);
-        long time1 = System.currentTimeMillis();
-        log.info("2查询es返回:{}, 耗时：{}", JsonUtils.toJSONString(condition), time1 - startTime);
-
-        if (searchData == null) {
-            return Result.ERROR(500, "查询异常");
-        }
-
-        List<MaocheCategoryMappingDO> roots = maocheCategoryMappingService.getCategoryFromCache(0L);
-        Map<String, String> rootNameMap = new HashMap<>();
-        for (MaocheCategoryMappingDO item : roots) {
-            rootNameMap.put("agg_" + item.getId(), item.getName());
-        }
-
-        long time2 = System.currentTimeMillis();
-        log.info("2查询类目:{}, 耗时：{}", JsonUtils.toJSONString(condition), time2 - time1);
-
-        List<CatProductBucketTO> carProductBucketTOs = new ArrayList<>();
-        Map<String, List<CatProductBucketTO>> bucketMap = searchData.getBucketMap();
-        for (Map.Entry<String, List<CatProductBucketTO>> entry : bucketMap.entrySet()) {
-            for (CatProductBucketTO bucket : entry.getValue()) {
-                if (StringUtils.isBlank(bucket.getName())) {
-                    continue;
-                }
-                String name = rootNameMap.get(bucket.getName());
-                if (StringUtils.isBlank(name)) {
-                    continue;
-                }
-                bucket.setName(name);
-
-                carProductBucketTOs.add(bucket);
-            }
-        }
-        ProductCategoryVO categoryVO = new ProductCategoryVO();
-        categoryVO.setCategories(carProductBucketTOs);
-        categoryVO.setTotal(searchData.getTotal());
-
-        return Result.OK(categoryVO);
+        return Result.OK("OK");
     }
 
 //

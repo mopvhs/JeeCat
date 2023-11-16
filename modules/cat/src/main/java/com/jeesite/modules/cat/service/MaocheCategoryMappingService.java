@@ -2,12 +2,15 @@ package com.jeesite.modules.cat.service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.jeesite.common.lang.StringUtils;
+import com.jeesite.common.lang.TimeUtils;
 import com.jeesite.common.utils.JsonUtils;
 import com.jeesite.modules.cat.cache.CacheService;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +27,7 @@ import javax.annotation.Resource;
  * @author YHQ
  * @version 2023-06-19
  */
+@Slf4j
 @Service
 public class MaocheCategoryMappingService extends CrudService<MaocheCategoryMappingDao, MaocheCategoryMappingDO> {
 
@@ -122,10 +126,11 @@ public class MaocheCategoryMappingService extends CrudService<MaocheCategoryMapp
 			});
 		}
 
+		log.info("getCategoryFromCache redis无数据，查询db，类目：{} ", parentId);
 		List<MaocheCategoryMappingDO> mappingDOS = listByParentId(parentId);
 		if (CollectionUtils.isNotEmpty(mappingDOS)) {
 			cacheService.set(key, JsonUtils.toJSONString(mappingDOS));
-			cacheService.expire(key, 3600);
+			cacheService.expire(key, (int) TimeUnit.DAYS.toSeconds(30));
 		}
 
 		return mappingDOS;

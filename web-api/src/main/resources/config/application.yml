@@ -88,8 +88,8 @@ jdbc:
       password: true
     # 其它数据源支持连接池设置
     pool:
-      init: 1
-      minIdle: 3
+      init: 20
+      minIdle: 20
       maxActive: 1000
     # 其它数据源支持读写分离
     readwriteSplitting:

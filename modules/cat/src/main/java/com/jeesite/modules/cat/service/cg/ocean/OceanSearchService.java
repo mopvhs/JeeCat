@@ -36,9 +36,11 @@ public class OceanSearchService {
     private ElasticSearch7Service elasticSearch7Service;
 
 
-    public ElasticSearchData<MaocheMessageSyncIndex, Object> searchMsg(OceanMessageCondition condition, int from, int size) {
+    public ElasticSearchData<MaocheMessageSyncIndex, Object> searchMsg(OceanMessageCondition condition,
+                                                                       Function<OceanMessageCondition, List<AggregationBuilder>> aggregations,
+                                                                       int from, int size) {
 
-        SearchSourceBuilder source = searchService.searchSource(condition, null, this::sort, null, OceanMessageCondition.class, from, size);
+        SearchSourceBuilder source = searchService.searchSource(condition, aggregations, this::sort, null, OceanMessageCondition.class, from, size);
 
 
         return elasticSearch7Service.search(source, ElasticSearchIndexEnum.MAOCHE_OCEAN_MESSAGE_SYNC_INDEX, null, OceanSearchService::convertMessage, null);

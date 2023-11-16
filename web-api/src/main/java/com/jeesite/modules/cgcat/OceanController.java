@@ -1,6 +1,7 @@
 package com.jeesite.modules.cgcat;
 
 import com.jeesite.common.entity.Page;
+import com.jeesite.common.lang.DateUtils;
 import com.jeesite.common.lang.NumberUtils;
 import com.jeesite.common.lang.StringUtils;
 import com.jeesite.common.web.Result;
@@ -32,6 +33,7 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.bucket.filter.FilterAggregationBuilder;
+import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -43,6 +45,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -136,7 +139,7 @@ public class OceanController {
 
 
     @RequestMapping(value = "ocean/msg/search")
-    public Page<OceanMessageVO> oceanMseeageSearch(@RequestBody OceanMsgSearchRequest query,
+    public Page<OceanMessageVO> oceanMessageSearch(@RequestBody OceanMsgSearchRequest query,
                                                              HttpServletRequest request, HttpServletResponse response) {
         Page<OceanMessageVO> page = new Page<>(request, response);
 
@@ -145,6 +148,9 @@ public class OceanController {
             size = 10;
         }
         int from = (page.getPageNo() - 1) * size;
+
+        // 获取3天前的开始时间
+        long startTime = DateUtils.getOfDayFirst(DateUtils.addDays(new Date(), -3)).getTime();
 
         // 根据商品id查询关联的商品
         OceanMessageCondition messageCondition = new OceanMessageCondition();
@@ -155,9 +161,18 @@ public class OceanController {
         String sort = "createDate desc";
         if (StringUtils.isNotBlank(query.getSort())) {
             sort = query.getSort() + " desc";
+            if ("newProduct".equals(query.getSort())) {
+                // 今天开始时间
+                startTime = DateUtils.getOfDayFirst(new Date()).getTime();
+            }
         }
+
+//        messageCondition.setGteCreateDate(startTime);
         messageCondition.setSorts(Collections.singletonList(sort));
-        ElasticSearchData<MaocheMessageSyncIndex, Object> searchMsg = oceanSearchService.searchMsg(messageCondition, from, size);
+        ElasticSearchData<MaocheMessageSyncIndex, Object> searchMsg = oceanSearchService.searchMsg(
+                messageCondition,
+                OceanController::getCategoryNameAgg,
+                from, size);
         if (searchMsg == null || CollectionUtils.isEmpty(searchMsg.getDocuments())) {
             return page;
         }
@@ -171,10 +186,12 @@ public class OceanController {
         if (CollectionUtils.isEmpty(msgIds)) {
             return page;
         }
+        long start = System.currentTimeMillis();
         MaocheRobotCrawlerMessageProductDO queryProduct = new MaocheRobotCrawlerMessageProductDO();
         queryProduct.setMsgId_in(msgIds);
         queryProduct.setStatus("NORMAL");
         List<MaocheRobotCrawlerMessageProductDO> products = maocheRobotCrawlerMessageProductService.findList(queryProduct);
+        log.info("查询消息商品耗时：{}", System.currentTimeMillis() - start);
         if (CollectionUtils.isNotEmpty(products)) {
             List<Long> innerIds = products.stream().map(i -> NumberUtils.toLong(i.getInnerId())).filter(i -> i > 0).distinct().toList();
             // 查询索引
@@ -211,6 +228,13 @@ public class OceanController {
         Page<OceanMessageVO> toPage = new Page<>(page.getPageNo() + 1, page.getPageSize(), searchMsg.getTotal(), vos);
 
         return toPage;
+    }
+
+    public static List<AggregationBuilder> getCategoryNameAgg(OceanMessageCondition condition) {
+        List<AggregationBuilder> aggregations = new ArrayList<>();
+        TermsAggregationBuilder categoryAgg = AggregationBuilders.terms("categoryName").field("categoryNames").size(1000);
+        aggregations.add(categoryAgg);
+        return aggregations;
     }
 
 

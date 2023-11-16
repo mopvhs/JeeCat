@@ -1,18 +1,23 @@
 package com.jeesite.modules.cat.service.stage.cg.ocean;
 
+import com.alibaba.fastjson.JSONObject;
 import com.jeesite.common.lang.NumberUtils;
 import com.jeesite.common.lang.StringUtils;
 import com.jeesite.common.utils.JsonUtils;
 import com.jeesite.common.web.Result;
+import com.jeesite.modules.cat.dao.MaocheAlimamaUnionProductDao;
+import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductDO;
 import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageDO;
 import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageProductDO;
 import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageSyncDO;
 import com.jeesite.modules.cat.es.config.model.ElasticSearchData;
+import com.jeesite.modules.cat.helper.ProductValueHelper;
 import com.jeesite.modules.cat.model.CarAlimamaUnionProductIndex;
 import com.jeesite.modules.cat.model.CatProductBucketTO;
 import com.jeesite.modules.cat.model.CatUnionProductCondition;
 import com.jeesite.modules.cat.model.ProductPriceTO;
 import com.jeesite.modules.cat.model.UnionProductTO;
+import com.jeesite.modules.cat.service.MaocheAlimamaUnionProductService;
 import com.jeesite.modules.cat.service.MaocheRobotCrawlerMessageProductService;
 import com.jeesite.modules.cat.service.MaocheRobotCrawlerMessageSyncService;
 import com.jeesite.modules.cat.service.cg.CgUnionProductService;
@@ -50,6 +55,9 @@ public class TbOceanStage extends AbstraOceanStage {
 
     @Resource
     private InnerApiService innerApiService;
+
+    @Resource
+    private MaocheAlimamaUnionProductService maocheAlimamaUnionProductService;
 
     @Override
     public String getAffType() {
@@ -137,18 +145,13 @@ public class TbOceanStage extends AbstraOceanStage {
         String itemIdSuffix = idArr[1];
         Long price = 0L;
         Long uiid = 0L;
-        CatUnionProductCondition condition = new CatUnionProductCondition();
-        condition.setItemIdSuffix(itemIdSuffix);
+
+        MaocheAlimamaUnionProductDO unionProductDO = maocheAlimamaUnionProductService.getProduct(itemIdSuffix, "NORMAL");
         // 在库商品，获取在库商品数据
-        ElasticSearchData<CarAlimamaUnionProductIndex, CatProductBucketTO> searchData = cgUnionProductService.searchProduct(condition, null, 0, 1);
-        if (searchData != null) {
-            List<UnionProductTO> productTOs = cgUnionProductService.listProductInfo(searchData);
-            if (CollectionUtils.isNotEmpty(productTOs)) {
-                UnionProductTO productTO = productTOs.get(0);
-                ProductPriceTO displayPrice = productTO.getDisplayPrice();
-                price = displayPrice.getPrice();
-                uiid = productTO.getId();
-            }
+        if (unionProductDO != null) {
+            // 券后价
+            price = ProductValueHelper.calVeApiPromotionPrice(JSONObject.parseObject(unionProductDO.getOrigContent()));
+            uiid = unionProductDO.getUiid();
         }
 
         long shopDsr = NumberUtils.toLong(data.getShopDsr());
@@ -159,16 +162,27 @@ public class TbOceanStage extends AbstraOceanStage {
                 uiid = NumberUtils.toLong(result.getResult());
             } else {
                 // todo 同步接口判断已经存在的话，需要覆盖numiid为库里面的
-
                 String message = result.getMessage();
                 Map<String, Object> remarks = new HashMap<>();
                 remarks.put("auto_storage_error", message);
                 messageSync.addRemarks(remarks);
             }
         }
+        long processed = 0;
+        String resourceId = itemIdSuffix;
+        if (uiid > 0 && unionProductDO == null) {
+            MaocheAlimamaUnionProductDO query = new MaocheAlimamaUnionProductDO();
+            query.setId(String.valueOf(uiid));
+            unionProductDO = maocheAlimamaUnionProductService.get(query);
+        }
 
-        messageSync.setProcessed(1L);
-        messageSync.setResourceIds(itemIdSuffix);
+        if (unionProductDO != null && StringUtils.isNotBlank(unionProductDO.getIid())) {
+            resourceId = unionProductDO.getIid();
+            processed = 1;
+        }
+
+        messageSync.setProcessed(processed);
+        messageSync.setResourceIds(resourceId);
         messageSync.setStatus("NORMAL");
         boolean res = maocheRobotCrawlerMessageSyncService.addIfAbsent(messageSync);
         if (!res) {
@@ -178,10 +192,10 @@ public class TbOceanStage extends AbstraOceanStage {
 
         MaocheRobotCrawlerMessageProductDO productDO = messageProducts.get(0);
 
-        if (price != null && price > 0) {
+        if (price > 0) {
             productDO.setPrice(price);
         }
-        if (uiid != null && uiid > 0) {
+        if (uiid > 0) {
             productDO.setInnerId(String.valueOf(uiid));
         }
 

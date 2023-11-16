@@ -32,6 +32,8 @@ public class MaocheMessageSyncIndex implements Serializable {
 
     private Long createDate;        // 创建时间
 
+    private List<String> categoryNames;
+
 
     public static MaocheMessageSyncIndex toIndex(MaocheRobotCrawlerMessageSyncDO syncDO) {
         if (syncDO == null || syncDO.getUiid() == null || syncDO.getUiid() <= 0) {

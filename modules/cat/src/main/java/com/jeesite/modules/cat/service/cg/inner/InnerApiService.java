@@ -73,6 +73,16 @@ public class InnerApiService {
             return Result.OK(response);
         }
 
+        Integer code = jsonObject.getInteger("code");
+        if (code != null && code == 10086) {
+            JSONObject res = jsonObject.getJSONObject("result");
+            if (res != null && res.get("id") != null) {
+                Result<String> result = Result.OK(String.valueOf(res.get("id")));
+                result.setCode(10086);
+                return result;
+            }
+        }
+
         String msg = Optional.ofNullable(jsonObject.getString("message")).orElse("解析错误");
 
         return Result.ERROR(505, msg);

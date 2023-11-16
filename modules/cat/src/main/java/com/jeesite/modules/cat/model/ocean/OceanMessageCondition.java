@@ -29,11 +29,10 @@ public class OceanMessageCondition implements Serializable {
     @EsItemAspect(queryType = "matchQuery")
     private String msg;
 
-    // 30天销量
-    @EsItemAspect(queryType = "rangeQuery", field = "volume", rangeOp = "gte")
-    private Long gteVolume;
-    @EsItemAspect(queryType = "rangeQuery", field = "volume", rangeOp = "lte")
-    private Long lteVolume;
+    @EsItemAspect(queryType = "rangeQuery", field = "createDate", rangeOp = "gte")
+    private Long gteCreateDate;
+//    @EsItemAspect(queryType = "rangeQuery", field = "volume", rangeOp = "lte")
+//    private Long lteVolume;
 
     @EsItemAspect(queryType = "itemsQuery")
     private List<String> resourceIds;

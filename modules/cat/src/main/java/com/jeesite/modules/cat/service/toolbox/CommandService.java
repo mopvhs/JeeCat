@@ -1,5 +1,6 @@
 package com.jeesite.modules.cat.service.toolbox;
 
+import cn.hutool.json.JSONUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.jeesite.common.collect.MapUtils;
 import com.jeesite.common.lang.NumberUtils;
@@ -8,6 +9,7 @@ import com.jeesite.common.utils.JsonUtils;
 import com.jeesite.common.web.Result;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductDO;
 import com.jeesite.modules.cat.es.config.model.ElasticSearchData;
+import com.jeesite.modules.cat.helper.CatEsHelper;
 import com.jeesite.modules.cat.helper.ProductValueHelper;
 import com.jeesite.modules.cat.model.CarAlimamaUnionProductIndex;
 import com.jeesite.modules.cat.model.CatProductBucketTO;
@@ -34,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -109,7 +112,7 @@ public class CommandService {
             item.setImage(data.getPictUrl());
 
             // 券后价
-            Long promotionPrice = ProductValueHelper.calVeApiPromotionPrice(JSONObject.parseObject(JsonUtils.toJSONString(data)));
+            long promotionPrice = ProductValueHelper.calVeApiPromotionPrice(JSONObject.parseObject(JsonUtils.toJSONString(data)));
             item.setReservePrice(promotionPrice);
 
             item.setOriginalPrice(new BigDecimal(data.getReservePrice()).multiply(new BigDecimal(100)).longValue());
@@ -124,22 +127,9 @@ public class CommandService {
             // XgBGorXFGtXxwmvX5BT0oYcAUg-yz3oeZi6a2bapxdcyb
             String[] idArr = StringUtils.split(numIid, "-");
             String itemId = idArr[1];
-            List<MaocheAlimamaUnionProductDO> resources = maocheAlimamaUnionProductService.getByItemIdSuffix(itemId, "NORMAL");
-            if (CollectionUtils.isNotEmpty(resources)) {
-                MaocheAlimamaUnionProductDO unionProductDO = resources.get(0);
-                CatUnionProductCondition condition = new CatUnionProductCondition();
+            MaocheAlimamaUnionProductDO unionProductDO = maocheAlimamaUnionProductService.getProduct(itemId, "NORMAL");
+            if (unionProductDO != null) {
                 Long uiid = unionProductDO.getUiid();
-                condition.setId(uiid);
-                // 在库商品，获取在库商品数据
-                ElasticSearchData<CarAlimamaUnionProductIndex, CatProductBucketTO> searchData = cgUnionProductService.searchProduct(condition, null, 0, 1);
-                if (searchData != null) {
-                    List<UnionProductTO> productTOs = cgUnionProductService.listProductInfo(searchData);
-                    if (CollectionUtils.isNotEmpty(productTOs)) {
-                        ProductPriceTO displayPrice = productTOs.get(0).getDisplayPrice();
-                        item.setReservePrice(displayPrice.getPrice());
-                    }
-                }
-
                 item.setId(uiid);
             }
             product.setItem(item);
@@ -148,8 +138,6 @@ public class CommandService {
             commandDTO.setProducts(products);
             return Result.OK(commandDTO);
         }
-
-
 
         return Result.ERROR(response.getCode(), response.getMessage());
     }

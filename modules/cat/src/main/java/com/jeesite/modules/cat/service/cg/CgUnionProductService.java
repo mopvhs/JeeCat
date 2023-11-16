@@ -545,7 +545,7 @@ public class CgUnionProductService {
      * @return
      */
     public List<AggregationBuilder> buildRootCategoryAgg(CatUnionProductCondition condition) {
-
+        long startTime = System.currentTimeMillis();
         List<AggregationBuilder> builders = new ArrayList<>();
         String fieldName = "categoryName";
         String aggNameSuffix = "agg_";
@@ -554,6 +554,7 @@ public class CgUnionProductService {
         for (Long cid : rootCids) {
             String name = aggNameSuffix + cid;
             // 获取所有子类目
+            log.info("buildRootCategoryAgg 类目：{} 开始", cid);
             List<MaocheCategoryMappingDO> categories = maocheCategoryMappingService.getCategoryFromCache(cid);
             if (CollectionUtils.isEmpty(categories)) {
                 continue;
@@ -565,6 +566,8 @@ public class CgUnionProductService {
 
             builders.add(builder);
         }
+        log.info("buildRootCategoryAgg 耗时:{}", System.currentTimeMillis() - startTime);
+
 
         return builders;
     }

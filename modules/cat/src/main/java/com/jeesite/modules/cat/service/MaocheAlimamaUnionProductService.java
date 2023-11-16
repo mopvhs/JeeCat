@@ -229,4 +229,16 @@ public class MaocheAlimamaUnionProductService extends CrudService<MaocheAlimamaU
 
 		return productDOs;
 	}
+
+	public MaocheAlimamaUnionProductDO getProduct(String itemIdSuffix, String status) {
+		if (StringUtils.isBlank(itemIdSuffix) || StringUtils.isBlank(status)) {
+			return null;
+		}
+
+		MaocheAlimamaUnionProductDO query = new MaocheAlimamaUnionProductDO();
+		query.setItemIdSuffix(itemIdSuffix);
+		query.setStatus(status);
+		MaocheAlimamaUnionProductDO item = dao.getByEntity(query);
+		return item;
+	}
 }

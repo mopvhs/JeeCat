@@ -17,6 +17,7 @@ import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Component
@@ -52,7 +53,7 @@ public class OceanEsService {
         // 查询消息
         List<MaocheRobotCrawlerMessageProductDO> productList = maocheRobotCrawlerMessageProductService.findList(productQuery);
 
-        List<Map<String, Object>> messageSyncIndex = getMessageSyncIndex(crawlerMessages);
+        List<Map<String, Object>> messageSyncIndex = getMessageSyncIndex(crawlerMessages, productList);
         List<Map<String, Object>> productIndex = getMessageProductIndex(productList);
 
         elasticSearch7Service.index(messageSyncIndex, ElasticSearchIndexEnum.MAOCHE_OCEAN_MESSAGE_SYNC_INDEX, "id", corePoolSize);
@@ -60,16 +61,21 @@ public class OceanEsService {
 
     }
 
-    private List<Map<String, Object>> getMessageSyncIndex(List<MaocheRobotCrawlerMessageSyncDO> crawlerMessages) {
+    private List<Map<String, Object>> getMessageSyncIndex(List<MaocheRobotCrawlerMessageSyncDO> crawlerMessages,
+                                                          List<MaocheRobotCrawlerMessageProductDO> productList) {
         if (CollectionUtils.isEmpty(crawlerMessages)) {
             return new ArrayList<>();
         }
+        productList = Optional.ofNullable(productList).orElse(new ArrayList<>());
+        // 获取类目
+        List<String> categoryNames = productList.stream().map(MaocheRobotCrawlerMessageProductDO::getCategory).distinct().toList();
         List<Map<String, Object>> list = new ArrayList<>();
         for (MaocheRobotCrawlerMessageSyncDO item : crawlerMessages) {
             MaocheMessageSyncIndex index = MaocheMessageSyncIndex.toIndex(item);
             if (index == null) {
                 continue;
             }
+            index.setCategoryNames(categoryNames);
             Map<String, Object> map = JsonUtils.toReferenceType(JsonUtils.toJSONString(index), new TypeReference<Map<String, Object>>() {
             });
 

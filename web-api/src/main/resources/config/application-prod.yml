@@ -49,8 +49,8 @@ jdbc:
       password: true
     # 其它数据源支持连接池设置
     pool:
-      init: 1
-      minIdle: 3
+      init: 10
+      minIdle: 30
       maxActive: 1000
 
 
@@ -68,8 +68,8 @@ jdbc:
       password: true
     # 其它数据源支持连接池设置
     pool:
-      init: 1
-      minIdle: 3
+      init: 20
+      minIdle: 30
       maxActive: 1000
     # 其它数据源支持读写分离
     readwriteSplitting:
@@ -97,7 +97,8 @@ spring:
         # 最大空闲连接数
         maxIdle: 3
         # 最大活动连接数
-        maxActive: 20
+        maxActive: 50
+        maxWait: 1000
 
 # MyBatis 相关
 mybatis:
