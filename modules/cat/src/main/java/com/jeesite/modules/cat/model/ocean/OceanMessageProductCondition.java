@@ -19,6 +19,9 @@ public class OceanMessageProductCondition implements Serializable {
     @EsItemAspect(queryType = "itemsQuery", field = "id")
     private List<Long> ids;
 
+    @EsItemAspect(queryType = "itemsQuery", field = "msgId")
+    private List<Long> msgIds;
+
     @EsItemAspect(queryType = "mustNotItemsQuery", field = "id")
     private List<Long> filterIds;
 

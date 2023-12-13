@@ -1,6 +1,7 @@
 package com.jeesite.modules.cat.service.stage.cg.ocean;
 
 import com.alibaba.fastjson.JSONObject;
+import com.jeesite.common.lang.DateUtils;
 import com.jeesite.common.lang.NumberUtils;
 import com.jeesite.common.lang.StringUtils;
 import com.jeesite.common.utils.JsonUtils;
@@ -11,20 +12,25 @@ import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageDO;
 import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageProductDO;
 import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageSyncDO;
 import com.jeesite.modules.cat.es.config.model.ElasticSearchData;
+import com.jeesite.modules.cat.helper.CatRobotHelper;
 import com.jeesite.modules.cat.helper.ProductValueHelper;
 import com.jeesite.modules.cat.model.CarAlimamaUnionProductIndex;
 import com.jeesite.modules.cat.model.CatProductBucketTO;
 import com.jeesite.modules.cat.model.CatUnionProductCondition;
 import com.jeesite.modules.cat.model.ProductPriceTO;
 import com.jeesite.modules.cat.model.UnionProductTO;
+import com.jeesite.modules.cat.model.ocean.OceanMessageCondition;
 import com.jeesite.modules.cat.service.MaocheAlimamaUnionProductService;
 import com.jeesite.modules.cat.service.MaocheRobotCrawlerMessageProductService;
 import com.jeesite.modules.cat.service.MaocheRobotCrawlerMessageSyncService;
 import com.jeesite.modules.cat.service.cg.CgUnionProductService;
 import com.jeesite.modules.cat.service.cg.inner.InnerApiService;
+import com.jeesite.modules.cat.service.cg.ocean.OceanSearchService;
 import com.jeesite.modules.cat.service.cg.third.tb.TbApiService;
 import com.jeesite.modules.cat.service.cg.third.tb.dto.CommandResponse;
+import com.jeesite.modules.cat.service.es.dto.MaocheMessageSyncIndex;
 import com.jeesite.modules.cat.service.stage.cg.ocean.exception.QueryThirdApiException;
+import com.jeesite.modules.cat.service.toolbox.CommandService;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
@@ -33,9 +39,11 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 @Slf4j
 @Component
@@ -59,9 +67,17 @@ public class TbOceanStage extends AbstraOceanStage {
     @Resource
     private MaocheAlimamaUnionProductService maocheAlimamaUnionProductService;
 
+    @Resource
+    private OceanSearchService oceanSearchService;
+
     @Override
     public String getAffType() {
         return "tb";
+    }
+
+    @Override
+    public Pattern getPattern() {
+        return CommandService.tb;
     }
 
     @Override
@@ -108,6 +124,7 @@ public class TbOceanStage extends AbstraOceanStage {
         MaocheRobotCrawlerMessageProductDO productDO = new MaocheRobotCrawlerMessageProductDO();
         productDO.setResourceId(itemIdSuffix);
         productDO.setInnerId("0");
+        productDO.setItemId(tbProduct.getNumIid());
         productDO.setApiContent(JsonUtils.toJSONString(tbProduct));
         productDO.setCategory(tbProduct.getCatLeafName());
         productDO.setTitle(tbProduct.getTitle());
@@ -122,7 +139,7 @@ public class TbOceanStage extends AbstraOceanStage {
         productDO.setStatus("NORMAL");
         productDO.setCreateBy("admin");
         productDO.setUpdateBy("admin");
-        productDO.setRemarks("");
+        productDO.setRemarks("{}");
 
         context.setMessageProducts(Collections.singletonList(productDO));
 
@@ -154,6 +171,7 @@ public class TbOceanStage extends AbstraOceanStage {
             uiid = unionProductDO.getUiid();
         }
 
+        String status = "NORMAL";
         long shopDsr = NumberUtils.toLong(data.getShopDsr());
         // 不存在并且shopdsr >= 4.8
         if (uiid == 0 && shopDsr >= 48000) {
@@ -163,9 +181,7 @@ public class TbOceanStage extends AbstraOceanStage {
             } else {
                 // todo 同步接口判断已经存在的话，需要覆盖numiid为库里面的
                 String message = result.getMessage();
-                Map<String, Object> remarks = new HashMap<>();
-                remarks.put("auto_storage_error", message);
-                messageSync.addRemarks(remarks);
+                messageSync.addRemarks("auto_storage_error", message);
             }
         }
         long processed = 0;
@@ -181,9 +197,38 @@ public class TbOceanStage extends AbstraOceanStage {
             processed = 1;
         }
 
+        if (shopDsr < 48000) {
+            status = "LOW_SHOP_DSR";
+        }
+
+        // 获取商品额时间
+        Date createDate = messageSync.getCreateDate();
+        int newProduct = 0;
+        // 获取3天前的开始时间
+        long startTime = DateUtils.getOfDayFirst(DateUtils.addDays(createDate, -3)).getTime();
+        // 获取今天开始时间
+        long endTime = DateUtils.getOfDayFirst(createDate).getTime() - 1;
+        // 判断3天前内是否存在
+        OceanMessageCondition condition = new OceanMessageCondition();
+        condition.setResourceIds(Collections.singletonList(resourceId));
+        condition.setAffType("tb");
+        condition.setGteCreateDate(startTime);
+        condition.setLteCreateDate(endTime);
+        ElasticSearchData<MaocheMessageSyncIndex, CatProductBucketTO> searchMsg = oceanSearchService.searchMsg(
+                condition,
+                null,
+                null,
+                null,
+                0, 1);
+        if (searchMsg != null && CollectionUtils.isEmpty(searchMsg.getDocuments())) {
+            newProduct = 1;
+        }
+
+        messageSync.addRemarks("newProduct", newProduct);
+
         messageSync.setProcessed(processed);
         messageSync.setResourceIds(resourceId);
-        messageSync.setStatus("NORMAL");
+        messageSync.setStatus(status);
         boolean res = maocheRobotCrawlerMessageSyncService.addIfAbsent(messageSync);
         if (!res) {
             log.error("messageSync is exist message:{}", JsonUtils.toJSONString(context.getCrawlerMessage()));

@@ -1,5 +1,6 @@
 package com.jeesite.modules.cat.model.task.content;
 
+import com.jeesite.modules.cat.service.cg.task.dto.TaskDetail;
 import lombok.Data;
 
 import java.io.Serial;
@@ -21,5 +22,12 @@ public class PushTaskContentDetail implements Serializable {
     public PushTaskContentDetail(String detail, String img) {
         this.detail = detail;
         this.img = img;
+    }
+
+    public static PushTaskContentDetail buildContent(TaskDetail detail) {
+        PushTaskContentDetail content = new PushTaskContentDetail();
+
+
+        return content;
     }
 }

@@ -117,9 +117,10 @@ public class MaocheAlimamaUnionProductDetailService extends CrudService<MaocheAl
 		// 循环拿
 		List<List<String>> partition = Lists.partition(iids, 20);
 		for (List<String> p : partition) {
-			MaocheAlimamaUnionProductDetailDO query = new MaocheAlimamaUnionProductDetailDO();
-			query.setIid_in(p.toArray(new String[0]));
-			List<MaocheAlimamaUnionProductDetailDO> list = dao.findList(query);
+			List<MaocheAlimamaUnionProductDetailDO> list = dao.listByIids(p);
+//			MaocheAlimamaUnionProductDetailDO query = new MaocheAlimamaUnionProductDetailDO();
+//			query.setIid_in(p.toArray(new String[0]));
+//			List<MaocheAlimamaUnionProductDetailDO> list = dao.findList(query);
 			if (CollectionUtils.isEmpty(list)) {
 				continue;
 			}
@@ -127,16 +128,5 @@ public class MaocheAlimamaUnionProductDetailService extends CrudService<MaocheAl
 		}
 
 		return words;
-	}
-
-	public MaocheAlimamaUnionProductDetailDO getByItemIdSuffix(String itemIdSuffix) {
-		if (StringUtils.isBlank(itemIdSuffix)) {
-			return null;
-		}
-
-		MaocheAlimamaUnionProductDetailDO query = new MaocheAlimamaUnionProductDetailDO();
-		query.setItemIdSuffix(itemIdSuffix);
-
-		return dao.getByEntity(query);
 	}
 }

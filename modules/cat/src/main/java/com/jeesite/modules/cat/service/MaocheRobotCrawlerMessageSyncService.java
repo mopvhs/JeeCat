@@ -3,6 +3,7 @@ package com.jeesite.modules.cat.service;
 import java.util.List;
 
 import com.jeesite.common.lang.StringUtils;
+import org.apache.commons.collections.CollectionUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -98,5 +99,14 @@ public class MaocheRobotCrawlerMessageSyncService extends CrudService<MaocheRobo
 		}
 
 		return false;
+	}
+
+	// 批量更新
+	public boolean updateBatch(List<MaocheRobotCrawlerMessageSyncDO> updateList) {
+		if (CollectionUtils.isEmpty(updateList)) {
+			return false;
+		}
+
+		return dao.updateBatchById(updateList) > 0;
 	}
 }

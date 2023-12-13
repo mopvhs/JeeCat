@@ -22,6 +22,14 @@ import com.jeesite.common.mybatis.mapper.query.QueryType;
 		@Column(name="item_id", attrName="itemId", label="item_id"),
 		@Column(name="item_id_suffix", attrName="itemIdSuffix", label="item_id_suffix"),
 		@Column(name="orig_content", attrName="origContent", label="orig_content"),
+
+
+		@Column(name="props", attrName="props", label="props"),
+		@Column(name="seller", attrName="seller", label="seller"),
+		@Column(name="rate", attrName="rate", label="rate"),
+		@Column(name="sku_base", attrName="skuBase", label="sku_base"),
+
+
 		@Column(name="create_time", attrName="createTime", label="create_time", isUpdateForce=true),
 		@Column(name="update_time", attrName="updateTime", label="update_time", isUpdateForce=true),
 	}, orderBy="a.id DESC"
@@ -35,6 +43,11 @@ public class MaocheAlimamaUnionProductDetailDO extends DataEntity<MaocheAlimamaU
 	private String origContent;		// orig_content
 	private Date createTime;		// create_time
 	private Date updateTime;		// update_time
+
+	private String props;		// props
+	private String seller;		// seller
+	private String rate;		// rate
+	private String skuBase;		// sku_base
 
 	public MaocheAlimamaUnionProductDetailDO() {
 		this(null);
@@ -95,6 +108,38 @@ public class MaocheAlimamaUnionProductDetailDO extends DataEntity<MaocheAlimamaU
 
 	public void setUpdateTime(Date updateTime) {
 		this.updateTime = updateTime;
+	}
+
+	public String getProps() {
+		return props;
+	}
+
+	public void setProps(String props) {
+		this.props = props;
+	}
+
+	public String getSeller() {
+		return seller;
+	}
+
+	public void setSeller(String seller) {
+		this.seller = seller;
+	}
+
+	public String getRate() {
+		return rate;
+	}
+
+	public void setRate(String rate) {
+		this.rate = rate;
+	}
+
+	public String getSkuBase() {
+		return skuBase;
+	}
+
+	public void setSkuBase(String skuBase) {
+		this.skuBase = skuBase;
 	}
 
 	public void setItemIdSuffix_in(String[] ids) {

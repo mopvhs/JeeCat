@@ -168,7 +168,7 @@ public class CommandService {
 
         List<CommandDTO.Product> products = new ArrayList<>();
         for (String url : urls) {
-            Result<JdUnionIdPromotion> result = dingDanXiaApiService.jdByUnionidPromotion("FHPOsYO7zki7tcrxp0amyGMP7wxVkbU3", url, 1002248572L, 3100684498L);
+            Result<JdUnionIdPromotion> result = dingDanXiaApiService.jdByUnionidPromotionWithCoupon("FHPOsYO7zki7tcrxp0amyGMP7wxVkbU3", url, 1002248572L, 3100684498L);
             if (Result.isOK(result)) {
                 JdUnionIdPromotion promotion = result.getResult();
                 content = content.replace(url, promotion.getShortURL());

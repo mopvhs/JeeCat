@@ -27,6 +27,9 @@ public class UnionProductTO implements Serializable {
     // 商品标题
     private String title;
 
+    // 短标题
+    private String shortTitle;
+
     // dsr分
     private Long shopDsr;
 
@@ -76,6 +79,8 @@ public class UnionProductTO implements Serializable {
     private Long couponTotalCount;
     // 优惠券金额
     private Long coupon;
+    // 优惠券开始金额
+    private Long couponStartFee;
     // 优惠券后价格
     private Long promotionPrice;
 
@@ -144,4 +149,6 @@ public class UnionProductTO implements Serializable {
 
     // 已完成的任务推送次数
     private Long pushNum;
+
+    private String itemUrl;
 }

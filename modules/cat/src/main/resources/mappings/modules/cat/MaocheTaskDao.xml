@@ -51,4 +51,25 @@
 			id = #{id}
 		</where>
 	</update>
+
+	<update id="updateById" parameterType="com.jeesite.modules.cat.entity.MaocheTaskDO">
+		UPDATE maoche_task
+		<set>
+			<if test=" title != null">
+				title = #{title},
+			</if>
+			<if test=" content != null">
+				content = #{content},
+			</if>
+			<if test=" timeType != null">
+				time_type = #{timeType},
+			</if>
+			<if test=" publishDate != null">
+				publish_date = #{publishDate}
+			</if>
+		</set>
+		<where>
+			id = #{id}
+		</where>
+	</update>
 </mapper>

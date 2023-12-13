@@ -16,4 +16,10 @@ public class PushTaskContent implements Serializable {
 
     private List<Long> filterIds;
 
+    // 来源
+    private String source;
+
+    // 发布延迟时间，相对的
+    private Long delayTime;
+
 }

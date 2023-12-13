@@ -3,17 +3,19 @@ package com.jeesite.modules.cgcat;
 
 import com.alibaba.fastjson.JSONArray;
 import com.google.common.util.concurrent.RateLimiter;
-import com.jeesite.common.collect.MapUtils;
-import com.jeesite.common.lang.NumberUtils;
+import com.jeesite.common.codec.Md5Utils;
 import com.jeesite.common.lang.StringUtils;
 import com.jeesite.common.utils.JsonUtils;
 import com.jeesite.common.web.Result;
 import com.jeesite.modules.cat.cache.CacheService;
+import com.jeesite.modules.cat.dao.CsOpLogDao;
+import com.jeesite.modules.cat.dao.MaocheRobotCrawlerMessageSyncDao;
+import com.jeesite.modules.cat.entity.CsOpLogDO;
 import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageDO;
 import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageProductDO;
 import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageSyncDO;
-import com.jeesite.modules.cat.entity.MaocheSyncDataInfoDO;
-import com.jeesite.modules.cat.service.FlameHttpService;
+import com.jeesite.modules.cat.enums.ElasticSearchIndexEnum;
+import com.jeesite.modules.cat.es.config.es7.ElasticSearch7Service;
 import com.jeesite.modules.cat.service.FlameProxyHttpService;
 import com.jeesite.modules.cat.service.MaocheAlimamaUnionProductService;
 import com.jeesite.modules.cat.service.MaocheRobotCrawlerMessageProductService;
@@ -21,6 +23,7 @@ import com.jeesite.modules.cat.service.MaocheRobotCrawlerMessageService;
 import com.jeesite.modules.cat.service.MaocheRobotCrawlerMessageSyncService;
 import com.jeesite.modules.cat.service.MaocheSyncDataInfoService;
 import com.jeesite.modules.cat.service.cg.CgUnionProductService;
+import com.jeesite.modules.cat.service.cg.OceanSyncService;
 import com.jeesite.modules.cat.service.cg.inner.InnerApiService;
 import com.jeesite.modules.cat.service.cg.third.DingDanXiaApiService;
 import com.jeesite.modules.cat.service.cg.third.VeApiService;
@@ -35,30 +38,27 @@ import com.jeesite.modules.cat.xxl.job.CgProductDeleteSyncXxlJob;
 import com.jeesite.modules.cat.xxl.job.CgProductSyncXxlJob;
 import com.jeesite.modules.cgcat.dto.CommandRequest;
 import com.jeesite.modules.cgcat.dto.TbProductRequest;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.nodes.Node;
-import org.jsoup.select.Elements;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Controller
@@ -106,6 +106,9 @@ public class CgToolboxController {
 
     @Resource
     private OceanStage tbOceanStage;
+
+    @Resource
+    private OceanStage jdOceanStage;
 
     @Resource
     private VeApiService veApiService;
@@ -202,49 +205,22 @@ public class CgToolboxController {
         return Result.OK("入库中");
     }
 
+    /**
+     * 补数据
+     * @param ids
+     * @return
+     */
     @RequestMapping(value = "/maoche/robot/message/sync")
     @ResponseBody
-    public Result<String> sync(@RequestParam(value = "times", required = false, defaultValue = "1") int times) {
+    public Result<String> sync(String ids) {
+        String[] split = StringUtils.split(ids, ",");
 
-        for (int i = 0; i < times; i++) {
-            sync2();
-        }
+        MaocheRobotCrawlerMessageDO query = new MaocheRobotCrawlerMessageDO();
+        query.setId_in(split);
+        List<MaocheRobotCrawlerMessageDO> messages = maocheRobotCrawlerMessageService.findList(query);
 
-        return Result.OK("OK");
-    }
-    // 获取规则模板 - specification
-    public Result<String> sync2() {
-        MaocheSyncDataInfoDO dataInfo = maocheSyncDataInfoService.getLatestSyncDataInfo("maoche_robot_crawler_message");
-        long syncDataId = 0;
-        long maxId = 0;
-        int step = 100;
-        if (dataInfo != null) {
-            syncDataId = dataInfo.getIid();
-            maxId = NumberUtils.toLong(dataInfo.getSyncMaxId());
-            step = Optional.ofNullable(dataInfo.getStep()).orElse(step);
-            if (maxId <= 0) {
-                return Result.ERROR(400, "同步数据异常，最大同步id为0");
-            }
-        }
-
-        step = 10;
-
-        List<String> affTypes = new ArrayList<>();
-        affTypes.add("tb");
-//        affTypes.add("jd");
-        // 查询数据
-        List<MaocheRobotCrawlerMessageDO> messages = maocheRobotCrawlerMessageService.startById(maxId, step, affTypes);
-        if (CollectionUtils.isEmpty(messages)) {
-            return Result.OK("暂无数据");
-        }
-
-        // todo yhq 处理数据
-        // 一个一个的解析
         for (MaocheRobotCrawlerMessageDO message : messages) {
             OceanContext context = new OceanContext(message);
-
-            String content = message.getMsg();
-            MaocheRobotCrawlerMessageSyncDO messageSyncDO = buildMessageSync(message);
 
             if (message.getAffType().equals("tb")) {
 
@@ -253,60 +229,63 @@ public class CgToolboxController {
 
             } else if (message.getAffType().equals("jd")) {
 
-                Map<String, String> urlMap = new HashMap<>();
-                List<String> urls = new ArrayList<>();
-                String[] split = StringUtils.split(content, "\n");
-                for (String item : split) {
-                    Matcher matcher = CommandService.jd.matcher(item);
-                    if (matcher.find()) {
-                        String group = matcher.group();
-                        urlMap.put(group, "");
-                        urls.add(group);
-                    }
-                }
-
-                if (MapUtils.isEmpty(urlMap)) {
-                    Map<String, Object> remarks = new HashMap<>();
-                    remarks.put("api_error", "正则匹配链接未找到");
-                    messageSyncDO.setStatus("FAIL");
-                    messageSyncDO.setRemarks(JsonUtils.toJSONString(remarks));
-                    // 写入
-                    maocheRobotCrawlerMessageSyncService.save(messageSyncDO);
-                    return Result.ERROR(500, "需要替换的链接分析失败");
-                }
-
-                List<JdUnionIdPromotion> promotions = new ArrayList<>();
-                for (String url : urls) {
-                    Result<JdUnionIdPromotion> result = dingDanXiaApiService.jdByUnionidPromotion("FHPOsYO7zki7tcrxp0amyGMP7wxVkbU3", url, 1002248572L, 3100684498L);
-                    if (Result.isOK(result)) {
-                        JdUnionIdPromotion promotion = result.getResult();
-                        if (promotion.getSkuId() == null || promotion.getSkuId() <= 0) {
-                            continue;
-                        }
-                        promotions.add(promotion);
-                    }
-                }
-
-                if (CollectionUtils.isEmpty(promotions)) {
-                    continue;
-                }
-
-                List<Long> skuIds = promotions.stream().map(JdUnionIdPromotion::getSkuId).toList();
-
-                messageSyncDO.setProcessed(1L);
-                messageSyncDO.setResourceIds(StringUtils.join(skuIds, ","));
-                messageSyncDO.setStatus("NORMAL");
-                maocheRobotCrawlerMessageSyncService.save(messageSyncDO);
-
-                for (JdUnionIdPromotion promotion : promotions) {
-                    MaocheRobotCrawlerMessageProductDO productDO = buildMessageProduct(messageSyncDO, promotion);
-                    maocheRobotCrawlerMessageProductService.save(productDO);
-                }
+                jdOceanStage.process(context);
             }
         }
 
-        // 更新位点
-        maocheSyncDataInfoService.addOrUpdateOffset(syncDataId, "maoche_robot_crawler_message", String.valueOf(messages.get(messages.size() - 1).getId()));
+        return Result.OK("操作完成");
+    }
+
+    @Resource
+    private OceanSyncService oceanSyncService;
+
+    /**
+     * 消息同步测试
+     * @return
+     */
+    @RequestMapping(value = "/maoche/test/robot/message/sync")
+    @ResponseBody
+    public Result<String> syncTest() {
+
+        Result<String> sync = oceanSyncService.sync();
+
+        return sync;
+    }
+
+    @Resource
+    private ElasticSearch7Service elasticSearch7Service;
+    @Resource
+    private MaocheRobotCrawlerMessageSyncDao maocheRobotCrawlerMessageSyncDao;
+
+    /**
+     * 消息同步测试
+     * @return
+     */
+    @RequestMapping(value = "/maoche/test/robot/message/fixMsgNgram")
+    @ResponseBody
+    public Result<String> fixMsgNgram() {
+
+        long id = 0;
+        int limit = 10;
+        while (true) {
+            try {
+                List<MaocheRobotCrawlerMessageSyncDO> all = maocheRobotCrawlerMessageSyncDao.findAll(id, limit);
+                if (CollectionUtils.isEmpty(all)) {
+                    break;
+                }
+                id = all.get(all.size() - 1).getUiid();
+                for (MaocheRobotCrawlerMessageSyncDO item : all) {
+                    Map<String, Object> messageSyncIndex = new HashMap<>();
+                    messageSyncIndex.put("id", item.getUiid());
+                    messageSyncIndex.put("msgNgram", item.getMsg());
+
+                    elasticSearch7Service.update(Collections.singletonList(messageSyncIndex), ElasticSearchIndexEnum.MAOCHE_OCEAN_MESSAGE_SYNC_INDEX, "id", 10);
+                }
+
+            } catch (Exception e) {
+
+            }
+        }
 
         return Result.OK("操作完成");
     }
@@ -333,41 +312,6 @@ public class CgToolboxController {
         return sync;
     }
 
-
-    private MaocheRobotCrawlerMessageProductDO buildMessageProduct(MaocheRobotCrawlerMessageSyncDO message, JdUnionIdPromotion promotion) {
-
-        MaocheRobotCrawlerMessageProductDO productDO = new MaocheRobotCrawlerMessageProductDO();
-
-        // 商品标题
-        JdUnionIdPromotion.ShopInfo shopInfo = promotion.getShopInfo();
-        JdUnionIdPromotion.PriceInfo priceInfo = promotion.getPriceInfo();
-
-        promotion.setImageInfo(null);
-
-        productDO.setRobotMsgId(message.getRobotMsgId());
-        productDO.setMsgId(message.getUiid());
-        productDO.setAffType(message.getAffType());
-        productDO.setResourceId(String.valueOf(promotion.getSkuId()));
-        productDO.setInnerId("0");
-        productDO.setApiContent(JsonUtils.toJSONString(promotion));
-        productDO.setCategory("");
-        productDO.setTitle(promotion.getSkuName());
-
-        productDO.setShortTitle("");
-        productDO.setShopDsr("0");
-        productDO.setShopName(shopInfo.getShopName());
-        productDO.setSellerId(String.valueOf(shopInfo.getShopId()));
-        productDO.setPrice(new BigDecimal(String.valueOf(priceInfo.getLowestPrice())).multiply(new BigDecimal(100)).longValue());
-        productDO.setVolume(0L);
-        productDO.setStatus("NORMAL");
-        productDO.setCreateBy("admin");
-        productDO.setUpdateBy("admin");
-        productDO.setCreateDate(message.getCreateDate());
-        productDO.setUpdateDate(message.getUpdateDate());
-        productDO.setRemarks("");
-
-        return productDO;
-    }
 
     @RequestMapping("/tb/search")
     public Result<?> tbSearch(String itemId) {
@@ -406,6 +350,93 @@ public class CgToolboxController {
         Result<Long> analysisTbIid = innerApiService.getAnalysisTbIid(itemUrl);
 
         return analysisTbIid;
+    }
+
+    @RequestMapping("/tb/jiexi/item/url/batch/update")
+    public Result<String> batchUpdate(String ids) {
+
+        String[] split = StringUtils.split(ids, ",");
+        List<Long> longList = Arrays.stream(split).map(Long::parseLong).collect(Collectors.toList());
+
+        MaocheRobotCrawlerMessageSyncDO messageSyncDO = new MaocheRobotCrawlerMessageSyncDO();
+        messageSyncDO.setUiid_in(longList);
+        messageSyncDO.setStatus("NORMAL");
+        List<MaocheRobotCrawlerMessageSyncDO> list = maocheRobotCrawlerMessageSyncService.findList(messageSyncDO);
+
+        for (MaocheRobotCrawlerMessageSyncDO item : list) {
+            item.setStatus("DELETE");
+            item.setRemarks("{}");
+        }
+
+        maocheRobotCrawlerMessageSyncService.updateBatch(list);
+
+        return Result.OK("");
+    }
+
+    public static void main(String[] args) {
+        String c1 =
+                "非凡宠贝零食罐头85g*5罐\n" +
+                "原价22.9，卷后\uD83D\uDCB09.9\n" +
+                "低脂高蛋白，补水大满贯\n" +
+                "(YaYlWeq3cmx)/ CZ77";
+
+        String c2 = "非凡宠贝零食罐头85g*7罐\n" +
+                "原价22.9，卷后\uD83D\uDCB09.9\n" +
+                "低脂高蛋白，补水大满贯\n" +
+                "(YaYlWeq3cmxdahf)/ CZ772323";
+
+//        String regex = "[\\u4e00-\\u9fa5\\w\\d]+";
+        String regex = "[\\w\\d*.()/]+";
+        String s = c1.replaceAll(regex, "");
+
+        // 淘宝
+        Pattern tb = Pattern.compile("\\((.*?)\\)\\/|\\/(.*?)\\/\\/");
+//        Pattern tb = Pattern.compile("\\((.*?)\\)\\/[a-z0-9A-Z ]+|\\/(.*?)\\/\\/");
+
+
+        MatchContent matchContent = calMatchContent(tb, c1);
+        MatchContent matchContent2 = calMatchContent(tb, c2);
+
+
+        System.out.println("完成");
+
+    }
+
+
+    public static MatchContent calMatchContent(Pattern pattern, String content) {
+        StringBuilder calContent = new StringBuilder();
+        String[] split = content.split("\n");
+        String regex = "[\\w\\d*.()/]+";
+
+        List<Matcher> matchers = new ArrayList<>();
+
+        for (String item : split) {
+            Matcher matcher = pattern.matcher(item);
+            if (matcher.find()) {
+                matchers.add(matcher);
+                // 去除所有的数字和符号还有英文
+                calContent.append(item.replaceAll(regex, ""));
+            } else {
+                calContent.append(item);
+            }
+        }
+
+        MatchContent matchContent = new MatchContent();
+
+        matchContent.setCalContent(calContent.toString());
+        matchContent.setMatchers(matchers);
+        matchContent.setCalMd5(Md5Utils.md5(calContent.toString()));
+        return matchContent;
+    }
+
+    @Data
+    private static class MatchContent {
+
+        private List<Matcher> matchers;
+
+        private String calContent;
+
+        private String calMd5;
     }
 
 

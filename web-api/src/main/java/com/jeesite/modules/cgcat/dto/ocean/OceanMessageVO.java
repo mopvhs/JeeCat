@@ -1,6 +1,9 @@
 package com.jeesite.modules.cgcat.dto.ocean;
 
+import com.alibaba.fastjson.JSONObject;
 import com.jeesite.common.lang.NumberUtils;
+import com.jeesite.common.lang.StringUtils;
+import com.jeesite.common.utils.JsonUtils;
 import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageProductDO;
 import com.jeesite.modules.cat.model.ProductPriceTO;
 import com.jeesite.modules.cat.model.UnionProductTO;
@@ -58,6 +61,8 @@ public class OceanMessageVO implements Serializable {
 
         UnionProductTO product = new UnionProductTO();
 
+        JSONObject apiContentObj = JsonUtils.toJsonObject(productDO.getApiContent());
+
         // 佣金
         Long price = productDO.getPrice();
         long commissionRate = Optional.ofNullable(productDO.getCommissionRate()).orElse(0L);
@@ -76,9 +81,54 @@ public class OceanMessageVO implements Serializable {
         product.setCommissionRate(commissionRate);
         product.setImgUrl(productDO.getPictUrl());
         product.setVolume(productDO.getVolume());
-        // todo
-        product.setPushNum(-1L);
+        // todo yhq 推送次数
+        product.setPushNum(0L);
         product.setShopName(productDO.getShopName());
+
+        if (apiContentObj != null && apiContentObj.get("num_iid") != null) {
+            String numIid = apiContentObj.getString("num_iid");
+            product.setItemId(numIid);
+            product.setItemUrl("https://uland.taobao.com/item/edetail?id=?id=" + numIid);
+        }
+
+        return product;
+    }
+
+    public static UnionProductTO convertProduct(MaocheMessageProductIndex index) {
+        if (index == null) {
+            return null;
+        }
+
+        UnionProductTO product = new UnionProductTO();
+
+        // 佣金
+        Long price = index.getPrice();
+        Long commissionRate = index.getCommissionRate();
+        long commission = 0;
+        if (commissionRate != null && commissionRate > 0) {
+            commission = new BigDecimal(String.valueOf(price)).multiply(new BigDecimal(String.valueOf(commissionRate))).divide(new BigDecimal("10000"), 2, RoundingMode.HALF_UP ).longValue();
+        }
+
+        long createTime = Optional.ofNullable(index.getCreateDate()).orElse(0L);
+
+        ProductPriceTO displayPrice = new ProductPriceTO();
+        displayPrice.setPrice(price);
+        product.setDisplayPrice(displayPrice);
+        product.setShopDsr(NumberUtils.toLong(index.getShopDsr()));
+        product.setTitle(index.getTitle());
+        product.setCreateDate(new Date(createTime));
+        product.setCommission(commission);
+        product.setCommissionRate(commissionRate);
+        product.setImgUrl(index.getPictUrl());
+        product.setVolume(index.getVolume());
+        // todo yhq 推送次数
+        product.setPushNum(0L);
+        product.setShopName(index.getShopName());
+        product.setItemId(index.getItemId());
+
+        if (StringUtils.isNotBlank(index.getItemId())) {
+            product.setItemUrl("https://uland.taobao.com/item/edetail?id=?id=" + index.getItemId());
+        }
 
         return product;
     }

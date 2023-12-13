@@ -7,7 +7,6 @@ import com.jeesite.modules.cat.entity.MaochePushTaskDO;
 import com.jeesite.modules.cat.entity.MaocheTaskDO;
 import com.jeesite.modules.cat.enums.task.TaskResourceTypeEnum;
 import com.jeesite.modules.cat.enums.task.TaskStatusEnum;
-import com.jeesite.modules.cat.enums.task.TaskSwitchEnum;
 import com.jeesite.modules.cat.enums.task.TaskTypeEnum;
 import com.jeesite.modules.cat.enums.task.TimeTypeEnum;
 import com.jeesite.modules.cat.es.config.model.ElasticSearchData;

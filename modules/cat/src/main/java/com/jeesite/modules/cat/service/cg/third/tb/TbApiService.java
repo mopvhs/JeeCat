@@ -122,8 +122,8 @@ public class TbApiService {
 
             String encode = URLEncoder.encode(content, StandardCharsets.UTF_8);
             // 口令与链接解密
-            String decUrl = "http://api.veapi.cn/tbk/dec?vekey=%s&para=%s&parsetkl=1";
-            decUrl = String.format(decUrl, vekey, encode);
+            String decUrl = "http://api.veapi.cn/tbk/dec?vekey=%s&para=%s&parsetkl=1&pid=%s";
+            decUrl = String.format(decUrl, vekey, encode, pid);
             RequestBuilder builder = RequestBuilder.create("GET");
             RequestConfig configBuilder = RequestConfig.custom().setCookieSpec(CookieSpecs.STANDARD).build();
             builder.setConfig(configBuilder);

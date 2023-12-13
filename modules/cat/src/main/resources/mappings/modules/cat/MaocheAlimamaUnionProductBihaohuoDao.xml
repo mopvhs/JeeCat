@@ -23,4 +23,16 @@
 			group by iid
 		</where>
 	</select>
+
+	<select id="listLatestChartPricesIdByProductId" resultType="java.lang.Long">
+		select max(id) as id
+		from maoche_alimama_union_product_bihaohuo
+		<where>
+			product_id in
+			<foreach collection="productIds" item="productId" close=")" open="(" separator=",">
+				#{productId}
+			</foreach>
+			group by product_id
+		</where>
+	</select>
 </mapper>

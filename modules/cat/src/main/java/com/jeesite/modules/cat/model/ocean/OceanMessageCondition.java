@@ -22,15 +22,14 @@ public class OceanMessageCondition implements Serializable {
     @EsItemAspect(queryType = "mustNotItemsQuery", field = "id")
     private List<Long> filterIds;
 
-    @EsItemAspect(queryType = "itemQuery")
-    private String category;
-
     // 宝贝描述（推荐理由）
-    @EsItemAspect(queryType = "matchQuery")
+    @EsItemAspect(queryType = "matchPhraseQuery")
     private String msg;
 
     @EsItemAspect(queryType = "rangeQuery", field = "createDate", rangeOp = "gte")
     private Long gteCreateDate;
+    @EsItemAspect(queryType = "rangeQuery", field = "createDate", rangeOp = "lte")
+    private Long lteCreateDate;
 //    @EsItemAspect(queryType = "rangeQuery", field = "volume", rangeOp = "lte")
 //    private Long lteVolume;
 
@@ -38,11 +37,25 @@ public class OceanMessageCondition implements Serializable {
     private List<String> resourceIds;
 
     @EsItemAspect
+    private Long newProduct;
+
+    @EsItemAspect(queryType = "itemsQuery")
+    private List<String> categoryNames;
+
+    @EsItemAspect
     private String affType;
+
+    @EsItemAspect
+    private String status;
 
     // 格式：如果没有，默认desc
     // updateTime desc
     // updateTime asc
     private List<String> sorts;
+
+    private String customMsgSearch;
+
+    @EsItemAspect
+    private String uniqueHash;
 
 }

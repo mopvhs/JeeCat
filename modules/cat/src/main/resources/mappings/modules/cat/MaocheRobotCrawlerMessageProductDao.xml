@@ -19,12 +19,14 @@
 		(robot_msg_id, msg_id, aff_type, resource_id, inner_id,
 		api_content, category, title, short_title, shop_dsr,
 		shop_name, seller_id, price, volume, status,
-		create_by, update_by, create_date, update_date, remarks, pict_url, commission_rate)
+		create_by, update_by, create_date, update_date, remarks, pict_url, commission_rate,
+		item_id, item_url)
 		VALUES
 		(#{robotMsgId},#{msgId},#{affType},#{resourceId},#{innerId},
 		#{apiContent},#{category},#{title},#{shortTitle},#{shopDsr},
 		#{shopName},#{sellerId},#{price},#{volume},#{status},
-		#{createBy},#{updateBy},#{createDate},#{updateDate},#{remarks}, #{pictUrl}, #{commissionRate});
+		#{createBy},#{updateBy},#{createDate},#{updateDate},#{remarks}, #{pictUrl}, #{commissionRate},
+		#{itemId}, #{itemUrl});
 	</insert>
 	
 </mapper>

@@ -14,6 +14,9 @@ public class OceanMsgSearchRequest implements Serializable {
     // 搜索关键词
     private String keyword;
 
+    // 类目名称
+    private String categoryName;
+
     private String sort;
 
     private int from;

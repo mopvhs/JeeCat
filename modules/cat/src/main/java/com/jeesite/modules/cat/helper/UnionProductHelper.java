@@ -58,6 +58,7 @@ public class UnionProductHelper {
             UnionProductTO product = new UnionProductTO();
             product.setId(index.getId());
             product.setItemId(index.getItemId());
+            product.setItemUrl("https://uland.taobao.com/item/edetail?id=" + index.getItemId());
             // todo 不同的平台执行不同的流行
             product.setShareCommand("");
             product.setTitle(index.getTitle());
@@ -76,6 +77,7 @@ public class UnionProductHelper {
             // 店铺名称
             product.setShopName(index.getShopTitle());
             // 设置优惠券数量信息
+            product.setCouponStartFee(index.getCouponStartFee());
             product.setCoupon(index.getCoupon());
             product.setCouponRemainCount(index.getCouponRemainCount());
             product.setCouponTotalCount(index.getCouponTotalCount());

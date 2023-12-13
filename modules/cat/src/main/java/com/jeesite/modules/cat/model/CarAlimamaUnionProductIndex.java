@@ -25,7 +25,8 @@ public class CarAlimamaUnionProductIndex implements Serializable {
     // 优惠券数量
     private Long couponRemainCount;
 //    private String couponShareUrl;
-//    private String couponStartFee;
+    // 优惠券起始金额
+    private Long couponStartFee;
 //    @JSONField(format = "yyyy-MM-dd HH:mm:ss")
 //    private Date couponStartTime;
     private Long couponTotalCount;

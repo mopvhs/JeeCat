@@ -24,7 +24,7 @@ public class JdUnionIdPromotion implements Serializable {
     private Integer coupon;
 
     // todo
-    private List<Object> couponInfo;
+    private List<CouponInfo> couponInfo;
 
     private CommissionInfo commissionInfo;
 
@@ -43,7 +43,7 @@ public class JdUnionIdPromotion implements Serializable {
     private ImageInfo imageInfo;
 
     private List<Object> documentInfo;
-    private List<Object> videoInfo;
+    private List<VideoInfo> videoInfo;
 
 
     @Data
@@ -61,28 +61,44 @@ public class JdUnionIdPromotion implements Serializable {
         private Long startTime;
     }
 
+
+//
+//            "takeEndTime":1701359999000,
+//                    "takeBeginTime":1699977600000,
+//                    "remainNum":23909,
+//                    "yn":"1",
+//                    "num":30000,
+//                    "quota":50,
+//                    "link":"https://coupon.m.jd.com/coupons/show.action?linkKey=AAROH_xIpeffAs_-naABEFoex0QM2CXmak9R0MlIzwzNbkNlGH6LL7i3GazKmfv68WgQS82yDBa95l7icBu3JTh_jyB8nQ",
+//                    "discount":15,
+//                    "beginTime":1699977600000,
+//                    "endTime":1701446399000,
+//                    "platform":"全平台"
+//
     @Data
     public static class CouponInfo implements Serializable {
 
         @Serial
         private static final long serialVersionUID = 5413372506870432893L;
 
-        private Double takeEndTime;
-        private Double takeBeginTime;
+        private Long takeEndTime;
+        private Long takeBeginTime;
         // 券剩余张数
         private Long remainNum;
         // 券有效状态（是否）
         private String yn;
         // 券总张数
         private Long num;
+        // 券使用限额
+        private Long quota;
         // 券链接
         private String link;
         // 券面额
         private Long discount;
         // 券有效使用开始时间(时间戳，毫秒)
-        private Double beginTime;
+        private Long beginTime;
         // 券有效使用结束时间(时间戳，毫秒)
-        private Double endTime;
+        private Long endTime;
         // 券使用平台
         private String platform;
     }
@@ -116,6 +132,24 @@ public class JdUnionIdPromotion implements Serializable {
         private Integer shopLevel;
         private String shopName;
         private String userEvaluateScore;
+    }
+
+    @Data
+    public static class VideoInfo implements Serializable {
+
+        @Serial
+        private static final long serialVersionUID = -1L;
+
+        private List<Video> videoList;
+    }
+
+    @Data
+    public static class Video implements Serializable {
+
+        @Serial
+        private static final long serialVersionUID = -1L;
+
+        private String imageUrl;
     }
 
     @Data

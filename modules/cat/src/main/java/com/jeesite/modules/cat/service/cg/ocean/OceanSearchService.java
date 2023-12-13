@@ -13,6 +13,7 @@ import com.jeesite.modules.cat.service.es.dto.MaocheMessageProductIndex;
 import com.jeesite.modules.cat.service.es.dto.MaocheMessageSyncIndex;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
+import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -23,6 +24,7 @@ import javax.annotation.Resource;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 @Slf4j
@@ -36,14 +38,16 @@ public class OceanSearchService {
     private ElasticSearch7Service elasticSearch7Service;
 
 
-    public ElasticSearchData<MaocheMessageSyncIndex, Object> searchMsg(OceanMessageCondition condition,
+    public ElasticSearchData<MaocheMessageSyncIndex, CatProductBucketTO> searchMsg(OceanMessageCondition condition,
                                                                        Function<OceanMessageCondition, List<AggregationBuilder>> aggregations,
+                                                                       Function<Aggregations, Map<String, List<CatProductBucketTO>>> bucketConverter,
+                                                                       BiConsumer<OceanMessageCondition, BoolQueryBuilder> customBoolQueryBuilder,
                                                                        int from, int size) {
 
-        SearchSourceBuilder source = searchService.searchSource(condition, aggregations, this::sort, null, OceanMessageCondition.class, from, size);
+        SearchSourceBuilder source = searchService.searchSource(condition, aggregations, this::sort, customBoolQueryBuilder, OceanMessageCondition.class, from, size);
 
 
-        return elasticSearch7Service.search(source, ElasticSearchIndexEnum.MAOCHE_OCEAN_MESSAGE_SYNC_INDEX, null, OceanSearchService::convertMessage, null);
+        return elasticSearch7Service.search(source, ElasticSearchIndexEnum.MAOCHE_OCEAN_MESSAGE_SYNC_INDEX, null, OceanSearchService::convertMessage, bucketConverter);
     }
 
     public ElasticSearchData<MaocheMessageProductIndex, CatProductBucketTO> searchProduct(OceanMessageProductCondition condition,

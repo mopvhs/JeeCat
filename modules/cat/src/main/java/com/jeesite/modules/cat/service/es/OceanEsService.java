@@ -32,9 +32,9 @@ public class OceanEsService {
     @Resource
     private MaocheRobotCrawlerMessageProductService maocheRobotCrawlerMessageProductService;
 
-    public void indexEs(List<Long> msgIds, int corePoolSize) {
+    public boolean indexEs(List<Long> msgIds, int corePoolSize) {
         if (CollectionUtils.isEmpty(msgIds)) {
-            return;
+            return false;
         }
         msgIds = msgIds.stream().distinct().collect(Collectors.toList());
 
@@ -44,7 +44,7 @@ public class OceanEsService {
         // 查询消息
         List<MaocheRobotCrawlerMessageSyncDO> crawlerMessages = maocheRobotCrawlerMessageSyncService.findList(query);
         if (CollectionUtils.isEmpty(crawlerMessages)) {
-            return;
+            return false;
         }
 
         MaocheRobotCrawlerMessageProductDO productQuery = new MaocheRobotCrawlerMessageProductDO();
@@ -59,6 +59,7 @@ public class OceanEsService {
         elasticSearch7Service.index(messageSyncIndex, ElasticSearchIndexEnum.MAOCHE_OCEAN_MESSAGE_SYNC_INDEX, "id", corePoolSize);
         elasticSearch7Service.index(productIndex, ElasticSearchIndexEnum.MAOCHE_OCEAN_MESSAGE_PRODUCT_INDEX, "id", corePoolSize);
 
+        return true;
     }
 
     private List<Map<String, Object>> getMessageSyncIndex(List<MaocheRobotCrawlerMessageSyncDO> crawlerMessages,

@@ -1,8 +1,16 @@
 package com.jeesite.modules.cat.web;
 
+import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.alibaba.fastjson.JSONObject;
+import com.jeesite.common.lang.NumberUtils;
+import com.jeesite.common.lang.StringUtils;
+import com.jeesite.common.utils.JsonUtils;
+import com.jeesite.modules.cat.dao.MaocheAlimamaUnionProductDetailDao;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.ibatis.annotations.Result;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -18,18 +26,23 @@ import com.jeesite.common.web.BaseController;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductDetailDO;
 import com.jeesite.modules.cat.service.MaocheAlimamaUnionProductDetailService;
 
+import java.util.List;
+
 /**
  * maoche_alimama_union_product_detailController
  * @author YHQ
  * @version 2023-05-28
  */
 @Controller
-@RequestMapping(value = "${adminPath}/cat/maocheAlimamaUnionProductDetailDO")
+@RequestMapping(value = "${adminPath}/api/detail")
 public class MaocheAlimamaUnionProductDetailController extends BaseController {
 
 	@Autowired
 	private MaocheAlimamaUnionProductDetailService maocheAlimamaUnionProductDetailDOService;
-	
+
+	@Resource
+	private MaocheAlimamaUnionProductDetailDao maocheAlimamaUnionProductDetailDao;
+
 	/**
 	 * 获取数据
 	 */
@@ -37,7 +50,7 @@ public class MaocheAlimamaUnionProductDetailController extends BaseController {
 //	public MaocheAlimamaUnionProductDetailDO get(Long id, boolean isNewRecord) {
 //		return maocheAlimamaUnionProductDetailDOService.get(id, isNewRecord);
 //	}
-	
+
 	/**
 	 * 查询列表
 	 */
@@ -47,7 +60,7 @@ public class MaocheAlimamaUnionProductDetailController extends BaseController {
 		model.addAttribute("maocheAlimamaUnionProductDetailDO", maocheAlimamaUnionProductDetailDO);
 		return "modules/cat/maocheAlimamaUnionProductDetailDOList";
 	}
-	
+
 	/**
 	 * 查询列表数据
 	 */
@@ -80,7 +93,7 @@ public class MaocheAlimamaUnionProductDetailController extends BaseController {
 		maocheAlimamaUnionProductDetailDOService.save(maocheAlimamaUnionProductDetailDO);
 		return renderResult(Global.TRUE, text("保存maoche_alimama_union_product_detail成功！"));
 	}
-	
+
 	/**
 	 * 删除数据
 	 */
@@ -91,5 +104,45 @@ public class MaocheAlimamaUnionProductDetailController extends BaseController {
 		maocheAlimamaUnionProductDetailDOService.delete(maocheAlimamaUnionProductDetailDO);
 		return renderResult(Global.TRUE, text("删除maoche_alimama_union_product_detail成功！"));
 	}
-	
+
+	/**
+	 * 删除数据
+	 */
+	@RequestMapping(value = "/exchange")
+	@ResponseBody
+	public String exchange(long id) {
+
+
+		int limit = 20;
+
+		while (true) {
+			List<MaocheAlimamaUnionProductDetailDO> all = maocheAlimamaUnionProductDetailDao.findAll(id, limit);
+
+			if (CollectionUtils.isEmpty(all)) {
+				break;
+			}
+			id = NumberUtils.toLong(all.get(all.size() - 1).getId());
+
+			for (MaocheAlimamaUnionProductDetailDO detailDO : all) {
+				logger.info("exchange id:{}", detailDO.getId());
+				String origContent = detailDO.getOrigContent();
+				if (StringUtils.isBlank(origContent) || "null".equals(origContent)) {
+					continue;
+				}
+				JSONObject jsonObject = JSONObject.parseObject(origContent);
+
+				JSONObject data = jsonObject.getJSONObject("data");
+				detailDO.setRate(JsonUtils.toJSONString(data.get("rate")));
+				detailDO.setProps(JsonUtils.toJSONString(data.get("props")));
+				detailDO.setSeller(JsonUtils.toJSONString(data.get("seller")));
+				detailDO.setSkuBase(JsonUtils.toJSONString(data.get("skuBase")));
+				maocheAlimamaUnionProductDetailDao.updateById(detailDO);
+			}
+		}
+
+
+		return "";
+	}
+
+
 }

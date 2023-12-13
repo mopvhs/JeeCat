@@ -33,6 +33,8 @@ import java.util.List;
 		@Column(name="shop_dsr", attrName="shopDsr", label="店铺分"),
 		@Column(name="shop_name", attrName="shopName", label="店铺名称", queryType=QueryType.LIKE),
 		@Column(name="seller_id", attrName="sellerId", label="商家id"),
+		@Column(name="item_id", attrName="itemId", label="itemId：如淘宝"),
+		@Column(name="item_url", attrName="itemUrl", label="itemId：如淘宝"),
 		@Column(name="pict_url", attrName="pictUrl", label="图片地址"),
 		@Column(name="commission_rate", attrName="commissionRate", label="佣金比例"),
 		@Column(name="price", attrName="price", label="价格"),
@@ -57,6 +59,10 @@ public class MaocheRobotCrawlerMessageProductDO extends DataEntity<MaocheRobotCr
 	private String shopDsr;		// 店铺分
 	private String shopName;		// 店铺名称
 	private String sellerId;		// 商家id
+
+	private String itemId;
+
+	private String itemUrl;
 
 	private Long commissionRate;	// 佣金比例
 	private String pictUrl;			// 图片地址
@@ -240,6 +246,22 @@ public class MaocheRobotCrawlerMessageProductDO extends DataEntity<MaocheRobotCr
 
 	public Long getCommissionRate() {
 		return commissionRate;
+	}
+
+	public String getItemId() {
+		return itemId;
+	}
+
+	public void setItemId(String itemId) {
+		this.itemId = itemId;
+	}
+
+	public String getItemUrl() {
+		return itemUrl;
+	}
+
+	public void setItemUrl(String itemUrl) {
+		this.itemUrl = itemUrl;
 	}
 
 	public void setCommissionRate(Long commissionRate) {

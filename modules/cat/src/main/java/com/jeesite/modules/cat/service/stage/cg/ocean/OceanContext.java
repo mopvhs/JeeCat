@@ -5,6 +5,7 @@ import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageProductDO;
 import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageSyncDO;
 import com.jeesite.modules.cat.service.cg.third.dto.JdUnionIdPromotion;
 import com.jeesite.modules.cat.service.cg.third.tb.dto.CommandResponse;
+import com.jeesite.modules.cat.service.es.dto.MaocheMessageSyncIndex;
 import lombok.Data;
 
 import java.io.Serial;
@@ -41,6 +42,11 @@ public class OceanContext implements Serializable {
     // 查询失败remarks
     private String failRemarks;
 
+    // 相似的消息
+    private List<MaocheMessageSyncIndex> similarMessages;
+
+    // 是否索引成功
+    private boolean indexResult = false;
 
 
 }

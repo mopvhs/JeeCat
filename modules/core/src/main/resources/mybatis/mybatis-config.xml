@@ -54,6 +54,7 @@
 	<plugins>
 		<plugin interceptor="com.jeesite.common.mybatis.interceptor.DataSourceInterceptor" />
 		<plugin interceptor="com.jeesite.common.mybatis.interceptor.PaginationInterceptor" />
+		<plugin interceptor="com.jeesite.modules.cat.service.interceptor.SlowSqlInterceptor" />
     </plugins>
 	
 </configuration>

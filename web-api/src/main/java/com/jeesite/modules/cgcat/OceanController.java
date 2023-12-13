@@ -1,9 +1,11 @@
 package com.jeesite.modules.cgcat;
 
+import com.alibaba.fastjson.JSONObject;
 import com.jeesite.common.entity.Page;
 import com.jeesite.common.lang.DateUtils;
 import com.jeesite.common.lang.NumberUtils;
 import com.jeesite.common.lang.StringUtils;
+import com.jeesite.common.utils.JsonUtils;
 import com.jeesite.common.web.Result;
 import com.jeesite.modules.cat.entity.MaocheCategoryMappingDO;
 import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageProductDO;
@@ -29,7 +31,12 @@ import com.jeesite.modules.cgcat.dto.ocean.OceanMsgProductSearchRequest;
 import com.jeesite.modules.cgcat.dto.ocean.OceanMsgSearchRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.FuzzyQueryBuilder;
+import org.elasticsearch.index.query.MatchPhraseQueryBuilder;
+import org.elasticsearch.index.query.MultiMatchQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.WildcardQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.bucket.filter.FilterAggregationBuilder;
@@ -154,24 +161,30 @@ public class OceanController {
 
         // 根据商品id查询关联的商品
         OceanMessageCondition messageCondition = new OceanMessageCondition();
-        messageCondition.setMsg(query.getKeyword());
-        messageCondition.setAffType("tb");
+//        messageCondition.setAffType("tb");
+        messageCondition.setCustomMsgSearch(query.getKeyword());
+        messageCondition.setStatus("NORMAL");
 
-        // todo yhq 先简单实现
+        if (StringUtils.isNotBlank(query.getCategoryName())) {
+            messageCondition.setCategoryNames(Collections.singletonList(query.getCategoryName()));
+        }
+
         String sort = "createDate desc";
         if (StringUtils.isNotBlank(query.getSort())) {
-            sort = query.getSort() + " desc";
             if ("newProduct".equals(query.getSort())) {
                 // 今天开始时间
                 startTime = DateUtils.getOfDayFirst(new Date()).getTime();
+                messageCondition.setNewProduct(1L);
             }
         }
 
-//        messageCondition.setGteCreateDate(startTime);
+        messageCondition.setGteCreateDate(startTime);
         messageCondition.setSorts(Collections.singletonList(sort));
-        ElasticSearchData<MaocheMessageSyncIndex, Object> searchMsg = oceanSearchService.searchMsg(
+        ElasticSearchData<MaocheMessageSyncIndex, CatProductBucketTO> searchMsg = oceanSearchService.searchMsg(
                 messageCondition,
                 OceanController::getCategoryNameAgg,
+                CatRobotHelper::convertUnionProductAggregationMap,
+                this::msgSearchBoolQuery,
                 from, size);
         if (searchMsg == null || CollectionUtils.isEmpty(searchMsg.getDocuments())) {
             return page;
@@ -187,13 +200,20 @@ public class OceanController {
             return page;
         }
         long start = System.currentTimeMillis();
-        MaocheRobotCrawlerMessageProductDO queryProduct = new MaocheRobotCrawlerMessageProductDO();
-        queryProduct.setMsgId_in(msgIds);
-        queryProduct.setStatus("NORMAL");
-        List<MaocheRobotCrawlerMessageProductDO> products = maocheRobotCrawlerMessageProductService.findList(queryProduct);
+//        MaocheRobotCrawlerMessageProductDO queryProduct = new MaocheRobotCrawlerMessageProductDO();
+//        queryProduct.setMsgId_in(msgIds);
+//        queryProduct.setStatus("NORMAL");
+//        List<MaocheRobotCrawlerMessageProductDO> msgProducts = maocheRobotCrawlerMessageProductService.findList(queryProduct);
+
+        OceanMessageProductCondition msgProductCondition = new OceanMessageProductCondition();
+        msgProductCondition.setMsgIds(msgIds);
+        ElasticSearchData<MaocheMessageProductIndex, CatProductBucketTO> msgProductData = oceanSearchService.searchProduct(msgProductCondition, null, null, 0, 1000);
+
+
         log.info("查询消息商品耗时：{}", System.currentTimeMillis() - start);
-        if (CollectionUtils.isNotEmpty(products)) {
-            List<Long> innerIds = products.stream().map(i -> NumberUtils.toLong(i.getInnerId())).filter(i -> i > 0).distinct().toList();
+        if (msgProductData != null && CollectionUtils.isNotEmpty(msgProductData.getDocuments())) {
+            List<MaocheMessageProductIndex> msgProducts = msgProductData.getDocuments();
+            List<Long> innerIds = msgProducts.stream().map(i -> NumberUtils.toLong(i.getInnerId())).filter(i -> i > 0).distinct().toList();
             // 查询索引
             CatUnionProductCondition productCondition = new CatUnionProductCondition();
             productCondition.setIds(innerIds);
@@ -202,20 +222,21 @@ public class OceanController {
             List<UnionProductTO> productTOs = cgUnionProductService.listProductInfo(unionProducts);
             Map<Long, UnionProductTO> unionProductMap = productTOs.stream().collect(Collectors.toMap(UnionProductTO::getId, i -> i, (o, n) -> n));
 
-            Map<Long, List<MaocheRobotCrawlerMessageProductDO>> productMap = products.stream().collect(Collectors.groupingBy(MaocheRobotCrawlerMessageProductDO::getMsgId));
-            for (Map.Entry<Long, List<MaocheRobotCrawlerMessageProductDO>> entry : productMap.entrySet()) {
+            Map<Long, List<MaocheMessageProductIndex>> productMap = msgProducts.stream().collect(Collectors.groupingBy(MaocheMessageProductIndex::getMsgId));
+            for (Map.Entry<Long, List<MaocheMessageProductIndex>> entry : productMap.entrySet()) {
                 Long msgId = entry.getKey();
                 OceanMessageVO oceanMessageVO = messageVOMap.get(msgId);
 
-                List<MaocheRobotCrawlerMessageProductDO> productDOs = entry.getValue();
+                List<MaocheMessageProductIndex> productIndies = entry.getValue();
                 List<UnionProductTO> productVOs = new ArrayList<>();
-                for (MaocheRobotCrawlerMessageProductDO productDO : productDOs) {
-                    long innerId = NumberUtils.toLong(productDO.getInnerId());
+                for (MaocheMessageProductIndex productIndex : productIndies) {
+                    long innerId = NumberUtils.toLong(productIndex.getInnerId());
                     UnionProductTO productTO = null;
                     if (innerId > 0) {
                         productTO = unionProductMap.get(innerId);
-                    } else {
-                        productTO = OceanMessageVO.convertProduct(productDO);
+                    }
+                    if (productTO == null) {
+                        productTO = OceanMessageVO.convertProduct(productIndex);
                     }
                     if (productTO != null) {
                         productVOs.add(productTO);
@@ -226,8 +247,26 @@ public class OceanController {
         }
 
         Page<OceanMessageVO> toPage = new Page<>(page.getPageNo() + 1, page.getPageSize(), searchMsg.getTotal(), vos);
-
+        // name = "猫全价膨化粮"
+        //count = {Long@20509} 1078
+        Map<String, List<CatProductBucketTO>> bucketMap = searchMsg.getBucketMap();
+        toPage.addOtherData("categoryName", bucketMap.get("categoryName"));
         return toPage;
+    }
+
+
+    public void msgSearchBoolQuery(OceanMessageCondition condition, BoolQueryBuilder boolQueryBuilder) {
+        if (condition == null || StringUtils.isBlank(condition.getCustomMsgSearch())) {
+            return;
+        }
+        String customMsgSearch = condition.getCustomMsgSearch();
+
+        BoolQueryBuilder should = new BoolQueryBuilder();
+
+        should.should(new MatchPhraseQueryBuilder("msg", customMsgSearch).slop(50));
+        should.should(new MatchPhraseQueryBuilder("msgNgram", customMsgSearch).slop(50));
+
+        boolQueryBuilder.must(should);
     }
 
     public static List<AggregationBuilder> getCategoryNameAgg(OceanMessageCondition condition) {

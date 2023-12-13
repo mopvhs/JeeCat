@@ -68,6 +68,27 @@
 		</where>
 	</update>
 
+	<update id="updateById" parameterType="com.jeesite.modules.cat.entity.MaochePushTaskDO">
+		UPDATE maoche_push_task
+		<set>
+			<if test=" title != null">
+				title = #{title},
+			</if>
+			<if test=" pushType != null">
+				push_type = #{pushType},
+			</if>
+			<if test=" detail != null">
+				detail = #{detail},
+			</if>
+			<if test=" content != null">
+				content = #{content}
+			</if>
+		</set>
+		<where>
+			id = #{id}
+		</where>
+	</update>
+
 	<select id="countResourceStatus" resultType="com.jeesite.modules.cat.entity.meta.TaskStatusCount">
 		select
 			resource_id as resourceId,
@@ -84,5 +105,14 @@
 				#{resourceId}
 			</foreach>
 			group by resource_id
+	</select>
+
+	<select id="getByTaskIds" resultType="MaochePushTaskDO">
+		SELECT *
+		from maoche_push_task
+		WHERE task_id IN
+		<foreach collection="taskIds" item="taskId" open="(" separator="," close=")">
+			#{taskId}
+		</foreach>
 	</select>
 </mapper>

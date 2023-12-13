@@ -179,10 +179,7 @@ public class MaochePushTaskService extends CrudService<MaochePushTaskDao, Maoche
 		}
 		taskIds = taskIds.stream().distinct().collect(Collectors.toList());
 
-		MaochePushTaskDO query = new MaochePushTaskDO();
-		query.setTaskId_in(taskIds.toArray(new String[0]));
-
-		return dao.findList(query);
+		return dao.getByTaskIds(taskIds);
 	}
 
 	public List<TaskStatusCount> countResourceStatus(List<Long> resourceIds, String resourceType, TaskStatusEnum statusEnum) {
@@ -196,5 +193,31 @@ public class MaochePushTaskService extends CrudService<MaochePushTaskDao, Maoche
 		List<String> tempIds = resourceIds.stream().map(String::valueOf).toList();
 
 		return dao.countResourceStatus(tempIds, resourceType, statusEnum.name());
+	}
+
+	public boolean createPushTask(MaochePushTaskDO pushTaskDO) {
+		if (pushTaskDO == null) {
+			return false;
+		}
+
+		pushTaskDO.setCreateBy("admin");
+		pushTaskDO.setUpdateBy("admin");
+		pushTaskDO.setCreateDate(new Date());
+		pushTaskDO.setUpdateDate(new Date());
+
+		return dao.insert(pushTaskDO) > 0;
+	}
+
+	public boolean createOrUpdatePushTask(MaochePushTaskDO pushTaskDO) {
+		if (pushTaskDO == null) {
+			return false;
+		}
+
+		if (StringUtils.isBlank(pushTaskDO.getId())) {
+			return createPushTask(pushTaskDO);
+		}
+
+		// 更新的话 只允许修改部分字段
+		return dao.updateById(pushTaskDO) > 0;
 	}
 }

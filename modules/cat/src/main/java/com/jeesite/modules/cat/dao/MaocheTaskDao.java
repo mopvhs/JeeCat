@@ -26,4 +26,6 @@ public interface MaocheTaskDao extends CrudDao<MaocheTaskDO> {
     int openTask(@Param("id") String id);
 
     int updateStatusSwitch(@Param("id") String id, @Param("status") String status, @Param("taskSwitch") String taskSwitch);
+
+    int updateById(MaocheTaskDO taskDO);
 }

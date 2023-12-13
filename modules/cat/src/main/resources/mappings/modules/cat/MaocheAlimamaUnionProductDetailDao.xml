@@ -11,5 +11,47 @@
 		</where>
 		ORDER BY ${sqlMap.order.toSql()}
 	</select> -->
-	
+
+	<sql id="Simple_Column_List">
+		id,
+		iid,
+		item_id,
+		item_id_suffix,
+		create_time,
+		update_time,
+		update_detail_time,
+		sync_time,
+		seller,
+		props,
+		rate,
+		sku_base
+	</sql>
+
+
+	<select id="findAll" resultType="MaocheAlimamaUnionProductDetailDO">
+		SELECT *
+		FROM maoche_alimama_union_product_detail
+		<where>
+			id > #{id}
+		</where>
+		ORDER BY id asc limit #{limit}
+	</select>
+
+	<update id="updateById">
+		update maoche_alimama_union_product_detail
+		set seller=#{seller}, rate=#{rate}, sku_base = #{skuBase}, props = #{props}
+		where id = #{id}
+	</update>
+
+	<select id="listByIids" resultType="MaocheAlimamaUnionProductDetailDO">
+		select
+		<include refid="Simple_Column_List" />
+		from maoche_alimama_union_product_detail
+		<where>
+			iid in
+			<foreach collection="iids" item="iid" open="(" separator="," close=")">
+				#{iid}
+			</foreach>
+		</where>
+	</select>
 </mapper>

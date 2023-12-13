@@ -118,5 +118,35 @@ public class MaocheAlimamaUnionProductBihaohuoService extends CrudService<Maoche
 
 		return words;
 	}
+
+	public List<MaocheAlimamaUnionProductBihaohuoDO> listLatestChartPricesByProductIds(List<Long> productIds) {
+		if (CollectionUtils.isEmpty(productIds)) {
+			return new ArrayList<>();
+		}
+		productIds = productIds.stream().filter(Objects::nonNull).distinct().collect(Collectors.toList());
+
+		List<MaocheAlimamaUnionProductBihaohuoDO> words = new ArrayList<>();
+		// 循环拿
+		List<List<Long>> partition = Lists.partition(productIds, 20);
+		for (List<Long> p : partition) {
+			try {
+				List<Long> ids = dao.listLatestChartPricesIdByProductId(p);
+
+				if (CollectionUtils.isEmpty(ids)) {
+					continue;
+				}
+				MaocheAlimamaUnionProductBihaohuoDO query = new MaocheAlimamaUnionProductBihaohuoDO();
+				query.setUiid_in(ids);
+				List<MaocheAlimamaUnionProductBihaohuoDO> list = dao.findList(query);
+
+				words.addAll(list);
+			} catch (Exception e) {
+				log.error("listLatestChartPricesByProductIds 异常 productIds:{}", JsonUtils.toJSONString(p), e);
+			}
+
+		}
+
+		return words;
+	}
 	
 }

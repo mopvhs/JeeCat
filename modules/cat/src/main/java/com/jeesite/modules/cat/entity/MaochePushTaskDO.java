@@ -29,6 +29,8 @@ import com.jeesite.common.shiro.realms.IiIiIiiIiiii;
 		@Column(name="publish_date", attrName="publishDate", label="创建时间"),
 		@Column(name="resource_id", attrName="resourceId", label="资源id"),
 		@Column(name="resource_type", attrName="resourceType", label="资源类型"),
+		@Column(name="detail", attrName="detail", label="详情"),
+//		@Column(name="item_snapshot", attrName="itemSnapshot", label="商品快照"),
 		@Column(includeEntity=DataEntity.class),
 		@Column(name="content", attrName="content", label="内容"),
 	}, orderBy="a.id ASC"
@@ -45,6 +47,10 @@ public class MaochePushTaskDO extends DataEntity<MaochePushTaskDO> {
 	private String resourceId;		// 资源id
 	private String resourceType;		// 资源类型
 	private String content;		// 内容
+
+	private String detail;		// 详细内容
+
+	private String itemSnapshot;		// 商品快照（京东的话会包含券）
 
 	public MaochePushTaskDO() {
 		this(null);
@@ -140,6 +146,22 @@ public class MaochePushTaskDO extends DataEntity<MaochePushTaskDO> {
 
 	public void setContent(String content) {
 		this.content = content;
+	}
+
+	public String getDetail() {
+		return detail;
+	}
+
+	public void setDetail(String detail) {
+		this.detail = detail;
+	}
+
+	public String getItemSnapshot() {
+		return itemSnapshot;
+	}
+
+	public void setItemSnapshot(String itemSnapshot) {
+		this.itemSnapshot = itemSnapshot;
 	}
 
 	public void setPublishDate_lte(Date date) {

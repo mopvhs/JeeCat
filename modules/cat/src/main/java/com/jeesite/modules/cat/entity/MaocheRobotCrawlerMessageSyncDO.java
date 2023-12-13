@@ -53,7 +53,7 @@ public class MaocheRobotCrawlerMessageSyncDO extends DataEntity<MaocheRobotCrawl
 	private Long processed;        // 0 未处理 1 已处理
 	private String affType;        // jd / tb
 	private String resourceIds;        // 资源id
-	private String uniqueHash;        // hash
+	private String uniqueHash;        // hash-md5
 
 	public MaocheRobotCrawlerMessageSyncDO() {
 		this(null);
@@ -152,12 +152,14 @@ public class MaocheRobotCrawlerMessageSyncDO extends DataEntity<MaocheRobotCrawl
 		this.uniqueHash = uniqueHash;
 	}
 
-	public void addRemarks(Map<String, Object> data) {
-		if (MapUtils.isEmpty(data)) {
+	public void addRemarks(String key, Object data) {
+		if (StringUtils.isBlank(key)) {
 			return;
 		}
 		if (StringUtils.isBlank(this.remarks)) {
-			this.remarks = JsonUtils.toJSONString(data);
+			Map<String, Object> map = new HashMap<>();
+			map.put(key, data);
+			this.remarks = JsonUtils.toJSONString(map);
 		} else {
 			try {
 				// 反序列化remarks为Map
@@ -166,9 +168,14 @@ public class MaocheRobotCrawlerMessageSyncDO extends DataEntity<MaocheRobotCrawl
 				if (map == null) {
 					map = new HashMap<>();
 				}
-				map.putAll(data);
+				map.put(key, data);
 				this.remarks = JsonUtils.toJSONString(map);
 			} catch (Exception e) {
+				// 异常
+				Map<String, Object> map = new HashMap<>();
+				map.put(key, data);
+				map.put("exceptionRemarks", this.remarks);
+				this.remarks = JsonUtils.toJSONString(map);
 				log.error("反序列化remarks为Map异常", e);
 			}
 		}

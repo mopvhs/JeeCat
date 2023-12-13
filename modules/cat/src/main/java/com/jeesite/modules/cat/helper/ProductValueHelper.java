@@ -389,31 +389,16 @@ public class ProductValueHelper {
             }
         }
 
-//        for (Object o : baseInfos) {
-//            if (o instanceof JSONObject item) {
-//                Object brandName = item.get("型号");
-//                if (brandName instanceof String) {
-//                    log.info("brandName is other : {}", brandName);
-//                    return brandName.toString();
-//                }
-//            }
-//        }
-
         return null;
     }
 
-    public static List<RateDetailTO> getDetailRates(JSONObject jsonObject) {
-        if (jsonObject == null || jsonObject.get("data") == null) {
+    public static List<RateDetailTO> getDetailRates(JSONObject rate) {
+        if (rate == null) {
             return new ArrayList<>();
         }
 
         List<RateDetailTO> details = new ArrayList<>();
         // 获取粉丝数和店铺等级
-        JSONObject data = jsonObject.getJSONObject("data");
-        JSONObject rate = data.getJSONObject("rate");
-        if (rate == null) {
-            return new ArrayList<>();
-        }
         if (rate.get("keywords") != null && rate.get("keywords") instanceof JSONArray) {
             JSONArray keywords = rate.getJSONArray("keywords");
             for (int i = 0; i < keywords.size(); i++) {
@@ -437,17 +422,7 @@ public class ProductValueHelper {
             return null;
         }
 
-        Object data = jsonObject.get("data");
-        if (!(data instanceof JSONObject obj)) {
-            return null;
-        }
-
-        Object props = obj.get("props");
-        if (!(props instanceof JSONObject propsObj)) {
-            return null;
-        }
-
-        Object groupProps = propsObj.get("groupProps");
+        Object groupProps = jsonObject.get("groupProps");
         if (!(groupProps instanceof JSONArray groupPropsObj)) {
             return null;
         }
@@ -504,22 +479,10 @@ public class ProductValueHelper {
      * @param jsonObject
      */
     public static List<PriceChartSkuBaseTO> getPriceChartSkuBase(JSONObject jsonObject) {
-
-        if (jsonObject == null || jsonObject.get("data") == null) {
+        JSONObject skuBase = getSkuBase(jsonObject);
+        if (skuBase == null) {
             return new ArrayList<>();
         }
-
-        JSONObject data = jsonObject.getJSONObject("data");
-        if (data.get("sku") == null) {
-            return new ArrayList<>();
-        }
-        JSONObject sku = data.getJSONObject("sku");
-
-        if (sku.get("skuBase") == null) {
-            return new ArrayList<>();
-        }
-
-        JSONObject skuBase = sku.getJSONObject("skuBase");
         Set<String> keySet = skuBase.keySet();
 
         List<PriceChartSkuBaseTO> skuBaseTOs = new ArrayList<>();
@@ -548,6 +511,27 @@ public class ProductValueHelper {
 
 
         return skuBaseTOs;
+    }
+
+    public static JSONObject getSkuBase(JSONObject jsonObject) {
+
+        if (jsonObject == null || jsonObject.get("data") == null) {
+            return null;
+        }
+
+        JSONObject data = jsonObject.getJSONObject("data");
+        if (data.get("sku") == null) {
+            return null;
+        }
+        JSONObject sku = data.getJSONObject("sku");
+
+        if (sku.get("skuBase") == null) {
+            return null;
+        }
+
+        JSONObject skuBase = sku.getJSONObject("skuBase");
+
+        return skuBase;
     }
 
     /**

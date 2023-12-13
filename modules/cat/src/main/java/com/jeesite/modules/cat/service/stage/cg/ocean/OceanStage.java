@@ -3,10 +3,14 @@ package com.jeesite.modules.cat.service.stage.cg.ocean;
 import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageProductDO;
 import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageSyncDO;
 
+import java.util.regex.Pattern;
+
 public interface OceanStage {
 
     // tb/jd
     String getAffType();
+
+    Pattern getPattern();
 
     // 流程处理
     void process(OceanContext context);
@@ -44,6 +48,11 @@ public interface OceanStage {
      * @param context
      */
     void indexEx(OceanContext context);
+
+    /**
+     * 相似文案判断
+     */
+    void similarMsgCheck(OceanContext context);
 
 
 

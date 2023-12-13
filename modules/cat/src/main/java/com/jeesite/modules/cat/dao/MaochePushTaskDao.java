@@ -26,6 +26,10 @@ public interface MaochePushTaskDao extends CrudDao<MaochePushTaskDO> {
 
     List<MaochePushTaskDO> queryByStatus(@Param("status") String status, @Param("publishDate") String publishDate, @Param("limit") int limit);
 
+    List<MaochePushTaskDO> getByTaskIds(@Param("taskIds") List<String> taskIds);
+
     List<TaskStatusCount> countResourceStatus(@Param("resourceIds") List<String> resourceIds, @Param("resourceType") String resourceType, @Param("status") String status);
+
+    int updateById(MaochePushTaskDO taskDO);
 	
 }

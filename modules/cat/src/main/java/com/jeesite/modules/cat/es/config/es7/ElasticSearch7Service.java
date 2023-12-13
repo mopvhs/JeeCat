@@ -19,6 +19,8 @@ import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchResponseSections;
+import org.elasticsearch.action.update.UpdateRequest;
+import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.core.CountRequest;
@@ -288,7 +290,13 @@ public class ElasticSearch7Service {
 //                            log.info("indexEs resourceId {}, indexEnum {}, result {}", id, indexEnum.getIndex(), JSON.toJSONString(result));
                         } catch (Exception e) {
                             log.error("indexEs error data {}, resourceId {}", JSON.toJSONString(data), id, e);
+                            // 异常的话，再执行一次
+                            try {
+                                restHighLevelClient.index(indexRequest, RequestOptions.DEFAULT);
+                            } catch (Exception ee) {
+                                log.error("indexEs error second times data {}, resourceId {}", JSON.toJSONString(data), id, ee);
 
+                            }
                             return false;
                         }
 
@@ -303,6 +311,60 @@ public class ElasticSearch7Service {
                     f.get();
                 } catch (Exception e) {
                     log.error("写入异常");
+                }
+            }
+        }
+    }
+
+    /**
+     * 更新
+     * @param data
+     * @param indexEnum
+     * @param resourceIdKey
+     */
+    public void update(List<Map<String, Object>> data, ElasticSearchIndexEnum indexEnum, String resourceIdKey, int limit) {
+        if (CollectionUtils.isEmpty(data)) {
+            return;
+        }
+
+        if (StringUtils.isBlank(resourceIdKey)) {
+            return;
+        }
+
+        // 每执行limit条等待
+        List<List<Map<String, Object>>> partition = Lists.partition(data, limit);
+        for (List<Map<String, Object>> list : partition) {
+
+            List<Future<Boolean>> futures = new ArrayList<>();
+            for (Map<String, Object> item : list) {
+                String id = String.valueOf(item.get(resourceIdKey));
+
+                UpdateRequest updateRequest = new UpdateRequest(indexEnum.getIndex(), indexEnum.getType(), id);
+                updateRequest.doc(item);
+                Future<Boolean> submit = executor.submit(new Callable<Boolean>() {
+                    @Override
+                    public Boolean call() throws Exception {
+                        try {
+                            UpdateResponse response = restHighLevelClient.update(updateRequest, RequestOptions.DEFAULT);
+                            DocWriteResponse.Result result = response.getResult();
+//                            log.info("indexEs resourceId {}, indexEnum {}, result {}", id, indexEnum.getIndex(), JSON.toJSONString(result));
+                        } catch (Exception e) {
+                            log.error("update es error data {}, resourceId {}", JSON.toJSONString(data), id, e);
+
+                            return false;
+                        }
+
+                        return true;
+                    }
+                });
+                futures.add(submit);
+            }
+
+            for (Future<Boolean> f : futures) {
+                try {
+                    f.get();
+                } catch (Exception e) {
+                    log.error("更新异常");
                 }
             }
         }

@@ -7,6 +7,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
@@ -17,6 +18,7 @@ import java.io.IOException;
  * @author zhaoloon
  * @since 1.0 create at 2016年5月31日
  */
+@Slf4j
 public final class JsonUtils {
 
     private static final ObjectMapper OM = new ObjectMapper();
@@ -109,7 +111,7 @@ public final class JsonUtils {
 
             return JSONObject.parseObject(jsonString);
         } catch (Exception e) {
-
+//            log.error("json转换异常 jsonString:{}", jsonString, e);
         }
 
         return null;

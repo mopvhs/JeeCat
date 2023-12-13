@@ -33,7 +33,7 @@ public class MaocheTaskService extends CrudService<MaocheTaskDao, MaocheTaskDO> 
 	 */
 	@Override
 	public MaocheTaskDO get(MaocheTaskDO maocheTaskDO) {
-		return super.get(maocheTaskDO);
+		return dao.getByEntity(maocheTaskDO);
 	}
 	
 	/**
@@ -180,5 +180,16 @@ public class MaocheTaskService extends CrudService<MaocheTaskDao, MaocheTaskDO> 
 
 		return StringUtils.isNotBlank(task.getId());
 	}
-	
+
+
+	public boolean createOrUpdateTask(MaocheTaskDO task) {
+		if (task == null) {
+			return false;
+		}
+		if (StringUtils.isBlank(task.getId())) {
+			return createTask(task);
+		}
+
+		return dao.updateById(task) > 0;
+	}
 }

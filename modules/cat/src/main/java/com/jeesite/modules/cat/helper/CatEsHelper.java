@@ -105,6 +105,7 @@ public class CatEsHelper {
         String productImage = ProductValueHelper.getProductImage(jsonObject);
         Long couponTotalCount = ProductValueHelper.getCouponTotalCount(jsonObject);
 
+        long couponStartFee = ProductValueHelper.getCouponStartFee(jsonObject);
         long coupon = ProductValueHelper.getCouponAmount(jsonObject);
         long zkFinalPrice = ProductValueHelper.getZkFinalPrice(jsonObject);
         String itemDescription = ProductValueHelper.getItemDescription(jsonObject);
@@ -121,24 +122,34 @@ public class CatEsHelper {
         String fans = null;
         Long creditLevel = null;
         // 获取粉丝数和店铺等级
-        if (productDetailDO != null && StringUtils.isNotBlank(productDetailDO.getOrigContent())) {
-            JSONObject productDetail = JSONObject.parseObject(productDetailDO.getOrigContent());
-            if (productDetail != null && productDetail.get("data") != null) {
-                JSONObject data = productDetail.getJSONObject("data");
-                JSONObject seller = data.getJSONObject("seller");
-                if (seller != null) {
-                    fans = seller.getString("fans");
-                    creditLevel = NumberUtils.toLong(seller.getString("creditLevel"));
+        if (productDetailDO != null) {
+            String seller = productDetailDO.getSeller();
+            if (StringUtils.isNotBlank(seller)) {
+                JSONObject sellerObj = JsonUtils.toJsonObject(seller);
+                if (sellerObj != null) {
+                    fans = sellerObj.getString("fans");
+                    creditLevel = NumberUtils.toLong(sellerObj.getString("creditLevel"));
                 }
+            }
+            String props = productDetailDO.getProps();
+            if (StringUtils.isNotBlank(props)) {
+                JSONObject propsObj = JsonUtils.toJsonObject(props);
+                if (propsObj != null) {
+                    String detailPropsProductName = ProductValueHelper.getDetailPropsProductName(propsObj);
+                    String detailPropsBrand = ProductValueHelper.getDetailPropsBrand(propsObj);
 
-                String detailPropsProductName = ProductValueHelper.getDetailPropsProductName(productDetail);
-                String detailPropsBrand = ProductValueHelper.getDetailPropsBrand(productDetail);
-
-                index.setPropsProductName(detailPropsProductName);
-                index.setPropsBrand(detailPropsBrand);
+                    index.setPropsProductName(detailPropsProductName);
+                    index.setPropsBrand(detailPropsBrand);
+                }
             }
 
-            List<RateDetailTO> details = ProductValueHelper.getDetailRates(productDetail);
+            String rate = productDetailDO.getRate();
+            JSONObject rateObj = null;
+            if (StringUtils.isNotBlank(rate)) {
+                rateObj = JsonUtils.toJsonObject(rate);
+            }
+
+            List<RateDetailTO> details = ProductValueHelper.getDetailRates(rateObj);
             index.setRates(details);
         }
 
@@ -163,6 +174,7 @@ public class CatEsHelper {
         index.setShopTitle(shopTitle);
         index.setCouponTotalCount(couponTotalCount);
         index.setProductImage(productImage);
+        index.setCouponStartFee(couponStartFee);
         index.setCoupon(coupon);
         index.setReservePrice(zkFinalPrice);
         index.setItemDescription(itemDescription);

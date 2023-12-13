@@ -18,4 +18,6 @@ public interface MaocheAlimamaUnionProductBihaohuoDao extends CrudDao<MaocheAlim
 
     List<Long> listLatestChartPricesId(@Param("iids") List<String> iids);
 
+    List<Long> listLatestChartPricesIdByProductId(@Param("productIds") List<Long> productIds);
+
 }

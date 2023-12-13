@@ -278,6 +278,7 @@ public class CgUnionProductService {
         // 商品sku detail
         List<MaocheAlimamaUnionProductDetailDO> productDetailDOs = maocheAlimamaUnionProductDetailService.listByIids(iids);
         Map<String, MaocheAlimamaUnionProductDetailDO> productDetailMap = productDetailDOs.stream().collect(Collectors.toMap(MaocheAlimamaUnionProductDetailDO::getItemIdSuffix, Function.identity(), (o1, o2) -> o1));
+        // 消耗的时间
 
 //        List<MaocheAlimamaUnionProductPriceChartDO> priceChartDOs = maocheAlimamaUnionProductPriceChartService.listLatestChartPrices(iids);
 //        Map<String, MaocheAlimamaUnionProductPriceChartDO> priceChartDOMap = priceChartDOs.stream().collect(Collectors.toMap(MaocheAlimamaUnionProductPriceChartDO::getIid, Function.identity(), (o1, o2) -> o1));
@@ -286,7 +287,7 @@ public class CgUnionProductService {
         Map<String, MaocheAlimamaUnionProductBihaohuoDO> priceChartDOMap = priceChartDOs.stream().collect(Collectors.toMap(MaocheAlimamaUnionProductBihaohuoDO::getIid, Function.identity(), (o1, o2) -> o1));
 
         // 获取大淘客的数据
-        Map<String, MaocheDataokeProductDO> daTaoKeProductMap = getDaTaoKeProductMap(items);
+//        Map<String, MaocheDataokeProductDO> daTaoKeProductMap = getDaTaoKeProductMap(items);
 
 //         获取全部类目
 //        List<CategoryTree> categoryTrees = maocheCategoryService.listAllCategoryFromCache();
@@ -324,20 +325,20 @@ public class CgUnionProductService {
                 MaocheAlimamaUnionProductBihaohuoDO priceChartDO = priceChartDOMap.get(item.getIid());
 //                ProductCategoryModel productCategory = CategoryHelper.getRelProductCategory(rels, categoryTrees);
 
-                ProductEsContext context = new ProductEsContext();
-                context.setItem(item);
-                context.setDaTaoKeProduct(daTaoKeProductMap.get(item.getItemIdSuffix()));
-                context.setProductDetailDO(productDetailDO);
-                context.setPriceChartDO(priceChartDO);
-                ProductEsStage stage = productEsFactory.getStage(item.getDataSource());
-
+//                ProductEsContext context = new ProductEsContext();
+//                context.setItem(item);
+//                context.setDaTaoKeProduct(daTaoKeProductMap.get(item.getItemIdSuffix()));
+//                context.setProductDetailDO(productDetailDO);
+//                context.setPriceChartDO(priceChartDO);
+//                ProductEsStage stage = productEsFactory.getStage(item.getDataSource());
+//
                 CarAlimamaUnionProductIndex catIndex = null;
-                if (stage != null) {
-                    Object convert = stage.convert(context);
-                    if (convert instanceof UnionProductModel model) {
-                        catIndex = CatEsHelper.buildCatUnionProductIndex(model, context);
-                    }
-                }
+//                if (stage != null) {
+//                    Object convert = stage.convert(context);
+//                    if (convert instanceof UnionProductModel model) {
+//                        catIndex = CatEsHelper.buildCatUnionProductIndex(model, context);
+//                    }
+//                }
 
                 if (catIndex == null) {
                     catIndex = CatEsHelper.buildCatAlimamaUnionProductIndex(item,
@@ -609,5 +610,24 @@ public class CgUnionProductService {
                 searchSourceBuilder.sort(name, sortOrder);
             }
         }
+    }
+
+
+    public List<UnionProductTO> listByIdsFromEs(List<Long> ids) {
+        if (CollectionUtils.isEmpty(ids)) {
+            return new ArrayList<>();
+        }
+
+        CatUnionProductCondition unionProductCondition = new CatUnionProductCondition();
+        unionProductCondition.setIds(ids);
+        SearchSourceBuilder source = searchSource(unionProductCondition, null, null, null, 0, ids.size());
+        ElasticSearchData<CarAlimamaUnionProductIndex, CatProductBucketTO> searchData = search(source);
+
+        if (searchData == null) {
+            return new ArrayList<>();
+        }
+
+        List<UnionProductTO> productTOs = listProductInfo(searchData);
+        return productTOs;
     }
 }
