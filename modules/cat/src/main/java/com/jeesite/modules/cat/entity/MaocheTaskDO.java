@@ -27,6 +27,7 @@ import java.util.Date;
 		@Column(name="content", attrName="content", label="内容"),
 		@Column(name="time_type", attrName="timeType", label="时间类型"),
 		@Column(name="publish_date", attrName="publishDate", label="发布时间"),
+		@Column(name="finished_date", attrName="finishedDate", label="完成时间"),
 	}, orderBy="a.update_date DESC"
 )
 public class MaocheTaskDO extends DataEntity<MaocheTaskDO> {
@@ -43,6 +44,7 @@ public class MaocheTaskDO extends DataEntity<MaocheTaskDO> {
 	private String content;		// 内容
 
 	private Date publishDate;	// 发布时间
+	private Date finishedDate;	// 发布时间
 
 	public MaocheTaskDO() {
 		this(null);
@@ -122,5 +124,13 @@ public class MaocheTaskDO extends DataEntity<MaocheTaskDO> {
 
 	public void setPublishDate(Date publishDate) {
 		this.publishDate = publishDate;
+	}
+
+	public Date getFinishedDate() {
+		return finishedDate;
+	}
+
+	public void setFinishedDate(Date finishedDate) {
+		this.finishedDate = finishedDate;
 	}
 }

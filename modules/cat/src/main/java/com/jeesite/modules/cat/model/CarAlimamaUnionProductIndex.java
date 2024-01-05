@@ -4,6 +4,7 @@ import lombok.Data;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 
 @Data
@@ -125,4 +126,8 @@ public class CarAlimamaUnionProductIndex implements Serializable {
 
     // 自定义利益点
     private String customBenefit;
-}
+
+    private Long finalPromotionPrice = 0L;
+    private Long predictRoundingUpPrice = 0L;
+    private String predictRoundingUpPriceDesc = "";
+    private List<String> pricePromotionTagList = new ArrayList<>();}

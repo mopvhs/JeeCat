@@ -1,0 +1,119 @@
+<% layout('/layouts/default.html', {title: 'maoche_product_v2管理', libs: ['dataGrid']}){ %>
+<div class="main-content">
+	<div class="box box-main">
+		<div class="box-header">
+			<div class="box-title">
+				<i class="fa icon-notebook"></i> ${text('maoche_product_v2管理')}
+			</div>
+			<div class="box-tools pull-right">
+				<a href="#" class="btn btn-default" id="btnSearch" title="${text('查询')}"><i class="fa fa-filter"></i> ${text('查询')}</a>
+				<% if(hasPermi('cat:maocheProductV2DO:edit')){ %>
+					<a href="${ctx}/cat/maocheProductV2DO/form" class="btn btn-default btnTool" title="${text('新增maoche_product_v2')}"><i class="fa fa-plus"></i> ${text('新增')}</a>
+				<% } %>
+				<a href="#" class="btn btn-default" id="btnSetting" title="${text('设置')}"><i class="fa fa-navicon"></i></a>
+			</div>
+		</div>
+		<div class="box-body">
+			<#form:form id="searchForm" model="${maocheProductV2DO}" action="${ctx}/cat/maocheProductV2DO/listData" method="post" class="form-inline hide"
+					data-page-no="${parameter.pageNo}" data-page-size="${parameter.pageSize}" data-order-by="${parameter.orderBy}">
+				<div class="form-group">
+					<label class="control-label">${text('product_id')}：</label>
+					<div class="control-inline">
+						<#form:input path="productId" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('DELETE / NORMAL')}：</label>
+					<div class="control-inline width-120">
+						<#form:select path="status" dictType="sys_search_status" blankOption="true" class="form-control isQuick"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('iid')}：</label>
+					<div class="control-inline">
+						<#form:input path="iid" maxlength="128" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('item_id')}：</label>
+					<div class="control-inline">
+						<#form:input path="itemId" maxlength="128" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('item_id_suffix')}：</label>
+					<div class="control-inline">
+						<#form:input path="itemIdSuffix" maxlength="128" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('orig_content')}：</label>
+					<div class="control-inline">
+						<#form:input path="origContent" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('sync_time')}：</label>
+					<div class="control-inline">
+						<#form:input path="syncTime" readonly="true" maxlength="20" class="form-control laydate width-datetime"
+							dataFormat="datetime" data-type="datetime" data-format="yyyy-MM-dd HH:mm"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('create_time')}：</label>
+					<div class="control-inline">
+						<#form:input path="createTime" readonly="true" maxlength="20" class="form-control laydate width-datetime"
+							dataFormat="datetime" data-type="datetime" data-format="yyyy-MM-dd HH:mm"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('update_time')}：</label>
+					<div class="control-inline">
+						<#form:input path="updateTime" readonly="true" maxlength="20" class="form-control laydate width-datetime"
+							dataFormat="datetime" data-type="datetime" data-format="yyyy-MM-dd HH:mm"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<button type="submit" class="btn btn-primary btn-sm">${text('查询')}</button>
+					<button type="reset" class="btn btn-default btn-sm isQuick">${text('重置')}</button>
+				</div>
+			</#form:form>
+			<table id="dataGrid"></table>
+			<div id="dataGridPage"></div>
+		</div>
+	</div>
+</div>
+<% } %>
+<script>
+// 初始化DataGrid对象
+$('#dataGrid').dataGrid({
+	searchForm: $("#searchForm"),
+	columnModel: [
+		{header:'${text("product_id")}', name:'productId', index:'a.product_id', width:150, align:"left", frozen:true, formatter: function(val, obj, row, act){
+			return '<a href="${ctx}/cat/maocheProductV2DO/form?id='+row.id+'" class="btnList" data-title="${text("编辑maoche_product_v2")}">'+(val||row.id)+'</a>';
+		}},
+		{header:'${text("DELETE / NORMAL")}', name:'status', index:'a.status', width:150, align:"center", formatter: function(val, obj, row, act){
+			return js.getDictLabel(${@DictUtils.getDictListJson('sys_search_status')}, val, '${text("未知")}', true);
+		}},
+		{header:'${text("iid")}', name:'iid', index:'a.iid', width:150, align:"left"},
+		{header:'${text("item_id")}', name:'itemId', index:'a.item_id', width:150, align:"left"},
+		{header:'${text("item_id_suffix")}', name:'itemIdSuffix', index:'a.item_id_suffix', width:150, align:"left"},
+		{header:'${text("orig_content")}', name:'origContent', index:'a.orig_content', width:150, align:"left"},
+		{header:'${text("sync_time")}', name:'syncTime', index:'a.sync_time', width:150, align:"center"},
+		{header:'${text("create_time")}', name:'createTime', index:'a.create_time', width:150, align:"center"},
+		{header:'${text("update_time")}', name:'updateTime', index:'a.update_time', width:150, align:"center"},
+		{header:'${text("操作")}', name:'actions', width:120, formatter: function(val, obj, row, act){
+			var actions = [];
+			//<% if(hasPermi('cat:maocheProductV2DO:edit')){ %>
+				actions.push('<a href="${ctx}/cat/maocheProductV2DO/form?id='+row.id+'" class="btnList" title="${text("编辑maoche_product_v2")}"><i class="fa fa-pencil"></i></a>&nbsp;');
+				actions.push('<a href="${ctx}/cat/maocheProductV2DO/delete?id='+row.id+'" class="btnList" title="${text("删除maoche_product_v2")}" data-confirm="${text("确认要删除该maoche_product_v2吗？")}"><i class="fa fa-trash-o"></i></a>&nbsp;');
+			//<% } %>
+			return actions.join('');
+		}}
+	],
+	// 加载成功后执行事件
+	ajaxSuccess: function(data){
+		
+	}
+});
+</script>

@@ -22,4 +22,6 @@ public class PushTaskContent implements Serializable {
     // 发布延迟时间，相对的
     private Long delayTime;
 
+    private Integer displayTimeType;
+
 }

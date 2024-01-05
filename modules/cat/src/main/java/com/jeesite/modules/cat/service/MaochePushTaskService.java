@@ -220,4 +220,12 @@ public class MaochePushTaskService extends CrudService<MaochePushTaskDao, Maoche
 		// 更新的话 只允许修改部分字段
 		return dao.updateById(pushTaskDO) > 0;
 	}
+
+	public List<MaochePushTaskDO> getByIds(List<String> ids) {
+		if (CollectionUtils.isEmpty(ids)) {
+			return new ArrayList<>();
+		}
+
+		return dao.getByIds(ids);
+	}
 }

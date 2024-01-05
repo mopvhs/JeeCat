@@ -29,7 +29,7 @@ public class MaochePushTaskRuleService extends CrudService<MaochePushTaskRuleDao
 	 */
 	@Override
 	public MaochePushTaskRuleDO get(MaochePushTaskRuleDO maochePushTaskRuleDO) {
-		return super.get(maochePushTaskRuleDO);
+		return dao.getByEntity(maochePushTaskRuleDO);
 	}
 
 	/**

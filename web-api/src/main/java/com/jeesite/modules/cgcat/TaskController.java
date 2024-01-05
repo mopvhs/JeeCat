@@ -10,6 +10,7 @@ import com.jeesite.modules.cat.dao.MaocheRobotCrawlerMessageSyncDao;
 import com.jeesite.modules.cat.entity.MaochePushTaskDO;
 import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageSyncDO;
 import com.jeesite.modules.cat.entity.MaocheTaskDO;
+import com.jeesite.modules.cat.enums.task.PushTypeEnum;
 import com.jeesite.modules.cat.enums.task.TaskStatusEnum;
 import com.jeesite.modules.cat.enums.task.TaskTypeEnum;
 import com.jeesite.modules.cat.model.task.content.PushTaskContent;
@@ -24,22 +25,23 @@ import com.jeesite.modules.cat.service.cg.task.dto.ProductDetail;
 import com.jeesite.modules.cat.service.cg.task.dto.TaskDetail;
 import com.jeesite.modules.cat.service.cg.task.dto.TaskInfo;
 import com.jeesite.modules.cat.service.cg.third.tb.TbApiService;
+import com.jeesite.modules.cat.service.es.TaskEsService;
 import com.jeesite.modules.cgcat.dto.task.SourceTaskCreateReq;
 import com.jeesite.modules.cgcat.dto.task.TaskDetailGetReq;
 import com.jeesite.modules.cgcat.dto.task.TaskDetailHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.io.LineIterator;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import javax.annotation.Resource;
-import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 @Slf4j
 @Controller
@@ -73,6 +75,9 @@ public class TaskController {
     @Resource
     private MaocheTaskService maocheTaskService;
 
+    @Resource
+    private TaskEsService taskEsService;
+
     // 获取任务详情
     @RequestMapping(value = "/source/task/info/get")
     public Result<TaskInfo> getTaskInfo(@RequestBody TaskDetailGetReq req) {
@@ -98,14 +103,23 @@ public class TaskController {
             PushTaskContent taskContent = JsonUtils.toReferenceType(taskDO.getContent(), new TypeReference<PushTaskContent>() {
             });
 
+            int displayTimeType = 0;
+            long delayTime = 0;
+            if (taskContent != null) {
+                displayTimeType = Optional.ofNullable(taskContent.getDisplayTimeType()).orElse(0);
+                delayTime = Optional.ofNullable(taskContent.getDelayTime()).orElse(0L);
+            }
+
             taskInfo.setTaskId(taskDO.getId());
             taskInfo.setTaskSwitch(taskDO.getTaskSwitch());
-            taskInfo.setDelayTime(taskContent != null ? taskContent.getDelayTime() : null);
+            taskInfo.setDelayTime(delayTime);
+            taskInfo.setDisplayTimeType(displayTimeType);
             taskInfo.setTimeType(taskDO.getTimeType());
             taskInfo.setPublishDate(taskDO.getPublishDate());
             taskInfo.setTitle(taskDO.getTitle());
             taskInfo.setStatus(taskDO.getStatus());
 
+            taskInfo.setPushType(pushTaskDO.getPushType());
             taskInfo.setPushTaskId(pushTaskDO.getId());
             String detail = pushTaskDO.getDetail();
             if (StringUtils.isNotBlank(detail)) {
@@ -235,12 +249,33 @@ public class TaskController {
             return Result.ERROR(500, "参数错误");
         }
 
+        String title = null;
+        TaskDetail detail = req.getDetail();
+        List<ProductDetail> products = detail.getProducts();
+        if (CollectionUtils.isNotEmpty(products)) {
+            ProductDetail productDetail = products.get(0);
+            title = productDetail.getTitle();
+        }
+        if (StringUtils.isNotBlank(req.getTitle())) {
+            title = req.getTitle();
+        }
+        if (StringUtils.isBlank(title)) {
+            title =  UUID.randomUUID().toString();
+        }
+
+        PushTypeEnum pushTypeEnum = PushTypeEnum.getByName(req.getPushType());
+        if (pushTypeEnum == null) {
+            return Result.ERROR(500, "推送类型不能为空");
+        }
+
         // 保存任务
         // 创建任务
         MaocheTaskDO task = new MaocheTaskDO();
+        req.initPublishTime();
+
         task.setId(req.getTaskId());
-        task.setTitle(req.getTitle());
-        task.setSubTitle("");
+        task.setTitle(title);
+        task.setSubTitle("NEW-PUSH");
         task.setTaskType(TaskTypeEnum.PUSH.name());
         task.setTimeType(req.getTimeType());
         task.setPublishDate(req.getPublishDate());
@@ -248,6 +283,8 @@ public class TaskController {
         PushTaskContent taskContent = new PushTaskContent();
         taskContent.setSource(req.getSource());
         taskContent.setDelayTime(req.getDelayTime());
+        taskContent.setDisplayTimeType(req.getDisplayTimeType());
+
         task.setContent(JsonUtils.toJSONString(taskContent));
         boolean res = maocheTaskService.createOrUpdateTask(task);
         if (!res) {
@@ -257,26 +294,28 @@ public class TaskController {
         // 创建推送任务
         MaochePushTaskDO pushTaskDO = new MaochePushTaskDO();
         pushTaskDO.setId(req.getPushTaskId());
-        pushTaskDO.setTitle(req.getTitle());
+        pushTaskDO.setTitle(title);
         pushTaskDO.setTaskId(task.getId());
 
-        pushTaskDO.setSubTitle("");
+        pushTaskDO.setSubTitle("NEW-PUSH");
         pushTaskDO.setResourceId("");
         pushTaskDO.setResourceType("");
-        pushTaskDO.setPushType(req.getPushType());
+        pushTaskDO.setPushType(pushTypeEnum.name());
         pushTaskDO.setPublishDate(new Date());
         pushTaskDO.setStatus(TaskStatusEnum.INIT.name());
 
         // todo 通过任务详情，获取到发送内容
         TaskDetail taskDetail = req.getDetail();
         pushTaskDO.setDetail(JsonUtils.toJSONString(taskDetail));
-        PushTaskContentDetail content = PushTaskContentDetail.buildContent(taskDetail);
+        PushTaskContentDetail content = PushTaskContentDetail.buildContent(pushTaskDO, taskDetail);
         pushTaskDO.setContent(JsonUtils.toJSONString(content));
 
         // 创建发送内容
         maochePushTaskService.createOrUpdatePushTask(pushTaskDO);
 
-        return Result.OK();
+        taskEsService.indexEs(Collections.singletonList(pushTaskDO.getId()), 10);
+
+        return Result.OK("处理完成");
     }
 
 }

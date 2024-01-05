@@ -28,6 +28,14 @@ public class PriceHelper {
         return price.multiply(new BigDecimal("100")).longValue();
     }
 
+    public static String formatPriceReplaceZero(Long price) {
+        if (price == null) {
+            return "0";
+        }
+
+        return formatPrice(price, ".00", "");
+    }
+
     public static String formatPrice(Long price, String replaceTarget, String replacement) {
         if (price == null) {
             return "0";

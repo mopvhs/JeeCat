@@ -393,6 +393,9 @@ public class CgMaocheTaskController {
             return Result.OK("更新成功");
         }
 
+        String content = task.getContent();
+        PushTaskContent taskContent = JsonUtils.toReferenceType(content, new TypeReference<PushTaskContent>() {
+        });
         // 如果是开启的话，把所有初始状态的都改成正常，并且设置发布时间
         // 根据不同的推送类型，设置不同的发布时间
         if (task.getTimeType().equals(TimeTypeEnum.DAILY_SCHEDULE.name())) {
@@ -402,9 +405,7 @@ public class CgMaocheTaskController {
             Date time = DateTimeUtils.getTodyDate(publishDate);
             // 从第二天开始
             time = new Date(time.getTime() + 86400000L);
-            String content = task.getContent();
-            PushTaskContent taskContent = JsonUtils.toReferenceType(content, new TypeReference<PushTaskContent>() {
-            });
+
             if (taskContent != null && CollectionUtils.isNotEmpty(taskContent.getIds())) {
                 Map<String, List<MaochePushTaskDO>> listMap = taskDOS.stream().collect(Collectors.groupingBy(MaochePushTaskDO::getResourceId));
                 for (Long id : taskContent.getIds()) {
@@ -444,6 +445,9 @@ public class CgMaocheTaskController {
             Date time = new Date();
             if (task.getTimeType().equals(TimeTypeEnum.SCHEDULE.name())) {
                 time = task.getPublishDate();
+            }
+            if (taskContent != null && taskContent.getDelayTime() != null) {
+                time = new Date(time.getTime() + taskContent.getDelayTime());
             }
 
             List<String> ids = taskDOS.stream().map(MaochePushTaskDO::getId).collect(Collectors.toList());

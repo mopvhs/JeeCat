@@ -115,4 +115,13 @@
 			#{taskId}
 		</foreach>
 	</select>
+
+	<select id="getByIds" resultType="MaochePushTaskDO">
+		SELECT *
+		from maoche_push_task
+		WHERE id IN
+		<foreach collection="ids" item="id" open="(" separator="," close=")">
+			#{id}
+		</foreach>
+	</select>
 </mapper>

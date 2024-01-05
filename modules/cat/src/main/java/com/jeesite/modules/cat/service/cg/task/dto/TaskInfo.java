@@ -32,4 +32,6 @@ public class TaskInfo implements Serializable {
     private String pushTaskId;      // 推送任务id
     private TaskDetail detail;      // 详情
 
+    private Integer displayTimeType;
+
 }

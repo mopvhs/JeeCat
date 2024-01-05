@@ -16,6 +16,7 @@ import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductDetailDO;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionTitleKeywordDO;
 import com.jeesite.modules.cat.entity.MaocheCategoryMappingDO;
 import com.jeesite.modules.cat.entity.MaocheDataokeProductDO;
+import com.jeesite.modules.cat.entity.MaocheProductV2DO;
 import com.jeesite.modules.cat.enums.ElasticSearchIndexEnum;
 import com.jeesite.modules.cat.enums.ProductDataSource;
 import com.jeesite.modules.cat.es.config.es7.ElasticSearch7Service;
@@ -36,6 +37,7 @@ import com.jeesite.modules.cat.service.MaocheCategoryMappingService;
 import com.jeesite.modules.cat.service.MaocheCategoryProductRelService;
 import com.jeesite.modules.cat.service.MaocheCategoryService;
 import com.jeesite.modules.cat.service.MaocheDataokeProductService;
+import com.jeesite.modules.cat.service.MaocheProductV2Service;
 import com.jeesite.modules.cat.service.stage.cg.ProductEsContext;
 import com.jeesite.modules.cat.service.stage.cg.ProductEsFactory;
 import com.jeesite.modules.cat.service.stage.cg.ProductEsStage;
@@ -116,6 +118,9 @@ public class CgUnionProductService {
 
     @Resource
     private MaocheAlimamaUnionProductBihaohuoService maocheAlimamaUnionProductBihaohuoService;
+
+    @Resource
+    private MaocheProductV2Service maocheProductV2Service;
 
     /**
      * 查询商品索引数据
@@ -266,6 +271,7 @@ public class CgUnionProductService {
         List<String> itemSuffixIds = UnionProductHelper.getItemIds(items);
         List<String> iids = UnionProductHelper.getIids(items);
 
+        List<Long> ids = items.stream().map(MaocheAlimamaUnionProductDO::getUiid).toList();
 
         // 获取标签信息
         List<MaocheAlimamaUnionTitleKeywordDO> keywordDOs = maocheAlimamaUnionTitleKeywordService.listByItemIdSuffixs(itemSuffixIds);
@@ -285,6 +291,10 @@ public class CgUnionProductService {
 
         List<MaocheAlimamaUnionProductBihaohuoDO> priceChartDOs = maocheAlimamaUnionProductBihaohuoService.listLatestChartPrices(iids);
         Map<String, MaocheAlimamaUnionProductBihaohuoDO> priceChartDOMap = priceChartDOs.stream().collect(Collectors.toMap(MaocheAlimamaUnionProductBihaohuoDO::getIid, Function.identity(), (o1, o2) -> o1));
+
+        // 获取价格和优惠信息
+        List<MaocheProductV2DO> productV2DOs = maocheProductV2Service.listByProductIds(ids, "NORMAL");
+        Map<Long, MaocheProductV2DO> productV2DOMap = productV2DOs.stream().collect(Collectors.toMap(MaocheProductV2DO::getProductId, Function.identity(), (o1, o2) -> o1));
 
         // 获取大淘客的数据
 //        Map<String, MaocheDataokeProductDO> daTaoKeProductMap = getDaTaoKeProductMap(items);
@@ -323,6 +333,7 @@ public class CgUnionProductService {
                 MaocheAlimamaUnionGoodPriceDO goodPriceDO = unionGoodPriceMap.get(item.getItemIdSuffix());
                 MaocheAlimamaUnionProductDetailDO productDetailDO = productDetailMap.get(item.getItemIdSuffix());
                 MaocheAlimamaUnionProductBihaohuoDO priceChartDO = priceChartDOMap.get(item.getIid());
+                MaocheProductV2DO productV2DO = productV2DOMap.get(item.getUiid());
 //                ProductCategoryModel productCategory = CategoryHelper.getRelProductCategory(rels, categoryTrees);
 
 //                ProductEsContext context = new ProductEsContext();
@@ -346,7 +357,8 @@ public class CgUnionProductService {
                             goodPriceDO,
                             null,
                             productDetailDO,
-                            priceChartDO);
+                            priceChartDO,
+                            productV2DO);
                 }
 
                 if (catIndex == null) {

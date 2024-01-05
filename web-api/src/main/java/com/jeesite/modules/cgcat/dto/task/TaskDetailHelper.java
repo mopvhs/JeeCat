@@ -76,8 +76,11 @@ public class TaskDetailHelper {
         productDetail.setTitle(title);
         productDetail.setCommand(product.getTbkPwd());
 
+        String pictUrl = product.getPictUrl();
+        productDetail.setImgs(Collections.singletonList(pictUrl));
+
         productDetail.setNum(1);
-        productDetail.setDiscountPrice(productDetail.getPayPrice());
+//        productDetail.setDiscountPrice(productDetail.getPayPrice());
         List<NameDetail> coupons = new ArrayList<>();
         // 优惠券是否可用
         if (StringUtils.isNotBlank(tbProduct.getCouponInfo())) {
@@ -172,18 +175,23 @@ public class TaskDetailHelper {
                     reservePrice = BigDecimal.valueOf(promotion.getPriceInfo().getLowestPrice()).multiply(new BigDecimal(100)).longValue();
                 }
 
+                String imgUrl = "";
+                if (promotion.getImageInfo() != null && CollectionUtils.isNotEmpty(promotion.getImageInfo().getImageList())) {
+                    imgUrl = promotion.getImageInfo().getImageList().get(0).getUrl();
+                }
+
                 ProductDetail productDetail = new ProductDetail();
                 productDetail.setPrice(originalPrice);
                 productDetail.setPayPrice(reservePrice);
                 productDetail.setResourceId(String.valueOf(promotion.getSkuId()));
                 productDetail.setResourceType("jd");
                 productDetail.setUniqueId(String.valueOf(promotion.getSkuId()));
-
+                productDetail.setImgs(Collections.singletonList(imgUrl));
                 productDetail.setTitle(promotion.getSkuName());
                 productDetail.setCommand(promotion.getShortURL());
 
                 productDetail.setNum(1);
-                productDetail.setDiscountPrice(productDetail.getPayPrice());
+//                productDetail.setDiscountPrice(productDetail.getPayPrice());
                 List<NameDetail> coupons = new ArrayList<>();
                 // 优惠券是否可用
                 if (CollectionUtils.isNotEmpty(promotion.getCouponInfo())) {
@@ -208,7 +216,6 @@ public class TaskDetailHelper {
         detail.setDesc(content);
         detail.setProducts(products);
         detail.setActCoupons(actLinks);
-
 
         return detail;
     }

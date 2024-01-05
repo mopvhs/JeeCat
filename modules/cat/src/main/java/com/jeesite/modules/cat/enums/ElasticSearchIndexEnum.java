@@ -11,6 +11,8 @@ public enum ElasticSearchIndexEnum {
 
     MAOCHE_OCEAN_MESSAGE_SYNC_INDEX("maoche_message_sync_index", "_doc", "公海消息同步索引"),
     MAOCHE_OCEAN_MESSAGE_PRODUCT_INDEX("maoche_message_product_index", "_doc", "公海消息商品同步索引"),
+
+    PUSH_TASK_INDEX("push_task_index", "_doc", "推送任务索引"),
     ;
 
     private String index;

@@ -27,6 +27,9 @@ public class TaskDetail implements Serializable {
     // 凑单品-》列表  标题，口令
     private List<NameDetail> addOnProducts;
 
+    // 小程序
+    private NameDetail miniProgram;
+
     // 作业图 -》 列表
     private List<String> jobImgs;
 

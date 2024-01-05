@@ -17,6 +17,8 @@ public class ProductDetail implements Serializable {
     // 商品规格
     private List<PropsInfo> propsInfos;
 
+    private List<String> imgs;
+
     // 日常价
     private Long price;
 

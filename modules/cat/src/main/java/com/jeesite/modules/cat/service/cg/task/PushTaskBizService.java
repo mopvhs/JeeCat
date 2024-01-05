@@ -101,10 +101,16 @@ public class PushTaskBizService {
                 continue;
             }
 
+            boolean oldPush = true;
+            String subTitle = task.getSubTitle();
+            if ("NEW-PUSH".equals(subTitle)) {
+                oldPush = false;
+            }
+
             // 加上类型
             String pushType = push.getPushType();
             PushTypeEnum pushTypeEnum = PushTypeEnum.getByName(pushType);
-            if (pushTypeEnum != null) {
+            if (pushTypeEnum != null && oldPush) {
                 text = pushTypeEnum.getDesc() + "\n" + text;
             }
 

@@ -13,6 +13,7 @@ import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductDO;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductDetailDO;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductPriceChartDO;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionTitleKeywordDO;
+import com.jeesite.modules.cat.entity.MaocheProductV2DO;
 import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageDO;
 import com.jeesite.modules.cat.enums.CatActivityEnum;
 import com.jeesite.modules.cat.enums.QualityStatusEnum;
@@ -23,6 +24,7 @@ import com.jeesite.modules.cat.model.PriceChartInfoTO;
 import com.jeesite.modules.cat.model.PriceChartSkuBaseTO;
 import com.jeesite.modules.cat.model.ProductCategoryModel;
 import com.jeesite.modules.cat.model.ProductScoreModel;
+import com.jeesite.modules.cat.model.ProductV2Content;
 import com.jeesite.modules.cat.model.PromotionModel;
 import com.jeesite.modules.cat.model.RateDetailTO;
 import com.jeesite.modules.cat.model.ShopModel;
@@ -75,7 +77,8 @@ public class CatEsHelper {
                                                                                MaocheAlimamaUnionGoodPriceDO goodPriceDO,
                                                                                ProductCategoryModel productCategory,
                                                                                MaocheAlimamaUnionProductDetailDO productDetailDO,
-                                                                               MaocheAlimamaUnionProductBihaohuoDO priceChartDO) {
+                                                                               MaocheAlimamaUnionProductBihaohuoDO priceChartDO,
+                                                                               MaocheProductV2DO productV2DO) {
         if (item == null) {
             return null;
         }
@@ -163,6 +166,13 @@ public class CatEsHelper {
             activity.add(CatActivityEnum.GOOD_PRICE.getActivity());
         }
 
+        String productOrigContent = null;
+        if (productV2DO != null && StringUtils.isNotBlank(productV2DO.getOrigContent())) {
+            productOrigContent = productV2DO.getOrigContent();
+        }
+        // 到手价
+        ProductV2Content productV2Content = ProductV2Helper.processContent(productOrigContent);
+
         // 券后价
         Long promotionPrice = ProductValueHelper.calVeApiPromotionPrice(jsonObject);
 
@@ -212,6 +222,8 @@ public class CatEsHelper {
         fillTag(index, tagContent);
 
         fillPriceChartInfo(index, priceChartDO);
+
+        ProductV2Helper.fillPricePromotionInfo2Index(index, productV2Content);
 
         return index;
     }
