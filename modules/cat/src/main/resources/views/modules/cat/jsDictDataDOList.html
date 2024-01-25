@@ -1,0 +1,132 @@
+<% layout('/layouts/default.html', {title: '字典数据表管理', libs: ['dataGrid']}){ %>
+<div class="main-content">
+	<div class="box box-main">
+		<div class="box-header">
+			<div class="box-title">
+				<i class="fa icon-notebook"></i> ${text('字典数据表管理')}
+			</div>
+			<div class="box-tools pull-right">
+				<a href="#" class="btn btn-default" id="btnSearch" title="${text('查询')}"><i class="fa fa-filter"></i> ${text('查询')}</a>
+				<a href="#" class="btn btn-default" id="btnRefreshTree" title="${text('刷新')}"><i class="fa fa-refresh"></i> ${text('刷新')}</a>
+				<a href="#" class="btn btn-default" id="btnExpandTreeNode" title="${text('展开一级')}"><i class="fa fa-angle-double-down"></i> ${text('展开')}</a>
+				<a href="#" class="btn btn-default" id="btnCollapseTreeNode" title="${text('折叠全部')}"><i class="fa fa-angle-double-up"></i> ${text('折叠')}</a>
+				<% if(hasPermi('cat:jsDictDataDO:edit')){ %>
+					<a href="${ctx}/cat/jsDictDataDO/form" class="btn btn-default btnTool" title="${text('新增字典数据表')}"><i class="fa fa-plus"></i> ${text('新增')}</a>
+				<% } %>
+				<a href="#" class="btn btn-default" id="btnSetting" title="${text('设置')}"><i class="fa fa-navicon"></i></a>
+			</div>
+		</div>
+		<div class="box-body">
+			<#form:form id="searchForm" model="${jsDictDataDO}" action="${ctx}/cat/jsDictDataDO/listData" method="post" class="form-inline hide"
+					data-page-no="${parameter.pageNo}" data-page-size="${parameter.pageSize}" data-order-by="${parameter.orderBy}">
+				<#form:hidden path="dictCode"/>
+				<div class="form-group">
+					<label class="control-label">${text('字典标签')}：</label>
+					<div class="control-inline">
+						<#form:input path="dictLabel" maxlength="100" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('字典键值')}：</label>
+					<div class="control-inline">
+						<#form:input path="dictValue" maxlength="100" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('字典图标')}：</label>
+					<div class="control-inline">
+						<#form:input path="dictIcon" maxlength="100" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('字典类型')}：</label>
+					<div class="control-inline">
+						<#form:input path="dictType" maxlength="100" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('系统内置')}：</label>
+					<div class="control-inline">
+						<#form:input path="isSys" maxlength="1" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('字典描述')}：</label>
+					<div class="control-inline">
+						<#form:input path="description" maxlength="500" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('css样式')}：</label>
+					<div class="control-inline">
+						<#form:input path="cssStyle" maxlength="500" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('css类名')}：</label>
+					<div class="control-inline">
+						<#form:input path="cssClass" maxlength="500" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('状态')}：</label>
+					<div class="control-inline width-120">
+						<#form:select path="status" dictType="sys_search_status" blankOption="true" class="form-control isQuick"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('备注信息')}：</label>
+					<div class="control-inline">
+						<#form:input path="remarks" maxlength="500" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<button type="submit" class="btn btn-primary btn-sm">${text('查询')}</button>
+					<button type="reset" class="btn btn-default btn-sm isQuick">${text('重置')}</button>
+				</div>
+			</#form:form>
+			<table id="dataGrid"></table>
+		</div>
+	</div>
+</div>
+<% } %>
+<script>
+// 初始化DataGrid对象
+$('#dataGrid').dataGrid({
+	searchForm: $("#searchForm"),
+	columnModel: [
+		{header:'${text("排序号")}', name:'treeSort', index:'a.tree_sort', width:150, align:"left", frozen:true, formatter: function(val, obj, row, act){
+			return '<a href="${ctx}/cat/jsDictDataDO/form?dictCode='+row.dictCode+'" class="btnList" data-title="${text("编辑字典数据表")}">'+(val||row.id)+'</a>';
+		}},
+		{header:'${text("字典标签")}', name:'dictLabel', index:'a.dict_label', width:150, align:"left"},
+		{header:'${text("字典键值")}', name:'dictValue', index:'a.dict_value', width:150, align:"left"},
+		{header:'${text("字典图标")}', name:'dictIcon', index:'a.dict_icon', width:150, align:"left"},
+		{header:'${text("字典类型")}', name:'dictType', index:'a.dict_type', width:150, align:"left"},
+		{header:'${text("系统内置")}', name:'isSys', index:'a.is_sys', width:150, align:"left"},
+		{header:'${text("字典描述")}', name:'description', index:'a.description', width:150, align:"left"},
+		{header:'${text("css样式")}', name:'cssStyle', index:'a.css_style', width:150, align:"left"},
+		{header:'${text("css类名")}', name:'cssClass', index:'a.css_class', width:150, align:"left"},
+		{header:'${text("状态")}', name:'status', index:'a.status', width:150, align:"center", formatter: function(val, obj, row, act){
+			return js.getDictLabel(${@DictUtils.getDictListJson('sys_search_status')}, val, '${text("未知")}', true);
+		}},
+		{header:'${text("更新时间")}', name:'updateDate', index:'a.update_date', width:150, align:"center"},
+		{header:'${text("备注信息")}', name:'remarks', index:'a.remarks', width:150, align:"left"},
+		{header:'${text("操作")}', name:'actions', width:150, formatter: function(val, obj, row, act){
+			var actions = [];
+			//<% if(hasPermi('cat:jsDictDataDO:edit')){ %>
+				actions.push('<a href="${ctx}/cat/jsDictDataDO/form?dictCode='+row.dictCode+'" class="btnList" title="${text("编辑字典数据表")}"><i class="fa fa-pencil"></i></a>&nbsp;');
+				actions.push('<a href="${ctx}/cat/jsDictDataDO/delete?dictCode='+row.dictCode+'" class="btnList" title="${text("删除字典数据表")}" data-confirm="${text("确认要删除该字典数据表及所有子字典数据表吗？")}" data-deltreenode="'+row.id+'"><i class="fa fa-trash-o"></i></a>&nbsp;');
+				actions.push('<a href="${ctx}/cat/jsDictDataDO/form?parentCode='+row.id+'" class="btnList" title="${text("新增下级字典数据表")}"><i class="fa fa-plus-square"></i></a>&nbsp;');
+			//<% } %>
+			return actions.join('');
+		}}
+	],
+	treeGrid: true,			// 启用树结构表格
+	defaultExpandLevel: 0,	// 默认展开的层次
+	expandNodeClearPostData: 'dictLabel,dictValue,dictIcon,dictType,isSys,description,cssStyle,cssClass,remarks,', // 展开节点清理请求参数数据（一般设置查询条件的字段属性，否则在查询后，不能展开子节点数据）
+	// 加载成功后执行事件
+	ajaxSuccess: function(data){
+		
+	}
+});
+</script>

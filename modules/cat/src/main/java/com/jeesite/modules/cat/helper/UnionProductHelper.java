@@ -81,7 +81,18 @@ public class UnionProductHelper {
             product.setCoupon(index.getCoupon());
             product.setCouponRemainCount(index.getCouponRemainCount());
             product.setCouponTotalCount(index.getCouponTotalCount());
+
+            // 各个调整，替换优惠价格为到手价【腾讯文档】到手价修改文档
+            //https://docs.qq.com/doc/DQm1FTENVTld4amFI
+            if (index.getFinalPromotionPrice() != null && index.getFinalPromotionPrice() > 0) {
+                index.setPromotionPrice(index.getFinalPromotionPrice());
+            }
             product.setPromotionPrice(index.getPromotionPrice());
+            if (StringUtils.isNotBlank(index.getPredictRoundingUpPriceDesc()) && index.getPredictRoundingUpPrice() != null && index.getPredictRoundingUpPrice() > 0) {
+                String desc = "%s到手价可至￥%s";
+                product.setPredictRoundingUpPriceDesc(String.format(desc, index.getPredictRoundingUpPriceDesc(), PriceHelper.formatPrice(index.getPredictRoundingUpPrice(), ".00", "")));
+            }
+            product.setPricePromotionTagList(index.getPricePromotionTagList());
 
             product.setQualityStatus(index.getQualityStatus());
             if (QualityStatusEnum.GOLD.getStatus().equals(index.getQualityStatus())) {
@@ -119,32 +130,35 @@ public class UnionProductHelper {
             product.setRate(rateTO);
 
             String belongToName = "超搜";
+            List<String> belongTo = new ArrayList<>();
             // 商品所属
             if (CollectionUtils.isNotEmpty(product.getActivity())) {
                 product.setBelongTo(product.getActivity());
             } else {
-                product.setBelongTo(Collections.singletonList(belongToName));
+                belongTo.add(belongToName);
+                product.setBelongTo(belongTo);
+            }
+            if (index.getFinalPromotionPrice() != null && index.getFinalPromotionPrice() > 0) {
+                belongTo.add("到手价：{");
+                belongTo.add(PriceHelper.formatPriceReplaceZero(index.getFinalPromotionPrice()));
+                belongTo.add("}");
+                if (StringUtils.isNotBlank(product.getPredictRoundingUpPriceDesc())) {
+                    belongTo.add("活动信息描述：{");
+                    belongTo.add(product.getPredictRoundingUpPriceDesc());
+                    belongTo.add("}");
+                }
+            }
+            if (CollectionUtils.isNotEmpty(product.getPricePromotionTagList())) {
+                belongTo.add("价格优惠标签：{");
+                belongTo.addAll(product.getPricePromotionTagList());
+                belongTo.add("}");
             }
 
             fillCustomTags(product, index);
 
-//            List<String> cidOneNames = new ArrayList<>();
-//            // 获取自定义类目
-//            if (CollectionUtils.isNotEmpty(index.getCidOnes())) {
-//                for (Long cid : index.getCidOnes()) {
-//                    MaocheCategoryDO maocheCategoryDO = customCategoryMap.get(cid);
-//                    if (maocheCategoryDO == null) {
-//                        continue;
-//                    }
-//                    cidOneNames.add(maocheCategoryDO.getName());
-//                }
-//            }
             product.setCidOneNames(new ArrayList<>());
 
             product.setImgUrl(index.getProductImage());
-
-//            UnionProductTagTO unionProductTagTO = convert2TagTO(keywordMap.get(productDO.getItemIdSuffix()));
-//            product.setTag(unionProductTagTO);
 
             // 针对有好价的商品，替换promotionTags的数据
             replaceCouponOfPromotionTags(product);
@@ -197,7 +211,7 @@ public class UnionProductHelper {
         sortKeywords.add("同款低价");
         sortKeywords.add("低于");
 
-        // 价格标签
+        // 价格标签ß
         List<PriceChartSkuBaseTO> skuBases = index.getPriceChartSkuBases();
         if (CollectionUtils.isNotEmpty(skuBases)) {
             List<String> list = skuBases.stream().filter(Objects::nonNull).map(PriceChartSkuBaseTO::getCompareDesc).filter(StringUtils::isNotBlank).distinct().collect(Collectors.toList());

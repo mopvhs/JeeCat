@@ -66,6 +66,10 @@ public class PushTaskContentDetail implements Serializable {
         for (ProductDetail product : products) {
 
             String title = product.getTitle();
+            NameDetail subTitle = product.getSubTitle();
+            if (subTitle != null && StringUtils.isNotBlank(subTitle.getContent())) {
+                title = subTitle.getContent() + title;
+            }
             if (CollectionUtils.isNotEmpty(product.getPropsInfos())) {
                 PropsInfo propsInfo = product.getPropsInfos().get(0);
                 if (StringUtils.isNotBlank(propsInfo.getContent())) {

@@ -60,7 +60,7 @@ public class TestEs7ApiDemoController {
                 Map<String, Object> data = JSONObject.parseObject(JSON.toJSONString(catIndex), Map.class);
 				elasticSearch7Service.index(data, ElasticSearchIndexEnum.CAT_ROBOT_CRAWLER_MESSAGE_INDEX, String.valueOf(catIndex.getId()));
 			} catch (Exception e) {
-				log.error("index error item:{} ", JSON.toJSONString(item), e);
+				log.error("index error3 item:{} ", JSON.toJSONString(item), e);
 			}
 		}
         return "完成";

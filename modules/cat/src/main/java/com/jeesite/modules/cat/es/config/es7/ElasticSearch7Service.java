@@ -93,7 +93,7 @@ public class ElasticSearch7Service {
         }
 
         try {
-            log.info("es search indexEnum {}, source :{}", indexEnum.getIndex(), searchSourceBuilder.toString());
+//            log.info("es search indexEnum {}, source :{}", indexEnum.getIndex(), searchSourceBuilder.toString());
             SearchResponse searchResponse = restHighLevelClient.search(searchRequest, RequestOptions.DEFAULT);
             if (searchResponse == null) {
                 return null;
@@ -172,7 +172,7 @@ public class ElasticSearch7Service {
             stopWatch.start();
             SearchResponse searchResponse = restHighLevelClient.search(searchRequest, RequestOptions.DEFAULT);
             stopWatch.stop();
-            log.info("es search2 indexEnum {}, time:{}, source :{}", indexEnum.getIndex(), stopWatch.toString(), searchSourceBuilder.toString());
+//            log.info("es search2 indexEnum {}, time:{}, source :{}", indexEnum.getIndex(), stopWatch.toString(), searchSourceBuilder.toString());
 
             if (searchResponse == null) {
                 return null;

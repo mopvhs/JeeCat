@@ -5,6 +5,7 @@ import lombok.Data;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -151,4 +152,12 @@ public class UnionProductTO implements Serializable {
     private Long pushNum;
 
     private String itemUrl;
+
+    // 活动信息
+    private String predictRoundingUpPriceDesc;
+    // 到手价活动优惠标签
+    // 各个调整，替换优惠价格为到手价【腾讯文档】到手价修改文档
+    //https://docs.qq.com/doc/DQm1FTENVTld4amFI
+    private List<String> pricePromotionTagList = new ArrayList<>();
+
 }

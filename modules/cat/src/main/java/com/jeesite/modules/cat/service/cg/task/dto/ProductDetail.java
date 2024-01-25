@@ -31,6 +31,9 @@ public class ProductDetail implements Serializable {
     // 88VIP价格 / PLUS
     private Long vipPrice;
 
+    // 官旗，百补等前缀
+    private NameDetail subTitle;
+
     private String title;
 
     private String resourceId;

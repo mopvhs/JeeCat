@@ -182,7 +182,7 @@ public class SyncMaocheProductController {
 
                     elasticSearch7Service.index(data, ElasticSearchIndexEnum.MAOCHE_PRODUCT_INDEX, String.valueOf(catIndex.getId()));
                 } catch (Exception e) {
-                    log.error("index error item:{} ", JSON.toJSONString(item), e);
+                    log.error("index error2 item:{} ", JSON.toJSONString(item), e);
                 }
             }
 

@@ -21,6 +21,7 @@ import com.jeesite.modules.cat.service.MaocheRobotCrawlerMessageProductService;
 import com.jeesite.modules.cat.service.MaocheRobotCrawlerMessageSyncService;
 import com.jeesite.modules.cat.service.MaocheTaskService;
 import com.jeesite.modules.cat.service.cg.CgUnionProductService;
+import com.jeesite.modules.cat.service.cg.task.dto.NameDetail;
 import com.jeesite.modules.cat.service.cg.task.dto.ProductDetail;
 import com.jeesite.modules.cat.service.cg.task.dto.TaskDetail;
 import com.jeesite.modules.cat.service.cg.task.dto.TaskInfo;
@@ -81,7 +82,9 @@ public class TaskController {
     // 获取任务详情
     @RequestMapping(value = "/source/task/info/get")
     public Result<TaskInfo> getTaskInfo(@RequestBody TaskDetailGetReq req) {
-
+        NameDetail miniProgram = new NameDetail();
+        miniProgram.setName("小程序");
+        miniProgram.setName("mp://rgI3nQxW1NT3gTz");
         TaskInfo taskInfo = new TaskInfo();
         // 如果是获取到任务id，那么就去获取任务详情
         if (StringUtils.isNotBlank(req.getTaskId())) {
@@ -135,7 +138,7 @@ public class TaskController {
             String source = req.getSource();
             if ("ocean".equals(source)) {
                 TaskDetail oceanTaskDetail = getOceanTaskDetail(req);
-
+                oceanTaskDetail.setMiniProgram(miniProgram);
                 taskInfo.setDetail(oceanTaskDetail);
                 return Result.OK(taskInfo);
             } else if ("product".equals(source)) {
@@ -157,6 +160,7 @@ public class TaskController {
                 }
 
                 detail.setProducts(products);
+                detail.setMiniProgram(miniProgram);
 
                 taskInfo.setDetail(detail);
                 return Result.OK(taskInfo);
@@ -174,6 +178,7 @@ public class TaskController {
                     return null;
                 }
 
+                item.setMiniProgram(miniProgram);
                 taskInfo.setDetail(item);
                 return Result.OK(taskInfo);
             }

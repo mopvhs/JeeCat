@@ -67,7 +67,7 @@ public class ProductValueHelper {
             volume = content.getLong("monthSellCount");
         }
 
-        return volume;
+        return Optional.ofNullable(volume).orElse(0L);
     }
 
     /**

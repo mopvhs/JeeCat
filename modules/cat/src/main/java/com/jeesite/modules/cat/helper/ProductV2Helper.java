@@ -10,9 +10,11 @@ import com.jeesite.modules.cat.model.ProductV2Content;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 public class ProductV2Helper {
 
+    public static Pattern N_YUAN_REGEX = Pattern.compile("^[0-9.]+元$");
 
     public static ProductV2Content processContent(String content) {
         if (StringUtils.isBlank(content)) {
@@ -59,6 +61,11 @@ public class ProductV2Helper {
                             }
                             String tag = tagObj.getString("tag_name");
                             if (StringUtils.isNotBlank(tag)) {
+                                // 正则匹配n元，过滤掉
+                                String replaceAll = N_YUAN_REGEX.matcher(tag).replaceAll("");
+                                if (StringUtils.isBlank(replaceAll)) {
+                                    continue;
+                                }
                                 pricePromotionTagList.add(tag);
                             }
                         }

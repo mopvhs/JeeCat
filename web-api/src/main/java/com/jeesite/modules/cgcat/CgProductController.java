@@ -389,7 +389,7 @@ public class CgProductController {
     @ResponseBody
     public Result<String> topCategory2(CatUnionProductCondition condition, HttpServletRequest request, HttpServletResponse response) {
 
-        log.info("2请求参数:{}", JsonUtils.toJSONString(condition));
+//        log.info("2请求参数:{}", JsonUtils.toJSONString(condition));
         cgUnionProductService.buildRootCategoryAgg(null);
 
         return Result.OK("OK");
