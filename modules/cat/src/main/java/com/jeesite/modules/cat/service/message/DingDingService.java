@@ -18,6 +18,9 @@ public class DingDingService {
     // 群名：猫车索引
     private static final String WEB_HOOK = "https://oapi.dingtalk.com/robot/send?access_token=5ea41e511ba998b6c2035209df2431193abf48c1003e6635a0aaea4e5256b3d6";
 
+    // 猫车告警
+    private static final String WEB_HOOK_CAT = "https://oapi.dingtalk.com/robot/send?access_token=faabc57115e2b8b26a1472ce9e428b0dbd41ed1fb8efc9f1beae8cc143579ab6";
+
     public void sendDingDingMsg(String msg) {
         String hook = getHook(null);
         doSend(msg, hook);
@@ -73,6 +76,9 @@ public class DingDingService {
     private String getHook(Integer sceneType) {
         if (sceneType == null) {
             return WEB_HOOK;
+        }
+        if (sceneType == 1) {
+            return WEB_HOOK_CAT;
         }
 
         return WEB_HOOK;

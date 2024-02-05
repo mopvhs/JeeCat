@@ -84,7 +84,7 @@ public class TaskController {
     public Result<TaskInfo> getTaskInfo(@RequestBody TaskDetailGetReq req) {
         NameDetail miniProgram = new NameDetail();
         miniProgram.setName("小程序");
-        miniProgram.setName("mp://rgI3nQxW1NT3gTz");
+        miniProgram.setContent("mp://rgI3nQxW1NT3gTz");
         TaskInfo taskInfo = new TaskInfo();
         // 如果是获取到任务id，那么就去获取任务详情
         if (StringUtils.isNotBlank(req.getTaskId())) {

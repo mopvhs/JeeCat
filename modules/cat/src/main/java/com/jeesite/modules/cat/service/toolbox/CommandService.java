@@ -7,21 +7,17 @@ import com.jeesite.common.lang.NumberUtils;
 import com.jeesite.common.lang.StringUtils;
 import com.jeesite.common.utils.JsonUtils;
 import com.jeesite.common.web.Result;
+import com.jeesite.modules.cat.cache.CacheService;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductDO;
-import com.jeesite.modules.cat.es.config.model.ElasticSearchData;
-import com.jeesite.modules.cat.helper.CatEsHelper;
 import com.jeesite.modules.cat.helper.ProductValueHelper;
-import com.jeesite.modules.cat.model.CarAlimamaUnionProductIndex;
-import com.jeesite.modules.cat.model.CatProductBucketTO;
-import com.jeesite.modules.cat.model.CatUnionProductCondition;
-import com.jeesite.modules.cat.model.ProductPriceTO;
-import com.jeesite.modules.cat.model.UnionProductTO;
+import com.jeesite.modules.cat.service.CsOpLogService;
 import com.jeesite.modules.cat.service.MaocheAlimamaUnionProductService;
 import com.jeesite.modules.cat.service.cg.CgUnionProductService;
+import com.jeesite.modules.cat.service.cg.third.DingDanXiaApiService;
 import com.jeesite.modules.cat.service.cg.third.dto.JdUnionIdPromotion;
 import com.jeesite.modules.cat.service.cg.third.tb.TbApiService;
 import com.jeesite.modules.cat.service.cg.third.tb.dto.CommandResponse;
-import com.jeesite.modules.cat.service.cg.third.DingDanXiaApiService;
+import com.jeesite.modules.cat.service.message.DingDingService;
 import com.jeesite.modules.cat.service.toolbox.dto.CommandDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
@@ -36,8 +32,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
+/**
+ * 口令接口
+ */
 @Slf4j
 @Component
 public class CommandService {
@@ -50,6 +48,15 @@ public class CommandService {
 
     @Resource
     private TbApiService tbApiService;
+
+    @Resource
+    private DingDingService dingDingService;
+
+    @Resource
+    private CsOpLogService csOpLogService;
+
+    @Resource
+    private CacheService cacheService;
 
     @Resource
     private MaocheAlimamaUnionProductService maocheAlimamaUnionProductService;
@@ -89,6 +96,10 @@ public class CommandService {
         objectMap.put("deepcoupon", 1);
 
         Result<CommandResponse> response = tbApiService.getCommonCommand(content, objectMap);
+
+        // 日志记录
+        csOpLogService.addLog("tb", "doExchangeTb", "tb_command", "maoche", "tb转链",
+                content, JsonUtils.toJSONString(response));
 
         CommandDTO commandDTO = new CommandDTO();
 
@@ -139,6 +150,9 @@ public class CommandService {
             return Result.OK(commandDTO);
         }
 
+        String msgFormat = "{} \n 转链结果：{}";
+        dingDingService.sendParseDingDingMsg(msgFormat, 1, content, JSONUtil.toJsonStr(response));
+
         return Result.ERROR(response.getCode(), response.getMessage());
     }
 
@@ -165,10 +179,11 @@ public class CommandService {
 
         boolean match = false;
         StringBuilder errorMsg = new StringBuilder();
-
+        Map<String, String> commandMap = new HashMap<>();
         List<CommandDTO.Product> products = new ArrayList<>();
         for (String url : urls) {
             Result<JdUnionIdPromotion> result = dingDanXiaApiService.jdByUnionidPromotionWithCoupon("FHPOsYO7zki7tcrxp0amyGMP7wxVkbU3", url, 1002248572L, 3100684498L);
+            commandMap.put(url, JsonUtils.toJSONString(result));
             if (Result.isOK(result)) {
                 JdUnionIdPromotion promotion = result.getResult();
                 content = content.replace(url, promotion.getShortURL());
@@ -185,7 +200,13 @@ public class CommandService {
             }
         }
 
+        // 日志记录
+        csOpLogService.addLog("jd", "doExchangeJd", "jd_command", "maoche", "jd转链",
+                content, JsonUtils.toJSONString(commandMap));
+
         if (!match) {
+            String msgFormat = "{} \n 转链结果：{}";
+            dingDingService.sendParseDingDingMsg(msgFormat, 1, content, errorMsg.toString());
             return Result.ERROR(500, errorMsg.toString());
         }
 

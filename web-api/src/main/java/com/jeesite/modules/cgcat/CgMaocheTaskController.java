@@ -8,6 +8,7 @@ import com.jeesite.common.utils.DateTimeUtils;
 import com.jeesite.common.utils.JsonUtils;
 import com.jeesite.common.web.Result;
 import com.jeesite.modules.cat.dao.MaocheAlimamaUnionProductDao;
+import com.jeesite.modules.cat.dao.MaocheTaskDao;
 import com.jeesite.modules.cat.entity.MaochePushTaskDO;
 import com.jeesite.modules.cat.entity.MaocheTaskDO;
 import com.jeesite.modules.cat.enums.task.TaskResourceTypeEnum;
@@ -83,6 +84,9 @@ public class CgMaocheTaskController {
 
     @Resource
     private TaskSearchBizService taskSearchBizService;
+
+    @Resource
+    private MaocheTaskDao maocheTaskDao;
 
     @RequestMapping(value = "/push/task/list")
     @ResponseBody
@@ -447,7 +451,17 @@ public class CgMaocheTaskController {
                 time = task.getPublishDate();
             }
             if (taskContent != null && taskContent.getDelayTime() != null) {
-                time = new Date(time.getTime() + taskContent.getDelayTime());
+                // 如果是延迟发送的，需要查询最后一条任务的发布时间，再加上延迟时间
+                long timeTime = time.getTime();
+                try {
+                    MaocheTaskDO latestTask = maocheTaskDao.getLatestTask();
+                    if (latestTask != null && latestTask.getPublishDate() != null && latestTask.getPublishDate().getTime() > timeTime) {
+                        timeTime = latestTask.getPublishDate().getTime();
+                    }
+                } catch (Exception e) {
+                    log.error("查询最新任务异常", e);
+                }
+                time = new Date(timeTime + taskContent.getDelayTime());
             }
 
             List<String> ids = taskDOS.stream().map(MaochePushTaskDO::getId).collect(Collectors.toList());

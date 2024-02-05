@@ -24,6 +24,18 @@
 		FROM maoche_task
 	</select>
 
+	<!-- 查询最晚发布的任务 -->
+	<select id="getLatestTask" resultType="MaocheTaskDO">
+		SELECT *
+		FROM maoche_task
+		<where>
+		task_switch = 'OPEN'
+		AND time_type in ('NOW','SCHEDULE')
+		ORDER BY publish_date DESC
+		LIMIT 1
+		</where>
+	</select>
+
 
 	<update id="finishTask">
 		UPDATE maoche_task

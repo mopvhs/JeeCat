@@ -38,6 +38,7 @@ import com.jeesite.modules.cat.service.MaocheCategoryProductRelService;
 import com.jeesite.modules.cat.service.MaocheCategoryService;
 import com.jeesite.modules.cat.service.MaocheDataokeProductService;
 import com.jeesite.modules.cat.service.MaocheProductV2Service;
+import com.jeesite.modules.cat.service.message.DingDingService;
 import com.jeesite.modules.cat.service.stage.cg.ProductEsContext;
 import com.jeesite.modules.cat.service.stage.cg.ProductEsFactory;
 import com.jeesite.modules.cat.service.stage.cg.ProductEsStage;
@@ -121,6 +122,9 @@ public class CgUnionProductService {
 
     @Resource
     private MaocheProductV2Service maocheProductV2Service;
+
+    @Resource
+    private DingDingService dingDingService;
 
     /**
      * 查询商品索引数据
@@ -418,6 +422,8 @@ public class CgUnionProductService {
             }
             // 说明错误了
             if (StringUtils.isBlank(res)) {
+                String dingDingMsg = "口令获取异常 itemId：{} \n 获取错误信息：{} \n 原文: {}";
+                dingDingService.sendParseDingDingMsg(dingDingMsg, 1, itemId, errorMsg, resp);
                 return Result.ERROR(500, errorMsg);
             }
         } catch (Exception e) {

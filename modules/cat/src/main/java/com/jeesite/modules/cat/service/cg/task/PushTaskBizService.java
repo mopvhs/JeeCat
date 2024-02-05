@@ -60,7 +60,7 @@ public class PushTaskBizService {
         log.info("【推送】推送数据入队列成功");
 
         // 1. 查询所有的任务
-        List<MaochePushTaskDO> list = maochePushTaskService.listValidTask();
+        List<MaochePushTaskDO> list = maochePushTaskService.listValidTask(50);
         log.info("【推送】查询到的任务列表数量：{}", list.size());
 
         if (CollectionUtils.isEmpty(list)) {

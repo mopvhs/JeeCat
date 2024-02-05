@@ -32,7 +32,7 @@ public class ProductDetail implements Serializable {
     private Long vipPrice;
 
     // 官旗，百补等前缀
-    private NameDetail subTitle;
+    private String subTitle;
 
     private String title;
 

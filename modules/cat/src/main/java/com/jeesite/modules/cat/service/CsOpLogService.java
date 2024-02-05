@@ -1,5 +1,6 @@
 package com.jeesite.modules.cat.service;
 
+import java.util.Date;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -76,6 +77,24 @@ public class CsOpLogService extends CrudService<CsOpLogDao, CsOpLogDO> {
 	@Transactional
 	public void delete(CsOpLogDO csOpLogDO) {
 		super.delete(csOpLogDO);
+	}
+
+	public void addLog(String resourceId, String resourceType, String opType, String bizType, String describe, String originContent, String changeContent) {
+		CsOpLogDO item = new CsOpLogDO();
+		item.setResourceId(resourceId);
+		item.setResourceType(resourceType);
+		item.setOpType(opType);
+		item.setBizType(bizType);
+		item.setDescribe(describe);
+		item.setOrigionContent(originContent);
+		item.setChangeContent(changeContent);
+		item.setCreateDate(new Date());
+		item.setUpdateDate(new Date());
+		item.setCreateBy("system");
+		item.setUpdateBy("system");
+		item.setRemarks("");
+
+		save(item);
 	}
 	
 }
