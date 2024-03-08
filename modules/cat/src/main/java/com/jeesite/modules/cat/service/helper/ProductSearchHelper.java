@@ -2,7 +2,7 @@ package com.jeesite.modules.cat.service.helper;
 
 import com.jeesite.modules.cat.enums.AuditStatusEnum;
 import com.jeesite.modules.cat.enums.SaleStatusEnum;
-import com.jeesite.modules.cat.model.CatUnionProductCondition;
+import com.jeesite.modules.cat.model.condition.CatUnionProductCondition;
 
 public class ProductSearchHelper {
 

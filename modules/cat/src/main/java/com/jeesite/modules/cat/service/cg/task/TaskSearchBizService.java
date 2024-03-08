@@ -1,12 +1,11 @@
 package com.jeesite.modules.cat.service.cg.task;
 
 import com.jeesite.modules.cat.entity.MaochePushTaskDO;
-import com.jeesite.modules.cat.entity.MaocheTaskDO;
 import com.jeesite.modules.cat.enums.task.TaskResourceTypeEnum;
 import com.jeesite.modules.cat.es.config.model.ElasticSearchData;
 import com.jeesite.modules.cat.model.CarAlimamaUnionProductIndex;
 import com.jeesite.modules.cat.model.CatProductBucketTO;
-import com.jeesite.modules.cat.model.CatUnionProductCondition;
+import com.jeesite.modules.cat.model.condition.CatUnionProductCondition;
 import com.jeesite.modules.cat.model.UnionProductTO;
 import com.jeesite.modules.cat.service.cg.CgUnionProductService;
 import lombok.extern.slf4j.Slf4j;

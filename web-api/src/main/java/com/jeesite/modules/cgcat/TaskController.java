@@ -27,6 +27,7 @@ import com.jeesite.modules.cat.service.cg.task.dto.TaskDetail;
 import com.jeesite.modules.cat.service.cg.task.dto.TaskInfo;
 import com.jeesite.modules.cat.service.cg.third.tb.TbApiService;
 import com.jeesite.modules.cat.service.es.TaskEsService;
+import com.jeesite.modules.cat.xxl.job.task.PushTaskIndexXxlJob;
 import com.jeesite.modules.cgcat.dto.task.SourceTaskCreateReq;
 import com.jeesite.modules.cgcat.dto.task.TaskDetailGetReq;
 import com.jeesite.modules.cgcat.dto.task.TaskDetailHelper;
@@ -319,6 +320,22 @@ public class TaskController {
         maochePushTaskService.createOrUpdatePushTask(pushTaskDO);
 
         taskEsService.indexEs(Collections.singletonList(pushTaskDO.getId()), 10);
+
+        return Result.OK("处理完成");
+    }
+
+
+    @Resource
+    private PushTaskIndexXxlJob pushTaskIndexXxlJob;
+
+    @RequestMapping(value = "/source/push/task/index")
+    public Result<?> indexAll() {
+
+        try {
+            pushTaskIndexXxlJob.execute();
+        } catch (Exception e) {
+            return Result.ERROR(500, "处理失败");
+        }
 
         return Result.OK("处理完成");
     }

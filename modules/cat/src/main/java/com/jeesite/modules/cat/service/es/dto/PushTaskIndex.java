@@ -11,13 +11,19 @@ import com.jeesite.modules.cat.entity.MaocheTaskDO;
 import com.jeesite.modules.cat.enums.task.TaskResourceTypeEnum;
 import com.jeesite.modules.cat.model.task.content.PushTaskContent;
 import com.jeesite.modules.cat.model.task.content.PushTaskContentDetail;
+import com.jeesite.modules.cat.service.cg.task.dto.NameDetail;
+import com.jeesite.modules.cat.service.cg.task.dto.ProductDetail;
+import com.jeesite.modules.cat.service.cg.task.dto.TaskDetail;
 import lombok.Data;
+import org.apache.commons.collections.CollectionUtils;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Data
 public class PushTaskIndex implements Serializable {
@@ -86,14 +92,28 @@ public class PushTaskIndex implements Serializable {
 
     private long delayTime;
 
+    private List<Long> brandLibIds;
+
+    private List<String> categorys;
+
     public static PushTaskIndex toIndex(MaochePushTaskDO push, MaocheTaskDO task) {
         if (push == null || task == null) {
             return null;
         }
 
         String content = push.getContent();
+
         PushTaskContentDetail detail = JsonUtils.toReferenceType(content, new TypeReference<PushTaskContentDetail>() {
         });
+        if (detail == null) {
+            return null;
+        }
+
+        TaskDetail taskProductDetail = null;
+        if (StringUtils.isNotBlank(push.getDetail())) {
+            taskProductDetail = JsonUtils.toReferenceType(push.getDetail(), new TypeReference<TaskDetail>() {
+            });
+        }
 
         PushTaskContent taskContent = JsonUtils.toReferenceType(task.getContent(), new TypeReference<PushTaskContent>() {
         });
@@ -126,6 +146,22 @@ public class PushTaskIndex implements Serializable {
         index.setSource(source);
         index.setDisplayTimeType(displayTimeType);
         index.setDelayTime(delayTime);
+
+        index.setBrandLibIds(new ArrayList<>());
+        if (taskProductDetail != null) {
+            List<NameDetail> topics = taskProductDetail.getTopics();
+            if (CollectionUtils.isNotEmpty(topics)) {
+                List<Long> brandLibIds = topics.stream().filter(c -> StringUtils.isNotBlank(c.getId())).map(c -> NumberUtils.toLong(c.getId())).distinct().toList();
+                if (CollectionUtils.isNotEmpty(brandLibIds)) {
+                    index.setBrandLibIds(brandLibIds);
+                }
+            }
+            List<ProductDetail> products = taskProductDetail.getProducts();
+            if (CollectionUtils.isNotEmpty(products)) {
+                List<String> categoryNames = products.stream().map(ProductDetail::getCategoryName).filter(StringUtils::isNotBlank).toList();
+                index.setCategorys(categoryNames);
+            }
+        }
 
 
         return index;

@@ -58,4 +58,11 @@ public class OceanMessageCondition implements Serializable {
     @EsItemAspect
     private String uniqueHash;
 
+//    /**
+//     * 品牌库id
+//     */
+//    private Long brandLibId;
+
+    private List<String> keywords;
+
 }

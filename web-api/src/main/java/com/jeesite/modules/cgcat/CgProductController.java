@@ -9,11 +9,9 @@ import com.jeesite.modules.cat.dao.MaocheAlimamaUnionProductDao;
 import com.jeesite.modules.cat.dao.MaocheAlimamaUnionTitleKeywordDao;
 import com.jeesite.modules.cat.entity.CsOpLogDO;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductDO;
-import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductDetailDO;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionTitleKeywordDO;
 import com.jeesite.modules.cat.entity.MaocheCategoryMappingDO;
 import com.jeesite.modules.cat.entity.MaocheCategoryProductRelDO;
-import com.jeesite.modules.cat.entity.MaochePushTaskDO;
 import com.jeesite.modules.cat.entity.meta.TaskStatusCount;
 import com.jeesite.modules.cat.enums.AuditStatusEnum;
 import com.jeesite.modules.cat.enums.CatActivityEnum;
@@ -26,7 +24,7 @@ import com.jeesite.modules.cat.helper.CategoryHelper;
 import com.jeesite.modules.cat.helper.UnionProductHelper;
 import com.jeesite.modules.cat.model.CarAlimamaUnionProductIndex;
 import com.jeesite.modules.cat.model.CatProductBucketTO;
-import com.jeesite.modules.cat.model.CatUnionProductCondition;
+import com.jeesite.modules.cat.model.condition.CatUnionProductCondition;
 import com.jeesite.modules.cat.model.CategoryTree;
 import com.jeesite.modules.cat.model.ProductAuditRequest;
 import com.jeesite.modules.cat.model.ProductCategoryModel;
@@ -38,8 +36,10 @@ import com.jeesite.modules.cat.service.MaocheAlimamaUnionProductService;
 import com.jeesite.modules.cat.service.MaocheCategoryMappingService;
 import com.jeesite.modules.cat.service.MaocheCategoryProductRelService;
 import com.jeesite.modules.cat.service.MaocheCategoryService;
+import com.jeesite.modules.cat.service.MaochePushTaskRuleService;
 import com.jeesite.modules.cat.service.MaochePushTaskService;
 import com.jeesite.modules.cat.service.cg.CgUnionProductService;
+import com.jeesite.modules.cat.service.cg.brand.BrandLibService;
 import com.jeesite.modules.cgcat.dto.ProductCategoryVO;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
@@ -102,6 +102,12 @@ public class CgProductController {
     @Resource
     private CsOpLogService csOpLogService;
 
+    @Resource
+    private MaochePushTaskRuleService maochePushTaskRuleService;
+
+    @Resource
+    private BrandLibService brandLibService;
+
 
     // 商品库
     @RequestMapping(value = "/product/warehouse/detail")
@@ -137,7 +143,7 @@ public class CgProductController {
 
         int from = (page.getPageNo() - 1) * page.getPageSize();
         int size = page.getPageSize();
-        ElasticSearchData<CarAlimamaUnionProductIndex, CatProductBucketTO> searchData = cgUnionProductService.searchProduct(condition, null, from, size);
+        ElasticSearchData<CarAlimamaUnionProductIndex, CatProductBucketTO> searchData = cgUnionProductService.searchProduct(condition, null, brandLibService::brandLibQuery, from, size);
         if (searchData == null) {
             return page;
         }

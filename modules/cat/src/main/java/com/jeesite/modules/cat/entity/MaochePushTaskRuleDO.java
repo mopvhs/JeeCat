@@ -39,7 +39,6 @@ public class MaochePushTaskRuleDO extends DataEntity<MaochePushTaskRuleDO> {
 	private Long uiid;
 	private String brand;		// brand
 	private String productName;		// product_name
-
 	private String englishBrand;		// englishBrand
 	private String keyword;		// keyword
 	private Long categoryId;		// category_id

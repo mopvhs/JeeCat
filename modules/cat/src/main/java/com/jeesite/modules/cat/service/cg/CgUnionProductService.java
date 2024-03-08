@@ -10,7 +10,6 @@ import com.jeesite.modules.cat.common.MtxHttpClientUtils;
 import com.jeesite.modules.cat.dao.MaocheAlimamaUnionProductDao;
 import com.jeesite.modules.cat.dao.MaocheAlimamaUnionTitleKeywordDao;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionGoodPriceDO;
-import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductBihaohuoDO;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductDO;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductDetailDO;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionTitleKeywordDO;
@@ -26,8 +25,7 @@ import com.jeesite.modules.cat.helper.CatRobotHelper;
 import com.jeesite.modules.cat.helper.UnionProductHelper;
 import com.jeesite.modules.cat.model.CarAlimamaUnionProductIndex;
 import com.jeesite.modules.cat.model.CatProductBucketTO;
-import com.jeesite.modules.cat.model.CatUnionProductCondition;
-import com.jeesite.modules.cat.model.UnionProductModel;
+import com.jeesite.modules.cat.model.condition.CatUnionProductCondition;
 import com.jeesite.modules.cat.model.UnionProductTO;
 import com.jeesite.modules.cat.service.MaocheAlimamaUnionGoodPriceService;
 import com.jeesite.modules.cat.service.MaocheAlimamaUnionProductBihaohuoService;
@@ -38,13 +36,11 @@ import com.jeesite.modules.cat.service.MaocheCategoryProductRelService;
 import com.jeesite.modules.cat.service.MaocheCategoryService;
 import com.jeesite.modules.cat.service.MaocheDataokeProductService;
 import com.jeesite.modules.cat.service.MaocheProductV2Service;
+import com.jeesite.modules.cat.service.es.common.SearchService;
 import com.jeesite.modules.cat.service.message.DingDingService;
-import com.jeesite.modules.cat.service.stage.cg.ProductEsContext;
 import com.jeesite.modules.cat.service.stage.cg.ProductEsFactory;
-import com.jeesite.modules.cat.service.stage.cg.ProductEsStage;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections.MapUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.config.CookieSpecs;
 import org.apache.http.client.config.RequestConfig;
@@ -58,7 +54,6 @@ import org.elasticsearch.script.Script;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
-import org.elasticsearch.search.aggregations.BucketOrder;
 import org.elasticsearch.search.aggregations.bucket.filter.FilterAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.MaxAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.MinAggregationBuilder;
@@ -69,8 +64,6 @@ import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -125,6 +118,70 @@ public class CgUnionProductService {
 
     @Resource
     private DingDingService dingDingService;
+
+    @Resource
+    private SearchService searchService;
+
+    /**
+     * 查询商品索引数据
+     * @param condition
+     * @param from
+     * @param size
+     */
+    public ElasticSearchData<CarAlimamaUnionProductIndex, CatProductBucketTO> searchProduct(CatUnionProductCondition condition,
+                                                                                            Function<CatUnionProductCondition, List<AggregationBuilder>> aggregation,
+                                                                                            BiConsumer<CatUnionProductCondition, BoolQueryBuilder> customBoolQueryBuilder,
+                                                                                            int from,
+                                                                                            int size) {
+
+        SearchSourceBuilder source = searchService.searchSource(condition,
+                aggregation,
+                this::sort,
+                customBoolQueryBuilder,
+                CatUnionProductCondition.class,
+                from,
+                size);
+
+        return elasticSearch7Service.search(source, ElasticSearchIndexEnum.CAT_PRODUCT_INDEX, null, CatRobotHelper::convertUnionProduct, CatRobotHelper::convertUnionProductAggregationMap);
+    }
+
+    public void sort(CatUnionProductCondition condition, SearchSourceBuilder source) {
+        List<String> sorts = condition.getSorts();
+        if (CollectionUtils.isNotEmpty(sorts)) {
+            for (String sort : sorts) {
+                if (StringUtils.isBlank(sort)) {
+                    continue;
+                }
+                String[] sortArr = sort.split(" ");
+                String name = sortArr[0];
+                SortOrder sortOrder = SortOrder.DESC;
+                if (sortArr.length > 1) {
+                    String order = sortArr[1];
+                    if (order.equals("asc")) {
+                        sortOrder = SortOrder.ASC;
+                    }
+                }
+                if ("commission".equals(name)) {
+                    // 自定义排序脚本
+                    String code = "return (doc['commissionRate'].value / 100) * (doc['reservePrice'].value / 100)";
+
+                    Script script = new Script(
+                            Script.DEFAULT_SCRIPT_TYPE,
+                            Script.DEFAULT_SCRIPT_LANG,
+                            code,
+                            new HashMap<>(),
+                            new HashMap<>()
+                    );
+
+                    ScriptSortBuilder scriptSortBuilder = SortBuilders.scriptSort(script, ScriptSortBuilder.ScriptSortType.NUMBER);
+                    scriptSortBuilder.order(sortOrder);
+                    source.sort(scriptSortBuilder);
+                } else {
+                    source.sort(name, sortOrder);
+                }
+            }
+        }
+    }
 
     /**
      * 查询商品索引数据
@@ -184,17 +241,13 @@ public class CgUnionProductService {
         if (aggregation != null) {
             aggregationBuilder = aggregation.apply(condition);
         }
-//        StopWatch stopWatch = new StopWatch();
-//        stopWatch.start();
+
         ElasticSearchData<CarAlimamaUnionProductIndex, CatProductBucketTO> searchData = elasticSearch7Service.search(searchSourceBuilder,
                 ElasticSearchIndexEnum.CAT_PRODUCT_INDEX,
                 aggregationBuilder,
                 CatRobotHelper::convertUnionProduct,
                 CatRobotHelper::convertUnionProductAggregationMap
                 );
-
-//        stopWatch.stop();
-//        log.info("maocheSearch searchSourceBuilder {}, time:{}", JSON.toJSONString(searchSourceBuilder.toString()), stopWatch.toString());
 
         return searchData;
     }
@@ -290,8 +343,8 @@ public class CgUnionProductService {
         Map<String, MaocheAlimamaUnionProductDetailDO> productDetailMap = productDetailDOs.stream().collect(Collectors.toMap(MaocheAlimamaUnionProductDetailDO::getItemIdSuffix, Function.identity(), (o1, o2) -> o1));
         // 消耗的时间
 
-        List<MaocheAlimamaUnionProductBihaohuoDO> priceChartDOs = maocheAlimamaUnionProductBihaohuoService.listLatestChartPrices(iids);
-        Map<String, MaocheAlimamaUnionProductBihaohuoDO> priceChartDOMap = priceChartDOs.stream().collect(Collectors.toMap(MaocheAlimamaUnionProductBihaohuoDO::getIid, Function.identity(), (o1, o2) -> o1));
+//        List<MaocheAlimamaUnionProductBihaohuoDO> priceChartDOs = maocheAlimamaUnionProductBihaohuoService.listLatestChartPrices(iids);
+//        Map<String, MaocheAlimamaUnionProductBihaohuoDO> priceChartDOMap = priceChartDOs.stream().collect(Collectors.toMap(MaocheAlimamaUnionProductBihaohuoDO::getIid, Function.identity(), (o1, o2) -> o1));
 
         // 获取价格和优惠信息
         List<MaocheProductV2DO> productV2DOs = maocheProductV2Service.listByProductIds(ids, "NORMAL");
@@ -312,19 +365,16 @@ public class CgUnionProductService {
                 MaocheAlimamaUnionTitleKeywordDO titleKeywordDO = keywordMap.get(item.getItemIdSuffix());
                 MaocheAlimamaUnionGoodPriceDO goodPriceDO = unionGoodPriceMap.get(item.getItemIdSuffix());
                 MaocheAlimamaUnionProductDetailDO productDetailDO = productDetailMap.get(item.getItemIdSuffix());
-                MaocheAlimamaUnionProductBihaohuoDO priceChartDO = priceChartDOMap.get(item.getIid());
+//                MaocheAlimamaUnionProductBihaohuoDO priceChartDO = priceChartDOMap.get(item.getIid());
                 MaocheProductV2DO productV2DO = productV2DOMap.get(item.getUiid());
 
-                CarAlimamaUnionProductIndex catIndex = null;
-                if (catIndex == null) {
-                    catIndex = CatEsHelper.buildCatAlimamaUnionProductIndex(item,
-                            titleKeywordDO,
-                            goodPriceDO,
-                            null,
-                            productDetailDO,
-                            priceChartDO,
-                            productV2DO);
-                }
+                CarAlimamaUnionProductIndex catIndex = CatEsHelper.buildCatAlimamaUnionProductIndex(item,
+                        titleKeywordDO,
+                        goodPriceDO,
+                        null,
+                        productDetailDO,
+                        null,
+                        productV2DO);
 
                 if (catIndex == null) {
                     continue;

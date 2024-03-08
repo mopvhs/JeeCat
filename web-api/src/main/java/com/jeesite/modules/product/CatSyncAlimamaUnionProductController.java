@@ -6,7 +6,7 @@ import com.jeesite.common.web.Result;
 import com.jeesite.modules.cat.dao.MaocheAlimamaUnionProductDao;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductDO;
 import com.jeesite.modules.cat.es.config.es7.ElasticSearch7Service;
-import com.jeesite.modules.cat.model.CatRobotMessageCondition;
+import com.jeesite.modules.cat.model.condition.CatRobotMessageCondition;
 import com.jeesite.modules.cat.model.UnionProductSyncRequest;
 import com.jeesite.modules.cat.service.MaocheAlimamaUnionProductService;
 import com.jeesite.modules.cat.service.cg.CgUnionProductService;

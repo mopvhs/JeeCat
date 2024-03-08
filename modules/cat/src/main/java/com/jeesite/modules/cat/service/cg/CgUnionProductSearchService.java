@@ -1,6 +1,5 @@
 package com.jeesite.modules.cat.service.cg;
 
-import com.alibaba.fastjson.JSON;
 import com.jeesite.common.lang.StringUtils;
 import com.jeesite.common.utils.JsonUtils;
 import com.jeesite.modules.cat.enums.ElasticSearchIndexEnum;
@@ -9,7 +8,7 @@ import com.jeesite.modules.cat.es.config.model.ElasticSearchData;
 import com.jeesite.modules.cat.helper.CatRobotHelper;
 import com.jeesite.modules.cat.model.CarAlimamaUnionProductIndex;
 import com.jeesite.modules.cat.model.CatProductBucketTO;
-import com.jeesite.modules.cat.model.CatUnionProductCondition;
+import com.jeesite.modules.cat.model.condition.CatUnionProductCondition;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.elasticsearch.index.query.BoolQueryBuilder;

@@ -20,4 +20,7 @@ public @interface EsItemAspect {
 
     // 是否清除空格
     boolean needTrim() default false;
+
+    // 英文字母是否需要转小写  true需要，false不需要
+    boolean needLowerCase() default false;
 }

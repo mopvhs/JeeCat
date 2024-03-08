@@ -1,5 +1,6 @@
 package com.jeesite.modules.cat.service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -128,6 +129,46 @@ public class MaochePushTaskRuleService extends CrudService<MaochePushTaskRuleDao
 		}
 
 		return true;
+	}
+
+	/**
+	 * @return
+	 */
+	public List<String> getKeywords(Long id) {
+
+		if (id == null || id <= 0) {
+			return new ArrayList<>();
+		}
+		MaochePushTaskRuleDO ruleQuery = new MaochePushTaskRuleDO();
+		ruleQuery.setId(String.valueOf(id));
+		MaochePushTaskRuleDO rule = dao.getByEntity(ruleQuery);
+		if (rule == null || StringUtils.isBlank(rule.getKeyword())) {
+			return new ArrayList<>();
+		}
+
+		try {
+			List<String> keywords = JsonUtils.toReferenceType(rule.getKeyword(), new TypeReference<List<String>>() {
+			});
+			if (CollectionUtils.isNotEmpty(keywords)) {
+				return keywords;
+			}
+
+		} catch (Exception e) {
+			logger.error("getKeywords error, rule:{}", JsonUtils.toJSONString(rule), e);
+		}
+
+		return new ArrayList<>();
+	}
+
+	/**
+	 * 获取所有的品牌库
+	 * @return
+	 */
+	public List<MaochePushTaskRuleDO> getAllBrandLib() {
+		MaochePushTaskRuleDO query = new MaochePushTaskRuleDO();
+		query.setStatus("NORMAL");
+
+		return findList(query);
 	}
 
 }

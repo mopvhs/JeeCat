@@ -1,9 +1,8 @@
 package com.jeesite.modules.cat.helper;
 
-import com.jeesite.modules.cat.model.CatUnionProductCondition;
+import com.jeesite.modules.cat.model.condition.CatUnionProductCondition;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
-import org.elasticsearch.search.aggregations.BucketOrder;
 
 public class CatAggHelper {
 

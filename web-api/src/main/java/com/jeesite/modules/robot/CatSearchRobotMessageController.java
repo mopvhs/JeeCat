@@ -1,6 +1,5 @@
 package com.jeesite.modules.robot;
 
-import com.alibaba.fastjson.JSON;
 import com.jeesite.common.lang.StringUtils;
 import com.jeesite.common.web.Result;
 import com.jeesite.modules.cat.dao.MaocheRobotCrawlerMessageDao;
@@ -9,7 +8,7 @@ import com.jeesite.modules.cat.es.config.es7.ElasticSearch7Service;
 import com.jeesite.modules.cat.es.config.model.ElasticSearchData;
 import com.jeesite.modules.cat.helper.CatRobotHelper;
 import com.jeesite.modules.cat.model.CarRobotCrawlerMessageIndex;
-import com.jeesite.modules.cat.model.CatRobotMessageCondition;
+import com.jeesite.modules.cat.model.condition.CatRobotMessageCondition;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.elasticsearch.index.query.BoolQueryBuilder;

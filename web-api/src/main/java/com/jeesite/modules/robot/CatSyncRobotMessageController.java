@@ -12,7 +12,7 @@ import com.jeesite.modules.cat.enums.ElasticSearchIndexEnum;
 import com.jeesite.modules.cat.es.config.es7.ElasticSearch7Service;
 import com.jeesite.modules.cat.helper.CatEsHelper;
 import com.jeesite.modules.cat.model.CarRobotCrawlerMessageIndex;
-import com.jeesite.modules.cat.model.CatRobotMessageCondition;
+import com.jeesite.modules.cat.model.condition.CatRobotMessageCondition;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.stereotype.Controller;
@@ -21,7 +21,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 
 import javax.annotation.Resource;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;

@@ -11,17 +11,9 @@ import com.jeesite.modules.cat.dao.MaocheAlimamaUnionProductDao;
 import com.jeesite.modules.cat.dao.MaocheTaskDao;
 import com.jeesite.modules.cat.entity.MaochePushTaskDO;
 import com.jeesite.modules.cat.entity.MaocheTaskDO;
-import com.jeesite.modules.cat.enums.task.TaskResourceTypeEnum;
 import com.jeesite.modules.cat.enums.task.TaskStatusEnum;
 import com.jeesite.modules.cat.enums.task.TaskSwitchEnum;
-import com.jeesite.modules.cat.enums.task.TaskTypeEnum;
 import com.jeesite.modules.cat.enums.task.TimeTypeEnum;
-import com.jeesite.modules.cat.es.config.model.ElasticSearchData;
-import com.jeesite.modules.cat.helper.PriceHelper;
-import com.jeesite.modules.cat.model.CarAlimamaUnionProductIndex;
-import com.jeesite.modules.cat.model.CatProductBucketTO;
-import com.jeesite.modules.cat.model.CatUnionProductCondition;
-import com.jeesite.modules.cat.model.PriceChartSkuBaseTO;
 import com.jeesite.modules.cat.model.UnionProductTO;
 import com.jeesite.modules.cat.model.task.content.PushTaskContent;
 import com.jeesite.modules.cat.model.task.content.PushTaskContentDetail;
@@ -126,6 +118,12 @@ public class CgMaocheTaskController {
                     status = TaskStatusEnum.PUSHING.name();
                 } else if (finishedNum == pushNum) {
                     status = TaskStatusEnum.FINISHED.name();
+                }
+                if (pushTasks.size() == 1) {
+                    MaochePushTaskDO pushTaskDO = pushTasks.get(0);
+                    if (pushTaskDO.getStatus().equals(TaskStatusEnum.NORMAL.name())) {
+                        dto.setTitle(dto.getTitle() + "\n" + pushTaskDO.getPublishDate());
+                    }
                 }
             }
             if (!TaskSwitchEnum.OPEN.name().equals(dto.getTaskSwitch())) {

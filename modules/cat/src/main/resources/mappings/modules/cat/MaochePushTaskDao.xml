@@ -124,4 +124,14 @@
 			#{id}
 		</foreach>
 	</select>
+
+	<select id="getIds" resultType="java.lang.String">
+		SELECT id
+		from maoche_push_task
+		<where>
+			id > #{id}
+		</where>
+		order by id asc limit #{limit}
+
+	</select>
 </mapper>

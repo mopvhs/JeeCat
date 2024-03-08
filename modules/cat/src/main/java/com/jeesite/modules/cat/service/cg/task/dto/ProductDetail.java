@@ -40,6 +40,11 @@ public class ProductDetail implements Serializable {
 
     private String resourceType;
 
+    /**
+     * 类目
+     */
+    private String categoryName;
+
     // 淘宝的是数字的id，京东是skuId
     private String uniqueId;
 

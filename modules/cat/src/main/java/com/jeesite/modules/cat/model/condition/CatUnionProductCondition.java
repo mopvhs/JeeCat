@@ -1,4 +1,4 @@
-package com.jeesite.modules.cat.model;
+package com.jeesite.modules.cat.model.condition;
 
 import com.alibaba.fastjson.annotation.JSONField;
 import com.jeesite.modules.cat.aop.EsItemAspect;
@@ -75,9 +75,9 @@ public class CatUnionProductCondition implements Serializable {
     private Long lteReservePrice;
 
     // 商品一口价格
-    @EsItemAspect(queryType = "rangeQuery", field = "promotionPrice", rangeOp = "gte")
+    @EsItemAspect(queryType = "rangeQuery", field = "finalPromotionPrice", rangeOp = "gte")
     private Long gtePromotionPrice;
-    @EsItemAspect(queryType = "rangeQuery", field = "promotionPrice", rangeOp = "lte")
+    @EsItemAspect(queryType = "rangeQuery", field = "finalPromotionPrice", rangeOp = "lte")
     private Long ltePromotionPrice;
 
     @EsItemAspect(queryType = "itemsQuery")
@@ -203,4 +203,10 @@ public class CatUnionProductCondition implements Serializable {
      * 1 只看有券
      */
     private Integer onlyCoupon;
+
+    /**
+     * 品牌库id
+     */
+    private Long brandLibId;
+    private List<String> keywords;
 }

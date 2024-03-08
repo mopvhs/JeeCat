@@ -1,4 +1,4 @@
-package com.jeesite.modules.cat.model;
+package com.jeesite.modules.cat.model.condition;
 
 import com.jeesite.modules.cat.aop.EsItemAspect;
 import lombok.Data;

@@ -13,7 +13,7 @@ import com.jeesite.modules.cat.es.config.model.ElasticSearchData;
 import com.jeesite.modules.cat.helper.PriceHelper;
 import com.jeesite.modules.cat.model.CarAlimamaUnionProductIndex;
 import com.jeesite.modules.cat.model.CatProductBucketTO;
-import com.jeesite.modules.cat.model.CatUnionProductCondition;
+import com.jeesite.modules.cat.model.condition.CatUnionProductCondition;
 import com.jeesite.modules.cat.model.PriceChartSkuBaseTO;
 import com.jeesite.modules.cat.model.task.content.PushTaskContent;
 import com.jeesite.modules.cat.model.task.content.PushTaskContentDetail;

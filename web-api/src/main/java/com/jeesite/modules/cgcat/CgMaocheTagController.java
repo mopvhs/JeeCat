@@ -39,7 +39,6 @@ public class CgMaocheTagController {
     }
 
     // 新增标签
-    // 获取标签列表
     @RequestMapping(value = "/maoche/tag/add")
     @ResponseBody
     public Result<String> addTag(@RequestParam(value = "parentId", required = false, defaultValue = "0") Long parentId,

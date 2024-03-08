@@ -132,7 +132,7 @@ public class PushTaskContentDetail implements Serializable {
 
         NameDetail miniProgram = detail.getMiniProgram();
         // 小程序
-        if (miniProgram != null && StringUtils.isNotBlank(miniProgram.getContent())) {
+        if (miniProgram != null && StringUtils.isNotBlank(miniProgram.getContent()) && miniProgram.isShow()) {
             appendWithLine(st, "去小程序付");
             appendWithLine(st, miniProgram.getContent());
         }

@@ -19,4 +19,8 @@ public class NameDetail implements Serializable {
     private String name;
 
     private String content;
+
+    private String desc;
+
+    private boolean show = true;
 }

@@ -1,26 +1,18 @@
 package com.jeesite.modules.robot;
 
 import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.Lists;
 import com.jeesite.common.lang.StringUtils;
 import com.jeesite.common.utils.JsonUtils;
 import com.jeesite.common.web.Result;
 import com.jeesite.modules.cat.dao.MaocheProductDao;
-import com.jeesite.modules.cat.dao.MaocheRobotCrawlerMessageDao;
-import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductDO;
 import com.jeesite.modules.cat.entity.MaocheProductDO;
-import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageDO;
 import com.jeesite.modules.cat.enums.ElasticSearchIndexEnum;
 import com.jeesite.modules.cat.es.config.es7.ElasticSearch7Service;
-import com.jeesite.modules.cat.helper.CatEsHelper;
 import com.jeesite.modules.cat.helper.MaocheProductHelper;
-import com.jeesite.modules.cat.model.CarRobotCrawlerMessageIndex;
-import com.jeesite.modules.cat.model.CatRobotMessageCondition;
 import com.jeesite.modules.cat.model.MaocheProductIndex;
 import com.jeesite.modules.cat.model.MaocheProductSyncRequest;
-import com.jeesite.modules.cat.model.UnionProductSyncRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.stereotype.Controller;
@@ -32,7 +24,6 @@ import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 @Slf4j
 @Controller

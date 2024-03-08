@@ -353,4 +353,24 @@ public class DateTimeUtils {
 		return now.getTime();
 	}
 
+	/**
+	 * 获取当天的0点时间
+	 * @param time
+	 * @return
+	 */
+	public static Date getDay(Date time) {
+
+		Calendar c = Calendar.getInstance();
+		c.setTimeInMillis(time.getTime());
+
+		Calendar now = Calendar.getInstance();
+		now.setTime(now.getTime());
+		now.set(Calendar.HOUR_OF_DAY, 0);
+		now.set(Calendar.MINUTE, 0);
+		now.set(Calendar.SECOND, 0);
+		now.set(Calendar.MILLISECOND, 0);
+
+		return now.getTime();
+	}
+
 }

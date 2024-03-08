@@ -74,6 +74,7 @@ public class TaskDetailHelper {
         productDetail.setPrice(PriceHelper.formatPrice(product.getReservePrice()));
         productDetail.setPayPrice(ProductValueHelper.calVeApiPromotionPrice(productObject));
         productDetail.setTitle(title);
+        productDetail.setCategoryName(tbProduct.getCatLeafName());
         productDetail.setCommand(product.getTbkPwd());
 
         String pictUrl = product.getPictUrl();
@@ -189,6 +190,7 @@ public class TaskDetailHelper {
                 productDetail.setImgs(Collections.singletonList(imgUrl));
                 productDetail.setTitle(promotion.getSkuName());
                 productDetail.setCommand(promotion.getShortURL());
+                productDetail.setCategoryName("京东");
 
                 productDetail.setNum(1);
 //                productDetail.setDiscountPrice(productDetail.getPayPrice());

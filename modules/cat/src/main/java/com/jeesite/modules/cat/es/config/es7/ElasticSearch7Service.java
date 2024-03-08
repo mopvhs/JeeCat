@@ -430,4 +430,25 @@ public class ElasticSearch7Service {
         return null;
     }
 
+
+    public long count(SearchSourceBuilder searchSourceBuilder,
+                      ElasticSearchIndexEnum indexEnum) {
+        CountRequest countRequest = new CountRequest();
+        countRequest.query(searchSourceBuilder.query());
+        countRequest.indices(indexEnum.getIndex());
+        countRequest.types(indexEnum.getType());
+        try {
+            CountResponse count = restHighLevelClient.count(countRequest, RequestOptions.DEFAULT);
+            if (count == null) {
+                return 0;
+            }
+
+            return count.getCount();
+        } catch (Exception e) {
+            log.error("查询ElasticSearch7Service查询异常，searchRequest:{}, indexEnum：{}", JSON.toJSONString(countRequest), JSON.toJSONString(indexEnum), e);
+        }
+
+        return 0;
+    }
+
 }

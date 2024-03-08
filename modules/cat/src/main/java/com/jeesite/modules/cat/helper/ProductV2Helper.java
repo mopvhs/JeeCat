@@ -91,14 +91,18 @@ public class ProductV2Helper {
             return;
         }
 
-        long finalPromotionPrice = 0;
-        long predictRoundingUpPrice = 0;
+        long finalPromotionPrice = index.getPromotionPrice();
+        long predictRoundingUpPrice = index.getPromotionPrice();
         String predictRoundingUpPriceDesc = "";
         List<String> pricePromotionTagList = new ArrayList<>();
         if (productV2Content != null && productV2Content.getPricePromotionInfo() != null) {
             ProductV2Content.PricePromotionInfo pricePromotionInfo = productV2Content.getPricePromotionInfo();
-            finalPromotionPrice = pricePromotionInfo.getFinalPromotionPrice();
-            predictRoundingUpPrice = pricePromotionInfo.getPredictRoundingUpPrice();
+            if (pricePromotionInfo.getFinalPromotionPrice() != 0) {
+                finalPromotionPrice = pricePromotionInfo.getFinalPromotionPrice();
+            }
+            if (pricePromotionInfo.getPredictRoundingUpPrice() != 0) {
+                predictRoundingUpPrice = pricePromotionInfo.getPredictRoundingUpPrice();
+            }
             predictRoundingUpPriceDesc = pricePromotionInfo.getPredictRoundingUpPriceDesc();
             pricePromotionTagList = pricePromotionInfo.getPromotionTagList();
         }

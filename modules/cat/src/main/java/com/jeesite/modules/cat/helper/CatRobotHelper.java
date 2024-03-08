@@ -7,6 +7,7 @@ import com.jeesite.modules.cat.model.CarAlimamaUnionProductIndex;
 import com.jeesite.modules.cat.model.CatProductBucketTO;
 import com.jeesite.modules.cat.model.CarRobotCrawlerMessageIndex;
 import com.jeesite.modules.cat.model.MaocheProductIndex;
+import com.jeesite.modules.cat.service.es.dto.PushTaskIndex;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
@@ -54,6 +55,11 @@ public class CatRobotHelper {
     public static MaocheProductIndex convertMaocheProduct(String index) {
 
         return JSON.parseObject(index, MaocheProductIndex.class);
+    }
+
+    public static PushTaskIndex convertPushTaskIndex(String index) {
+
+        return JSON.parseObject(index, PushTaskIndex.class);
     }
 
     public static Map<String, List<CatProductBucketTO>> convertUnionProductAggregationMap(Aggregations aggregations) {
@@ -188,9 +194,14 @@ public class CatRobotHelper {
                 name = annotation.field();
             }
             boolean needTrim = annotation.needTrim();
+            boolean needLowerCase = annotation.needLowerCase();
             if (needTrim && value instanceof String) {
                 // 移除空格
                 value = String.valueOf(value).replace(" ", "");
+            }
+
+            if (needLowerCase && value instanceof String) {
+                value = StringUtils.lowerCase(String.valueOf(value));
             }
 
             switch (q) {
