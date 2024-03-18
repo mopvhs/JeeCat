@@ -19,7 +19,7 @@ public class TaskDetail implements Serializable {
     private String desc;
 
     // 专题 -》 列表 保存对象
-    private List<NameDetail> topics;
+    private List<String> topics;
 
     // 活动券
     private List<NameDetail> actCoupons;

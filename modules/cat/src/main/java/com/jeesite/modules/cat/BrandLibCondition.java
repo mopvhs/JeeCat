@@ -51,5 +51,5 @@ public class BrandLibCondition implements Serializable {
     // 是否需要明细
     private boolean detail = false;
 
-
+    private String rootCategoryName;
 }

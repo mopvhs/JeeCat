@@ -30,6 +30,7 @@ import com.jeesite.modules.cat.model.RateDetailTO;
 import com.jeesite.modules.cat.model.ShopModel;
 import com.jeesite.modules.cat.model.UnionProductModel;
 import com.jeesite.modules.cat.model.UnionProductTagTO;
+import com.jeesite.modules.cat.service.cg.third.tb.dto.CommandResponseV2;
 import com.jeesite.modules.cat.service.stage.cg.ProductEsContext;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
@@ -74,10 +75,10 @@ public class CatEsHelper {
 
     public static CarAlimamaUnionProductIndex buildCatAlimamaUnionProductIndex(MaocheAlimamaUnionProductDO item,
                                                                                MaocheAlimamaUnionTitleKeywordDO titleKeywordDO,
-                                                                               MaocheAlimamaUnionGoodPriceDO goodPriceDO,
-                                                                               ProductCategoryModel productCategory,
+//                                                                               MaocheAlimamaUnionGoodPriceDO goodPriceDO,
+//                                                                               ProductCategoryModel productCategory,
                                                                                MaocheAlimamaUnionProductDetailDO productDetailDO,
-                                                                               MaocheAlimamaUnionProductBihaohuoDO priceChartDO,
+//                                                                               MaocheAlimamaUnionProductBihaohuoDO priceChartDO,
                                                                                MaocheProductV2DO productV2DO) {
         if (item == null) {
             return null;
@@ -163,9 +164,9 @@ public class CatEsHelper {
             index.setCatDsr(NumberUtils.toLong(calCatDsr.get("catDsr")));
             index.setCatDsrTips(catDsrTips);
             List<String> activity = new ArrayList<>();
-            if (goodPriceDO != null) {
-                activity.add(CatActivityEnum.GOOD_PRICE.getActivity());
-            }
+//            if (goodPriceDO != null) {
+//                activity.add(CatActivityEnum.GOOD_PRICE.getActivity());
+//            }
 
             String productOrigContent = null;
             if (productV2DO != null && StringUtils.isNotBlank(productV2DO.getOrigContent())) {
@@ -207,14 +208,6 @@ public class CatEsHelper {
             index.setUpdateTime(item.getUpdateTime() != null ? item.getUpdateTime().getTime() : 0L);
             index.setSyncTime(item.getSyncTime() != null ? item.getSyncTime().getTime() : 0L);
             index.setQualityStatus(item.getQualityStatus());
-
-            if (productCategory != null) {
-                // 类目
-                index.setCidOnes(productCategory.getCid1s());
-                index.setCidTwos(productCategory.getCid2s());
-                index.setCidThirds(productCategory.getCid3s());
-            }
-
             index.setCustomBenefit(item.getCustomBenefit());
 
             // 补充标签
@@ -222,13 +215,59 @@ public class CatEsHelper {
             String tagContent = titleKeywordDO != null ? titleKeywordDO.getContentManual() : null;
             fillTag(index, tagContent);
 
-            fillPriceChartInfo(index, priceChartDO);
+//            fillPriceChartInfo(index, priceChartDO);
+            fillPriceChartInfo(index, null);
 
             ProductV2Helper.fillPricePromotionInfo2Index(index, productV2Content);
 
             return index;
         } catch (Exception e) {
             log.error("buildCatAlimamaUnionProductIndex error, item:{}", JsonUtils.toJSONString(item), e);
+        }
+
+        return null;
+    }
+
+    public static CarAlimamaUnionProductIndex buildCatProductIndexV2(MaocheAlimamaUnionProductDO item,
+                                                                               MaocheAlimamaUnionProductDetailDO productDetailDO,
+                                                                               MaocheProductV2DO productV2DO) {
+        if (item == null) {
+            return null;
+        }
+        try {
+            CommandResponseV2 product = null;
+            if (productV2DO != null && StringUtils.isNotBlank(productV2DO.getOrigContent())) {
+                String productOrigContent = productV2DO.getOrigContent();
+                 product = JsonUtils.toReferenceType(productOrigContent, new TypeReference<CommandResponseV2>() {
+                });
+            }
+            if (product == null) {
+                return null;
+            }
+
+            CarAlimamaUnionProductIndex index = new CarAlimamaUnionProductIndex();
+
+            // 最新的商品详情构建
+            ProductV2Helper.fillItemBaseInfo(index, product);
+
+            // 填充优惠券详情
+            ProductV2Helper.fillCouponInfo(index, product);
+
+            // 填充审核信息
+            ProductV2Helper.fillAuditInfo(index, item);
+
+            // 价格信息
+            ProductV2Helper.fillPriceInfo(index, product);
+
+            // 补充标签
+            fillTag(index, null);
+
+            // 其他内容
+            ProductV2Helper.fillOtherInfo(index, productDetailDO);
+
+            return index;
+        } catch (Exception e) {
+            log.error("buildCatProductIndexV2 error, item:{}", JsonUtils.toJSONString(item), e);
         }
 
         return null;

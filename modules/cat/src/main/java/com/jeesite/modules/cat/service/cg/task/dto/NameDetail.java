@@ -22,5 +22,5 @@ public class NameDetail implements Serializable {
 
     private String desc;
 
-    private boolean show = true;
+    private boolean show = false;
 }

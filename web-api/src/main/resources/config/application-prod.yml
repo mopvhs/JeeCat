@@ -75,7 +75,7 @@ jdbc:
   ds2:
     type: mysql
     driver: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://82.157.6.8:6607/maoche?useSSL=false&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=CONVERT_TO_NULL&serverTimezone=Asia/Shanghai
+    url: jdbc:mysql://mysql.mtxtool.com:6607/maoche?useSSL=false&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=CONVERT_TO_NULL&serverTimezone=Asia/Shanghai
     username: root
     password: vXRXf#}4}Y}a8M)mfC]9
     testSql: SELECT 1

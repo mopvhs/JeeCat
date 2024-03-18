@@ -2,6 +2,7 @@ package com.jeesite.modules.cgcat;
 
 
 import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 import com.google.common.util.concurrent.RateLimiter;
 import com.jeesite.common.codec.Md5Utils;
 import com.jeesite.common.lang.StringUtils;
@@ -318,9 +319,11 @@ public class CgToolboxController {
         String vekey = "V73687541H40026415";
         String pid = "mm_30153430_909250463_109464700418";
 
-        Result<JSONArray> jsonArrayResult = veApiService.tbSearch(vekey, itemId, pid);
+        Result<JSONArray> jsonArrayResult = veApiService.tbSearch(vekey, itemId, pid, null);
 
-        return jsonArrayResult;
+        Result<JSONObject> result = dingDanXiaApiService.idPrivilege("FHPOsYO7zki7tcrxp0amyGMP7wxVkbU3", itemId, "mm_30153430_909250463_109464700418");
+
+        return result;
     }
 
     @Resource
@@ -328,20 +331,21 @@ public class CgToolboxController {
 
     @RequestMapping("/tb/jiexi/iid")
     public Result<Long> jiexiIid(String itemId) {
-        Map<String, Object> objectMap = new HashMap<>();
-        objectMap.put("detail", 1);
-        // 获取到口令详情
-        Result<CommandResponse> commonCommand = tbApiService.getCommonCommand(itemId, objectMap);
-        if (!Result.isOK(commonCommand)) {
-            return Result.ERROR(500, "获取口令详情失败");
-        }
-        CommandResponse result = commonCommand.getResult();
-//        String itemUrl = result.getItemUrl();
-        String itemUrl = result.getSclickUrl();
+//        Map<String, Object> objectMap = new HashMap<>();
+//        objectMap.put("detail", 2);
+//        // 获取到口令详情
+//        Result<CommandResponse> commonCommand = tbApiService.getCommonCommand(itemId, objectMap);
+//        if (!Result.isOK(commonCommand)) {
+//            return Result.ERROR(500, "获取口令详情失败");
+//        }
+//        CommandResponse result = commonCommand.getResult();
+////        String itemUrl = result.getItemUrl();
+//        String itemUrl = result.getSclickUrl();
+//
+//        Result<Long> analysisTbIid = innerApiService.getAnalysisTbIid(itemUrl);
 
-        Result<Long> analysisTbIid = innerApiService.getAnalysisTbIid(itemUrl);
-
-        return analysisTbIid;
+//        return analysisTbIid;
+        return Result.OK(0L);
     }
 
     @RequestMapping("/tb/jiexi/item/url/iid")

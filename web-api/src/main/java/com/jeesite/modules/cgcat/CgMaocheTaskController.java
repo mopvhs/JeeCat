@@ -122,7 +122,7 @@ public class CgMaocheTaskController {
                 if (pushTasks.size() == 1) {
                     MaochePushTaskDO pushTaskDO = pushTasks.get(0);
                     if (pushTaskDO.getStatus().equals(TaskStatusEnum.NORMAL.name())) {
-                        dto.setTitle(dto.getTitle() + "\n" + pushTaskDO.getPublishDate());
+                        dto.setTitle(dto.getTitle() + "\n" + DateTimeUtils.getStringDate(pushTaskDO.getPublishDate()));
                     }
                 }
             }

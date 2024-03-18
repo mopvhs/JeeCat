@@ -41,7 +41,7 @@ public class CgMaocheTagController {
     // 新增标签
     @RequestMapping(value = "/maoche/tag/add")
     @ResponseBody
-    public Result<String> addTag(@RequestParam(value = "parentId", required = false, defaultValue = "0") Long parentId,
+    public Result<MaocheTagDO> addTag(@RequestParam(value = "parentId", required = false, defaultValue = "0") Long parentId,
                                  @RequestParam(value = "name") String name) {
 
         // 判空
@@ -82,7 +82,7 @@ public class CgMaocheTagController {
             // 删除缓存
             maocheTagService.deleteCache();
 
-            return Result.OK("添加完成");
+            return Result.OK(tag);
         }
 
         return Result.ERROR(500, "添加失败");

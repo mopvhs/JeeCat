@@ -21,7 +21,7 @@ import org.apache.commons.lang3.math.NumberUtils;
 		@Column(name="id", attrName="iid", label="id", isPK=true),
 		@Column(name="level", attrName="level", label="level"),
 		@Column(name="parent_id", attrName="parentId", label="parent_id"),
-		@Column(name="tag_name", attrName="tagName", label="tag_name", queryType=QueryType.LIKE),
+		@Column(name="tag_name", attrName="tagName", label="tag_name"),
 		@Column(includeEntity=DataEntity.class),
 	}, orderBy="a.update_date DESC"
 )

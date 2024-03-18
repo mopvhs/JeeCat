@@ -335,16 +335,12 @@ public class CgUnionProductService {
         Map<String, MaocheAlimamaUnionTitleKeywordDO> keywordMap = keywordDOs.stream().collect(Collectors.toMap(MaocheAlimamaUnionTitleKeywordDO::getItemIdSuffix, Function.identity(), (o1, o2) -> o1));
 
         // 获取有好价信息
-        List<MaocheAlimamaUnionGoodPriceDO> unionGoodPriceDOs = maocheAlimamaUnionGoodPriceService.listByItemIdSuffixs(itemSuffixIds, 3);
-        Map<String, MaocheAlimamaUnionGoodPriceDO> unionGoodPriceMap = unionGoodPriceDOs.stream().collect(Collectors.toMap(MaocheAlimamaUnionGoodPriceDO::getItemIdSuffix, Function.identity(), (o1, o2) -> o1));
+//        List<MaocheAlimamaUnionGoodPriceDO> unionGoodPriceDOs = maocheAlimamaUnionGoodPriceService.listByItemIdSuffixs(itemSuffixIds, 3);
+//        Map<String, MaocheAlimamaUnionGoodPriceDO> unionGoodPriceMap = unionGoodPriceDOs.stream().collect(Collectors.toMap(MaocheAlimamaUnionGoodPriceDO::getItemIdSuffix, Function.identity(), (o1, o2) -> o1));
 
         // 商品sku detail
         List<MaocheAlimamaUnionProductDetailDO> productDetailDOs = maocheAlimamaUnionProductDetailService.listByIids(iids);
         Map<String, MaocheAlimamaUnionProductDetailDO> productDetailMap = productDetailDOs.stream().collect(Collectors.toMap(MaocheAlimamaUnionProductDetailDO::getItemIdSuffix, Function.identity(), (o1, o2) -> o1));
-        // 消耗的时间
-
-//        List<MaocheAlimamaUnionProductBihaohuoDO> priceChartDOs = maocheAlimamaUnionProductBihaohuoService.listLatestChartPrices(iids);
-//        Map<String, MaocheAlimamaUnionProductBihaohuoDO> priceChartDOMap = priceChartDOs.stream().collect(Collectors.toMap(MaocheAlimamaUnionProductBihaohuoDO::getIid, Function.identity(), (o1, o2) -> o1));
 
         // 获取价格和优惠信息
         List<MaocheProductV2DO> productV2DOs = maocheProductV2Service.listByProductIds(ids, "NORMAL");
@@ -363,17 +359,20 @@ public class CgUnionProductService {
                     continue;
                 }
                 MaocheAlimamaUnionTitleKeywordDO titleKeywordDO = keywordMap.get(item.getItemIdSuffix());
-                MaocheAlimamaUnionGoodPriceDO goodPriceDO = unionGoodPriceMap.get(item.getItemIdSuffix());
+//                MaocheAlimamaUnionGoodPriceDO goodPriceDO = unionGoodPriceMap.get(item.getItemIdSuffix());
                 MaocheAlimamaUnionProductDetailDO productDetailDO = productDetailMap.get(item.getItemIdSuffix());
 //                MaocheAlimamaUnionProductBihaohuoDO priceChartDO = priceChartDOMap.get(item.getIid());
                 MaocheProductV2DO productV2DO = productV2DOMap.get(item.getUiid());
 
-                CarAlimamaUnionProductIndex catIndex = CatEsHelper.buildCatAlimamaUnionProductIndex(item,
-                        titleKeywordDO,
-                        goodPriceDO,
-                        null,
+//                CarAlimamaUnionProductIndex catIndex = CatEsHelper.buildCatAlimamaUnionProductIndex(item,
+//                        titleKeywordDO,
+//                        null,
+//                        productDetailDO,
+//                        null,
+//                        productV2DO);
+
+                CarAlimamaUnionProductIndex catIndex = CatEsHelper.buildCatProductIndexV2(item,
                         productDetailDO,
-                        null,
                         productV2DO);
 
                 if (catIndex == null) {

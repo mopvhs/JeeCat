@@ -22,6 +22,7 @@ import com.jeesite.modules.cat.service.cg.inner.InnerApiService;
 import com.jeesite.modules.cat.service.cg.ocean.OceanSearchService;
 import com.jeesite.modules.cat.service.cg.third.tb.TbApiService;
 import com.jeesite.modules.cat.service.cg.third.tb.dto.CommandResponse;
+import com.jeesite.modules.cat.service.cg.third.tb.dto.CommandResponseV2;
 import com.jeesite.modules.cat.service.es.dto.MaocheMessageSyncIndex;
 import com.jeesite.modules.cat.service.stage.cg.ocean.exception.QueryThirdApiException;
 import com.jeesite.modules.cat.service.toolbox.CommandService;
@@ -84,11 +85,11 @@ public class TbOceanStage extends AbstraOceanStage {
 
         // https://www.veapi.cn/apidoc/taobaolianmeng/283
         Map<String, Object> objectMap = new HashMap<>();
-        objectMap.put("detail", 1);
+        objectMap.put("detail", 2);
         objectMap.put("deepcoupon", 1);
         objectMap.put("couponId", 1);
         // https://www.veapi.cn/apidoc/taobaolianmeng/283
-        Result<CommandResponse> response = tbApiService.getCommonCommand(content, objectMap);
+        Result<CommandResponseV2> response = tbApiService.getCommonCommand(content, objectMap);
 
         if (!Result.isOK(response)) {
             Map<String, Object> remarks = new HashMap<>();
@@ -98,17 +99,20 @@ public class TbOceanStage extends AbstraOceanStage {
             throw new QueryThirdApiException(QueryThirdApiException.QUERY_FAIL, "查询淘宝api失败");
         }
 
-        CommandResponse commandResponse = response.getResult();
+        CommandResponseV2 commandResponse = response.getResult();
         context.setTbProduct(commandResponse);
     }
 
     @Override
     public void buildBaseMessageProducts(OceanContext context) {
 
-        CommandResponse tbProduct = context.getTbProduct();
+        CommandResponseV2 tbProduct = context.getTbProduct();
         if (tbProduct == null) {
             throw new IllegalArgumentException("tbProduct is null");
         }
+
+        CommandResponseV2.ItemBasicInfo itemBasicInfo = tbProduct.getItemBasicInfo();
+        CommandResponseV2.PricePromotionInfo pricePromotionInfo = tbProduct.getPricePromotionInfo();
 
         // XgBGorXFGtXxwmvX5BT0oYcAUg-yz3oeZi6a2bapxdcyb
         String[] idArr = StringUtils.split(tbProduct.getNumIid(), "-");
@@ -119,16 +123,17 @@ public class TbOceanStage extends AbstraOceanStage {
         productDO.setInnerId("0");
         productDO.setItemId(tbProduct.getNumIid());
         productDO.setApiContent(JsonUtils.toJSONString(tbProduct));
-        productDO.setCategory(tbProduct.getCatLeafName());
-        productDO.setTitle(tbProduct.getTitle());
-        productDO.setShortTitle(tbProduct.getShortTitle());
-        productDO.setShopDsr(tbProduct.getShopDsr());
-        productDO.setShopName(tbProduct.getShopTitle());
-        productDO.setSellerId(tbProduct.getSellerId());
-        productDO.setPictUrl(tbProduct.getPictUrl());
+        productDO.setCategory(tbProduct.getCategoryId());
+        productDO.setTitle(itemBasicInfo.getTitle());
+        productDO.setShortTitle(itemBasicInfo.getShortTitle());
+        // detail = 2之后，字段被移除了
+        productDO.setShopDsr("0");
+        productDO.setShopName(itemBasicInfo.getShopTitle());
+        productDO.setSellerId(itemBasicInfo.getSellerId());
+        productDO.setPictUrl(itemBasicInfo.getPictUrl());
         productDO.setCommissionRate(new BigDecimal(tbProduct.getCommissionRate()).multiply(new BigDecimal(100)).longValue());
-        productDO.setPrice(new BigDecimal(tbProduct.getZkFinalPrice()).multiply(new BigDecimal(100)).longValue());
-        productDO.setVolume(NumberUtils.toLong(tbProduct.getVolume()));
+        productDO.setPrice(new BigDecimal(pricePromotionInfo.getZkFinalPrice()).multiply(new BigDecimal(100)).longValue());
+        productDO.setVolume(NumberUtils.toLong(itemBasicInfo.getVolume()));
         productDO.setStatus("NORMAL");
         productDO.setCreateBy("admin");
         productDO.setUpdateBy("admin");
@@ -142,7 +147,7 @@ public class TbOceanStage extends AbstraOceanStage {
     public void saveMessageAndProduct(OceanContext context) {
 
         MaocheRobotCrawlerMessageSyncDO messageSync = context.getMessageSync();
-        CommandResponse data = context.getTbProduct();
+        CommandResponseV2 data = context.getTbProduct();
         List<MaocheRobotCrawlerMessageProductDO> messageProducts = context.getMessageProducts();
 
         if (messageSync == null || data == null || CollectionUtils.isEmpty(messageProducts)) {
@@ -163,11 +168,14 @@ public class TbOceanStage extends AbstraOceanStage {
             price = ProductValueHelper.calVeApiPromotionPrice(JSONObject.parseObject(unionProductDO.getOrigContent()));
             uiid = unionProductDO.getUiid();
         }
-
+        CommandResponseV2.ItemBasicInfo itemBasicInfo = data.getItemBasicInfo();
         String status = "NORMAL";
-        long shopDsr = NumberUtils.toLong(data.getShopDsr());
+        // todo yhq detail = 2后 字段移除，先使用销量替换
+//        long shopDsr = NumberUtils.toLong(data.getShopDsr());
+        long volume = NumberUtils.toLong(itemBasicInfo.getVolume());
         // 不存在并且shopdsr >= 4.8
-        if (uiid == 0 && shopDsr >= 48000) {
+        // volume >= 100
+        if (uiid == 0 && volume >= 100) {
             Result<String> result = innerApiService.syncTbProduct(numIid);
             if (Result.isOK(result)) {
                 uiid = NumberUtils.toLong(result.getResult());
@@ -190,7 +198,10 @@ public class TbOceanStage extends AbstraOceanStage {
             processed = 1;
         }
 
-        if (shopDsr < 48000) {
+//        if (shopDsr < 48000) {
+//            status = "LOW_SHOP_DSR";
+//        }
+        if (volume < 10) {
             status = "LOW_SHOP_DSR";
         }
 

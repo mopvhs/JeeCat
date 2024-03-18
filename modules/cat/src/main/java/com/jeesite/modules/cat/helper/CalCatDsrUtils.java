@@ -21,6 +21,12 @@ public class CalCatDsrUtils {
     private static final String fansTimes = "0.2";
     private static final String commissionRateTimes = "0.15";
 
+
+    private static final String volumeTimesV2 = "0.3";
+    private static final String creditLevelTimesV2 = "0.1";
+    private static final String fansTimesV2 = "0.4";
+    private static final String commissionRateTimesV2 = "0.2";
+
     public static void main(String[] args) {
         Map<String, String> stringStringMap = calCatDsr(48984L, 40000L, 18L, "19.9万", 46L);
 
@@ -66,6 +72,37 @@ public class CalCatDsrUtils {
 
         return new BigDecimal(factor).divide(new BigDecimal(10000), 2, RoundingMode.UP).toString();
 
+    }
+
+    public static Map<String, String> calCatDsrV2(Long volume, Long creditLevel, String fans, Long commissionRate) {
+        int volumeFactor = getProductVolumeFactor(volume);
+        int creditLevelFactor = getProductCreditLevelFactor(creditLevel);
+        int fansFactor = getProductFansFactor(fans);
+        int commissionRateFactor = getProductCommissionRateFactor(commissionRate);
+
+        // 评分公式：（P1=0.3*店铺评分A +0.3*月销量C +0.1*店铺等级D+0.15*店铺粉丝数E+0.15*佣金率F ）
+        long catRate = new BigDecimal(volumeTimesV2).multiply(new BigDecimal(volumeFactor)).longValue() +
+                new BigDecimal(creditLevelTimesV2).multiply(new BigDecimal(creditLevelFactor)).longValue() +
+                new BigDecimal(fansTimesV2).multiply(new BigDecimal(fansFactor)).longValue() +
+                new BigDecimal(commissionRateTimesV2).multiply(new BigDecimal(commissionRateFactor)).longValue();
+        Long catDsr = Math.min(catRate, 50000);
+
+        StringBuilder tips = new StringBuilder();
+        tips.append("月销量：").append(volume).append("\n");
+        tips.append("店铺等级：").append(creditLevel).append("\n");
+        tips.append("店铺粉丝数：").append(fans).append("\n");
+        tips.append("佣金率：").append(commissionRate).append("\n\n");
+        // （P1=0.3*4.7 +0.3*4.7 +0.1*4.6+0.15*4.8+0.15*4.75 ）=4.72
+        tips.append("(P1=").append(volumeTimes).append("*").append(factorString(volumeFactor)).append("+")
+                .append(creditLevelTimes).append("*").append(factorString(creditLevelFactor)).append("+")
+                .append(fansTimes).append("*").append(factorString(fansFactor)).append("+")
+                .append(commissionRateTimes).append("*").append(factorString(commissionRateFactor)).append(")=").append(factorString(catDsr.intValue()));
+
+        Map<String, String> res = new HashMap<>();
+        res.put("catDsr", String.valueOf(catDsr));
+        res.put("tips", tips.toString());
+
+        return res;
     }
 
     /**

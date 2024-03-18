@@ -171,4 +171,12 @@ public class MaochePushTaskRuleService extends CrudService<MaochePushTaskRuleDao
 		return findList(query);
 	}
 
+	public boolean deleteById(Long id) {
+		if (id == null || id <= 0) {
+			return false;
+		}
+		int row = dao.deleteById(id);
+		return row > 0;
+	}
+
 }

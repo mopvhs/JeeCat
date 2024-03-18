@@ -63,6 +63,9 @@ public class BrandLibTO implements Serializable {
     // n天前
     private String lastPushTimeDesc;
 
+    // 标签
+    private List<Long> tagIds;
+
 
 
 }

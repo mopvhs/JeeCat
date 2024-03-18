@@ -17,6 +17,7 @@ import com.jeesite.modules.cat.service.cg.third.DingDanXiaApiService;
 import com.jeesite.modules.cat.service.cg.third.dto.JdUnionIdPromotion;
 import com.jeesite.modules.cat.service.cg.third.tb.TbApiService;
 import com.jeesite.modules.cat.service.cg.third.tb.dto.CommandResponse;
+import com.jeesite.modules.cat.service.cg.third.tb.dto.CommandResponseV2;
 import com.jeesite.modules.cat.service.message.DingDingService;
 import com.jeesite.modules.cat.service.toolbox.dto.CommandDTO;
 import lombok.extern.slf4j.Slf4j;
@@ -92,10 +93,10 @@ public class CommandService {
 
         // https://www.veapi.cn/apidoc/taobaolianmeng/283
         Map<String, Object> objectMap = new HashMap<>();
-        objectMap.put("detail", 1);
-        objectMap.put("deepcoupon", 1);
+        objectMap.put("detail", 2);
+        objectMap.put("deepcoupon", 2);
 
-        Result<CommandResponse> response = tbApiService.getCommonCommand(content, objectMap);
+        Result<CommandResponseV2> response = tbApiService.getCommonCommand(content, objectMap);
 
         // 日志记录
         csOpLogService.addLog("tb", "doExchangeTb", "tb_command", "maoche", "tb转链",
@@ -104,7 +105,9 @@ public class CommandService {
         CommandDTO commandDTO = new CommandDTO();
 
         if (Result.isOK(response)) {
-            CommandResponse data = response.getResult();
+            CommandResponseV2 data = response.getResult();
+            CommandResponseV2.ItemBasicInfo itemBasicInfo = data.getItemBasicInfo();
+            CommandResponseV2.PricePromotionInfo pricePromotionInfo = data.getPricePromotionInfo();
             String replaceAll = tb.matcher(content).replaceAll(data.getTbkPwd());
 
             commandDTO.setContent(replaceAll);
@@ -120,19 +123,21 @@ public class CommandService {
             product.setItemUrl(String.format(itemUrlFormat, data.getNumIid()));
 
             CommandDTO.Item item = new CommandDTO.Item();
-            item.setImage(data.getPictUrl());
+            item.setImage(itemBasicInfo.getPictUrl());
 
             // 券后价
             long promotionPrice = ProductValueHelper.calVeApiPromotionPrice(JSONObject.parseObject(JsonUtils.toJSONString(data)));
             item.setReservePrice(promotionPrice);
 
-            item.setOriginalPrice(new BigDecimal(data.getReservePrice()).multiply(new BigDecimal(100)).longValue());
-            item.setShopDsr(NumberUtils.toLong(data.getShopDsr()));
-            item.setVolume(NumberUtils.toLong(data.getVolume()));
+            item.setOriginalPrice(new BigDecimal(pricePromotionInfo.getReservePrice()).multiply(new BigDecimal(100)).longValue());
+//            item.setShopDsr(NumberUtils.toLong(data.getShopDsr()));
+            // 接口升级为detail=2之后，shopDsr字段被移除
+            item.setShopDsr(0L);
+            item.setVolume(NumberUtils.toLong(itemBasicInfo.getVolume()));
             item.setNumIid(data.getNumIid());
-            item.setTitle(data.getTitle());
+            item.setTitle(itemBasicInfo.getTitle());
             item.setCommissionRate(new BigDecimal(data.getCommissionRate()).multiply(new BigDecimal(100)).longValue());
-            item.setShopTitle(data.getShopTitle());
+            item.setShopTitle(itemBasicInfo.getShopTitle());
 
             String numIid = data.getNumIid();
             // XgBGorXFGtXxwmvX5BT0oYcAUg-yz3oeZi6a2bapxdcyb

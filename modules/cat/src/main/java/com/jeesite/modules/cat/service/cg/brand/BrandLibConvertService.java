@@ -69,7 +69,7 @@ public class BrandLibConvertService {
         // 库今日新增 - 此关键词新抓取到的商品
         brandLibTO.setProductDailyInc(index.getProductDailyInc());
         String pushDailyIncDesc = "未发布";
-        if (index.getProductDailyInc() != null && index.getProductDailyInc() > 0) {
+        if (index.getPushDailyInc() != null && index.getPushDailyInc() > 0) {
             pushDailyIncDesc = "已发布（" + index.getProductDailyInc() + "）";
         }
         brandLibTO.setPushDailyIncDesc(pushDailyIncDesc);
@@ -89,6 +89,7 @@ public class BrandLibConvertService {
             brandLibTO.setNextPushTimeDesc(DateTimeUtils.getStringDate(brandLibTO.getNextPushTime()));
         }
 
+        brandLibTO.setTagIds(index.getTags());
         return brandLibTO;
     }
 }

@@ -64,8 +64,8 @@ public class BrandLibService {
         CatUnionProductCondition condition = new CatUnionProductCondition();
         condition.setKeywords(keywords);
 
-        BoolQueryBuilder boolBuilder = new BoolQueryBuilder();
-        brandLibQuery(condition, boolBuilder);
+        BoolQueryBuilder boolBuilder = CatRobotHelper.buildQuery(condition, CatUnionProductCondition.class);
+        brandLibProductQuery(condition, boolBuilder);
 
         List<QueryBuilder> must = boolBuilder.must();
         if (CollectionUtils.isEmpty(must)) {
@@ -94,10 +94,11 @@ public class BrandLibService {
         OceanMessageCondition condition = new OceanMessageCondition();
 //        condition.setBrandLibId(brandLibId);
         condition.setKeywords(keywords);
-        BoolQueryBuilder boolBuilder = new BoolQueryBuilder();
         condition.setStatus("NORMAL");
         // 时间要求是当天
         condition.setGteCreateDate(DateTimeUtils.getDay(new Date()).getTime());
+
+        BoolQueryBuilder boolBuilder = CatRobotHelper.buildQuery(condition, OceanMessageCondition.class);
         brandLibOceanQuery(condition, boolBuilder);
 
         List<QueryBuilder> must = boolBuilder.must();
@@ -112,7 +113,7 @@ public class BrandLibService {
         searchSourceBuilder.query(boolBuilder);
 
         ElasticSearchData<MaocheMessageProductIndex, Object> searchData = elasticSearch7Service.search(searchSourceBuilder,
-                ElasticSearchIndexEnum.MAOCHE_OCEAN_MESSAGE_PRODUCT_INDEX,
+                ElasticSearchIndexEnum.MAOCHE_OCEAN_MESSAGE_SYNC_INDEX,
                 null,
                 OceanSearchService::convertMessageProduct,
                 null);
@@ -126,7 +127,7 @@ public class BrandLibService {
 
 
     // 获取品牌库的关键词数量
-    public void brandLibQuery(CatUnionProductCondition condition, BoolQueryBuilder builder) {
+    public void brandLibProductQuery(CatUnionProductCondition condition, BoolQueryBuilder builder) {
         List<String> brandLibKeywords = condition.getKeywords();
         if (CollectionUtils.isEmpty(brandLibKeywords)) {
             return;
@@ -293,7 +294,9 @@ public class BrandLibService {
         }
 
         BrandLibCondition condition = new BrandLibCondition();
-        condition.setFilterIds(Collections.singletonList(id));
+        if (id != null && id > 0) {
+            condition.setFilterIds(Collections.singletonList(id));
+        }
         condition.setKeywords(keywords);
 
         ElasticSearchData<MaocheBrandLibraryIndex, CatProductBucketTO> search = brandLibSearchService.search(condition, null, null, 0, 1000);

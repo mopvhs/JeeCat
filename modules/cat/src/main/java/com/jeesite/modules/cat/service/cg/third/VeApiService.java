@@ -26,14 +26,23 @@ public class VeApiService {
 
 
     // 超级搜索
-    public Result<JSONArray> tbSearch(String veKey, String id, String pid) {
+    public Result<JSONArray> tbSearch(String veKey, String id, String pid, Long relationId) {
         // 判空
         if (StringUtils.isBlank(veKey) || StringUtils.isBlank(id) || StringUtils.isBlank(pid)) {
             return Result.ERROR(400, "veKey不能为空");
         }
 
         // 700021007361678794ad9e04977e5d18515c3b2b1284eed41f1ad2ec0a1b63004744dcc53145618
-        String url = "http://api.veapi.cn/tbk/tb_search?sessionkey=700021007361678794ad9e04977e5d18515c3b2b1284eed41f1ad2ec0a1b63004744dcc53145618&tklink=1&item_id=%s&vekey=%s&pid=%s";
+//        String url = "http://api.veapi.cn/tbk/tb_search_update?sessionkey=700021007361678794ad9e04977e5d18515c3b2b1284eed41f1ad2ec0a1b63004744dcc53145618&tklink=1&item_id=%s&vekey=%s&pid=%s";
+
+        String url = "http://api.veapi.cn/tbk/tb_search_update" +
+                "?sessionkey=7000210023974d01668ed94ef9e035f8c2e50a3a5804845dcfd1b0a33ff532546f40a6e53145618" +
+                "&tklink=1" +
+                "&item_id=%s" +
+                "&vekey=%s" +
+                "&pid=%s";
+//                "&relation_id=%s";
+
         url = String.format(url, id, veKey, pid);
 //        Map<String, Object> objectMap = new HashMap<>();
 //        objectMap.put("item_id", id);

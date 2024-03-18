@@ -269,7 +269,7 @@ public class CgProductPushController {
 
         if (messagePushTO.getOnlyCoupon() != null && messagePushTO.getOnlyCoupon().equals(1)) {
             condition.setGteCoupon(1L);
-            condition.setGteCouponRemainCount(1L);
+//            condition.setGteCouponRemainCount(1L);
         }
 
         if (messagePushTO.getOnlyPriceChart() != null && messagePushTO.getOnlyPriceChart().equals(1)) {
@@ -497,7 +497,7 @@ public class CgProductPushController {
             // 该宝贝已下架或非淘客宝贝
             String message = eApiUrl.getMessage();
             if (StringUtils.isNotBlank(message) && message.contains("该宝贝已下架或非淘客宝贝")) {
-                Result<JSONArray> jsonArrayResult = veApiService.tbSearch(vekey, request.getItemId(), pid);
+                Result<JSONArray> jsonArrayResult = veApiService.tbSearch(vekey, request.getItemId(), pid, null);
                 if (!Result.isOK(jsonArrayResult) || CollectionUtils.isEmpty(jsonArrayResult.getResult())) {
                     List<Long> ids = Collections.singletonList(product.getId());
                     // 下架商品

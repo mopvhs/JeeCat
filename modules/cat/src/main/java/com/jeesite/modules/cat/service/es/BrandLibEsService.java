@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -47,6 +48,11 @@ public class BrandLibEsService {
         }
 
         doIndexEs(ruleDO);
+    }
+
+    public void delete(Long id) {
+
+        elasticSearch7Service.delIndex(Collections.singletonList(id), MAOCHE_BRAND_LIBRARY_INDEX);
     }
 
     public void doIndexEs(MaochePushTaskRuleDO ruleDO) {
@@ -105,6 +111,13 @@ public class BrandLibEsService {
         // 推送时间查询
         Long lastPushTime = brandLibService.getLastPushTime(id);
         Long nextPushTime = brandLibService.getNextPushTime(id);
+
+        List<Long> tags = new ArrayList<>();
+        if (StringUtils.isNotBlank(ruleDO.getTag())) {
+            tags = JsonUtils.toReferenceType(ruleDO.getTag(), new TypeReference<List<Long>>() {
+            });
+        }
+        index.setTags(tags);
 
         // 群今日新增 - 外部发单数量
         index.setGroupDailyInc(keywordsProductCnt);

@@ -5,6 +5,7 @@ import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageProductDO;
 import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageSyncDO;
 import com.jeesite.modules.cat.service.cg.third.dto.JdUnionIdPromotion;
 import com.jeesite.modules.cat.service.cg.third.tb.dto.CommandResponse;
+import com.jeesite.modules.cat.service.cg.third.tb.dto.CommandResponseV2;
 import com.jeesite.modules.cat.service.es.dto.MaocheMessageSyncIndex;
 import lombok.Data;
 
@@ -34,7 +35,7 @@ public class OceanContext implements Serializable {
     private List<MaocheRobotCrawlerMessageProductDO> messageProducts;
 
     // 淘宝api商品
-    private CommandResponse tbProduct;
+    private CommandResponseV2 tbProduct;
 
     // 京东api商品 (京东的消息一般会一条消息多个商品)
     private List<JdUnionIdPromotion> jdProducts;

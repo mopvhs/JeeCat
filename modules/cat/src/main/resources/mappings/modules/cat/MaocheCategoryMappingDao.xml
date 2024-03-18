@@ -11,5 +11,20 @@
 		</where>
 		ORDER BY ${sqlMap.order.toSql()}
 	</select> -->
-	
+
+	<select id="getByName" resultType="MaocheCategoryMappingDO">
+		SELECT *
+		FROM maoche_category_mapping
+		<where>
+			name = #{name} limit 1
+		</where>
+	</select>
+
+	<select id="getById" resultType="MaocheCategoryMappingDO">
+		SELECT *
+		FROM maoche_category_mapping
+		<where>
+			id = #{id}
+		</where>
+	</select>
 </mapper>

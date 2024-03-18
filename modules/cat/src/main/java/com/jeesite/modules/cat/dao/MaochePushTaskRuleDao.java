@@ -25,4 +25,6 @@ public interface MaochePushTaskRuleDao extends CrudDao<MaochePushTaskRuleDO> {
      * @return
      */
     List<MaochePushTaskRuleDO> likeKeyword(@Param("keyword") String keyword);
+
+    int deleteById(@Param("id") Long id);
 }

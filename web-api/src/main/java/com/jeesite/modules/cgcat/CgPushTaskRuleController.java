@@ -1,6 +1,8 @@
 package com.jeesite.modules.cgcat;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.jeesite.common.entity.Page;
+import com.jeesite.common.lang.NumberUtils;
 import com.jeesite.common.lang.StringUtils;
 import com.jeesite.common.utils.DateTimeUtils;
 import com.jeesite.common.utils.JsonUtils;
@@ -35,6 +37,7 @@ import com.jeesite.modules.cat.service.es.dto.PushTaskIndex;
 import com.jeesite.modules.cat.xxl.job.task.BrandLibCntIndexXxlJob;
 import com.jeesite.modules.cgcat.dto.BrandLibPageDetailVO;
 import com.jeesite.modules.cgcat.dto.ProductSpecificationTemplateVO;
+import com.jeesite.modules.cgcat.dto.PushTaskRuleDTO;
 import com.jeesite.modules.cgcat.dto.PushTaskRuleKeywordRequest;
 import com.jeesite.modules.cgcat.dto.PushTaskRuleRequest;
 import com.jeesite.modules.cgcat.dto.ocean.OceanMessageVO;
@@ -52,6 +55,7 @@ import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilde
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.joda.time.DateTime;
 import org.springframework.stereotype.Controller;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -170,6 +174,7 @@ public class CgPushTaskRuleController {
         BrandLibPageDetailVO detailVO = new BrandLibPageDetailVO();
         detailVO.setSuperStarOceans(superStarOceans);
 
+        detailVO.setQuantity(0L);
         detailVO.setBrandLibTaskCnt(dayCnt);
         detailVO.setYesterdayBrandLibTaskCnt(day2Cnt - dayCnt);
 
@@ -199,6 +204,7 @@ public class CgPushTaskRuleController {
         for (MaocheCategoryMappingDO item : roots) {
             BrandLibPageDetailVO.CategoryVO categoryVO =  new BrandLibPageDetailVO.CategoryVO();
             categoryVO.setName(item.getName());
+            categoryVO.setQuantity(0L);
             String key = "agg_" + item.getId();
             rootNameMap.put(key, categoryVO);
         }
@@ -269,9 +275,8 @@ public class CgPushTaskRuleController {
      */
     public Map<String, CatProductBucketTO> getBrandLibCategoryCnt(Date time) {
         PushTaskIndexCondition condition = new PushTaskIndexCondition();
-        // todo yhq
-//        totalCondition.setHadBrandLibId(true);
-//        condition.setStatus(TaskStatusEnum.FINISHED.name());
+        condition.setHadBrandLibId(true);
+        condition.setStatus(TaskStatusEnum.FINISHED.name());
         condition.setStatus(TaskStatusEnum.INIT.name());
         long startFinishedTime = 0;
         if (time != null) {
@@ -339,13 +344,18 @@ public class CgPushTaskRuleController {
         }
 
         int pageNo = page.getPageNo();
-        int pageSize = 10;
+        int pageSize = page.getPageSize() <= 0 ? 10 : page.getPageSize();
         int from = (pageNo - 1) * pageSize;
-        int size = pageSize;
 
-        condition.setSorts(List.of("id asc"));
+        processSorts(condition);
+        if (StringUtils.isNotBlank(condition.getRootCategoryName())) {
+            List<String> relationRootName = maocheCategoryMappingService.getRelationRootName(condition.getRootCategoryName());
+            if (CollectionUtils.isNotEmpty(relationRootName)) {
+                condition.setCategoryNames(relationRootName);
+            }
+        }
 
-        ElasticSearchData<MaocheBrandLibraryIndex, CatProductBucketTO> search = brandLibSearchService.search(condition, null, null, from, size);
+        ElasticSearchData<MaocheBrandLibraryIndex, CatProductBucketTO> search = brandLibSearchService.search(condition, null, null, from, pageSize);
         if (search == null) {
             return page;
         }
@@ -366,12 +376,53 @@ public class CgPushTaskRuleController {
         return toPage;
     }
 
+
+    public void processSorts(BrandLibCondition condition) {
+        List<String> sorts = condition.getSorts();
+        if (CollectionUtils.isEmpty(sorts)) {
+            condition.setSorts(List.of("id asc"));
+            return;
+        }
+        Map<String, String> sortMap = new HashMap<>();
+        sortMap.put("pushDailyIncDesc desc", "pushDailyInc desc");
+        sortMap.put("pushDailyIncDesc asc", "pushDailyInc asc");
+        sortMap.put("nextPushTimeDesc desc", "nextPushTime desc");
+        sortMap.put("nextPushTimeDesc asc", "nextPushTime asc");
+        sortMap.put("lastPushTimeDesc desc", "lastPushTime desc");
+        sortMap.put("lastPushTimeDesc asc", "lastPushTime asc");
+        sortMap.put("brand desc", "brand.keyword desc");
+        sortMap.put("brand asc", "brand.keyword asc");
+        sortMap.put("productName desc", "productName.keyword desc");
+        sortMap.put("productName asc", "productName.keyword asc");
+        // 替换
+        List<String> newSorts = new ArrayList<>();
+        for (String sort : sorts) {
+            if (StringUtils.isBlank(sort)) {
+                continue;
+            }
+            String newSort = Optional.ofNullable(sortMap.get(sort)).orElse(sort);
+            newSorts.add(newSort);
+        }
+
+        condition.setSorts(newSorts);
+    }
+
     // 新增或者修改规则
     @RequestMapping(value = "/product/push/task/rule/edit")
     @ResponseBody
     public Result<String> addOrUpdatePushTaskRule(@RequestBody PushTaskRuleRequest request) {
         if (request == null) {
             return Result.ERROR(400, "参数不能为空");
+        }
+
+        if (StringUtils.isBlank(request.getProductName())) {
+            return Result.ERROR(400, "品名不能为空");
+        }
+        if (StringUtils.isBlank(request.getBrand())) {
+            return Result.ERROR(400, "品牌不能为空");
+        }
+        if (request.getStar() == null) {
+            return Result.ERROR(400, "星级不能为空");
         }
 
         MaochePushTaskRuleDO ruleDO = new MaochePushTaskRuleDO();
@@ -390,6 +441,13 @@ public class CgPushTaskRuleController {
 
         ruleDO.setUpdateDate(new Date());
         ruleDO.setStatus("NORMAL");
+        ruleDO.setDescription(request.getDescribe());
+
+        List<Long> tagIds = new ArrayList<>();
+        if (CollectionUtils.isNotEmpty(request.getTagIds())) {
+            tagIds = request.getTagIds().stream().map(NumberUtils::toLong).collect(Collectors.toList());
+        }
+        ruleDO.setTag(JsonUtils.toJSONString(tagIds));
 
         // 判断关键词是否重复
         List<String> repeatKeywords = brandLibService.getRepeatKeywords(request.getId(), request.getKeywords());
@@ -420,6 +478,69 @@ public class CgPushTaskRuleController {
 
         return Result.OK("新增完成");
     }
+
+    // 删除规则
+    @RequestMapping(value = "/product/push/task/rule/delete")
+    @Validated
+    @ResponseBody
+    public Result<String> deletePushTaskRule(@RequestBody PushTaskRuleRequest request) {
+        if (request == null || request.getId() == null || request.getId() <= 0) {
+            return Result.ERROR(400, "参数不能为空");
+        }
+
+        long id = request.getId();
+        MaochePushTaskRuleDO query = new MaochePushTaskRuleDO();
+        query.setId(String.valueOf(id));
+        MaochePushTaskRuleDO ruleDO = maochePushTaskRuleService.get(query);
+        if (ruleDO == null) {
+            return Result.ERROR(404, "资源不存在，删除失败");
+        }
+        // 新增
+        maochePushTaskRuleService.deleteById(id);
+        brandLibEsService.delete(request.getId());
+
+        return Result.OK("删除完成");
+    }
+
+    // 规则详情获取
+    @RequestMapping(value = "/product/push/task/rule/get")
+    @ResponseBody
+    public Result<PushTaskRuleDTO> getPushRule(@RequestBody PushTaskRuleRequest request) {
+        if (request == null || request.getId() == null || request.getId() <= 0) {
+            return Result.ERROR(400, "参数不能为空");
+        }
+
+        long id = request.getId();
+        MaochePushTaskRuleDO query = new MaochePushTaskRuleDO();
+        query.setId(String.valueOf(id));
+        // 新增
+        MaochePushTaskRuleDO ruleDO = maochePushTaskRuleService.get(query);
+        if (ruleDO == null) {
+            return Result.ERROR(404, "资源不存在");
+        }
+
+        PushTaskRuleDTO dto = new PushTaskRuleDTO();
+        dto.setId(ruleDO.getUiid());
+        dto.setBrand(ruleDO.getBrand());
+        dto.setEnglishBrand(Optional.ofNullable(ruleDO.getEnglishBrand()).orElse(""));
+        dto.setProductName(ruleDO.getProductName());
+        dto.setKeywords(JsonUtils.toReferenceType(ruleDO.getKeyword(), new TypeReference<List<String>>() {
+        }));
+//        dto.setCategoryId(ruleDO.getCategoryId());
+        dto.setCategory(ruleDO.getCategoryName());
+//        dto.setLevelOneCategoryId(ruleDO.getLevelOneCategoryId());
+        dto.setLevelOneCategoryName(ruleDO.getLevelOneCategoryName());
+        dto.setStar(ruleDO.getStar());
+        dto.setPolling(ruleDO.getPolling());
+        dto.setDescribe(Optional.ofNullable(ruleDO.getDescription()).orElse(""));
+
+        List<Long> tagIds = Optional.ofNullable(JsonUtils.toReferenceType(ruleDO.getTag(), new TypeReference<List<Long>>() {
+        })).orElse(new ArrayList<>());
+        dto.setTagIds(tagIds);
+
+        return Result.OK(dto);
+    }
+
 
 
     // 获取关键词最大的类目
@@ -470,9 +591,17 @@ public class CgPushTaskRuleController {
             return Result.ERROR(400, "查询失败");
         }
 
+        String categoryName = maxCategory.getName();
+        String levelOneCategoryName = "宠物/宠物食品及用品";
+        // 获取父类
+        MaocheCategoryMappingDO category = maocheCategoryMappingService.getParentCategory(categoryName);
+        if (category != null) {
+            levelOneCategoryName = category.getName();
+        }
+
         Map<String, Object> data = new HashMap<>();
-        data.put("categoryName", maxCategory.getName());
-        data.put("levelOneCategoryName", "宠物/宠物食品及用品");
+        data.put("categoryName", categoryName);
+        data.put("levelOneCategoryName", levelOneCategoryName);
 
         return Result.OK(data);
     }

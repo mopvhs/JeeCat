@@ -24,13 +24,13 @@ public class CarAlimamaUnionProductIndex implements Serializable {
 //    private String couponId;
 //    private String couponInfo;
     // 优惠券数量
-    private Long couponRemainCount;
+    private Long couponRemainCount = 0L;
 //    private String couponShareUrl;
     // 优惠券起始金额
     private Long couponStartFee;
 //    @JSONField(format = "yyyy-MM-dd HH:mm:ss")
 //    private Date couponStartTime;
-    private Long couponTotalCount;
+    private Long couponTotalCount = 0L;
 //    private String includeDxjh;
 //    private String includeMkt;
 //    private String infoDxjh;
@@ -50,7 +50,7 @@ public class CarAlimamaUnionProductIndex implements Serializable {
     // 商品一口价格
     private Long reservePrice;
 //    private Long sellerId;
-    private Long shopDsr;
+    private Long shopDsr = 46666L;
 
     // 猫车分
     private Long catDsr;

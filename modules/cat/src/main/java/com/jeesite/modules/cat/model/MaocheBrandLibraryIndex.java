@@ -57,4 +57,6 @@ public class MaocheBrandLibraryIndex implements Serializable {
     // 下次推送时间
     private Long nextPushTime;
 
+    // 标签
+    private List<Long> tags;
 }

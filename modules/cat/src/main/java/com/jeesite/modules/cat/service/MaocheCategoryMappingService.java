@@ -172,4 +172,22 @@ public class MaocheCategoryMappingService extends CrudService<MaocheCategoryMapp
 
 		return rootCids;
 	}
+
+	// 获取父类
+	public MaocheCategoryMappingDO getParentCategory(String subCategoryName) {
+		if (StringUtils.isBlank(subCategoryName)) {
+			return null;
+		}
+		MaocheCategoryMappingDO byEntity = dao.getByName(subCategoryName);
+		if (byEntity == null) {
+			return null;
+		}
+
+		Long parentId = byEntity.getParentId();
+		if (parentId == null || parentId == 0L) {
+			return byEntity;
+		}
+
+		return dao.getById(parentId);
+	}
 }

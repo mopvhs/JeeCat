@@ -18,7 +18,7 @@ import org.apache.commons.lang3.math.NumberUtils;
 @Table(name="maoche_category_mapping", alias="a", label="maoche_category_mapping信息", columns={
 		@Column(name="id", attrName="id", label="id", isPK=true),
 		@Column(name="parent_id", attrName="parentId", label="parent_id", isUpdateForce=true),
-		@Column(name="name", attrName="name", label="name", queryType=QueryType.LIKE),
+		@Column(name="name", attrName="name", label="name"),
 		@Column(name="level", attrName="level", label="level", isUpdateForce=true),
 	}, orderBy="a.id DESC"
 )

@@ -29,6 +29,7 @@ import org.apache.commons.lang3.math.NumberUtils;
 		@Column(name="description", attrName="description", label="description"),
 		@Column(name="polling", attrName="polling", label="polling", isUpdateForce=true),
 		@Column(name="specifications", attrName="specifications", label="specifications"),
+		@Column(name="tag", attrName="tag", label="tag"),
 		@Column(includeEntity=DataEntity.class),
 	}, orderBy="a.update_date DESC"
 )
@@ -49,6 +50,7 @@ public class MaochePushTaskRuleDO extends DataEntity<MaochePushTaskRuleDO> {
 	private String description;		// description
 	private Long polling;		// polling
 	private String specifications;		// specifications
+	private String tag;
 
 	public MaochePushTaskRuleDO() {
 		this(null);
@@ -182,5 +184,13 @@ public class MaochePushTaskRuleDO extends DataEntity<MaochePushTaskRuleDO> {
 
 	public void setEnglishBrand(String englishBrand) {
 		this.englishBrand = englishBrand;
+	}
+
+	public String getTag() {
+		return tag;
+	}
+
+	public void setTag(String tag) {
+		this.tag = tag;
 	}
 }

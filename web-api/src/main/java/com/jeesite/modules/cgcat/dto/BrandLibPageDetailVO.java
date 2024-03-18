@@ -29,6 +29,11 @@ public class BrandLibPageDetailVO implements Serializable {
      */
     private long yesterdayBrandLibTaskCnt;
 
+    /**
+     * 定量
+     */
+    private Long quantity;
+
     private List<CategoryVO> categories;
 
 

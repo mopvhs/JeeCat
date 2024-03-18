@@ -7,6 +7,7 @@ import com.jeesite.common.web.Result;
 import com.jeesite.modules.cat.common.MtxHttpClientUtils;
 import com.jeesite.modules.cat.service.cg.CgUnionProductService;
 import com.jeesite.modules.cat.service.cg.third.tb.dto.CommandResponse;
+import com.jeesite.modules.cat.service.cg.third.tb.dto.CommandResponseV2;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.MapUtils;
 import org.apache.http.HttpEntity;
@@ -43,7 +44,7 @@ public class TbApiService {
      * @param extraMap
      * @return
      */
-    public Result<CommandResponse> getCommonCommand(String content, Map<String, Object> extraMap) {
+    public Result<CommandResponseV2> getCommonCommand(String content, Map<String, Object> extraMap) {
 
         // https://www.veapi.cn/apidoc/taobaolianmeng/283
         CloseableHttpClient httpClient = MtxHttpClientUtils.getHttpsClient();
@@ -87,7 +88,7 @@ public class TbApiService {
                     return Result.ERROR(error, jsonObject.getString("msg"));
                 }
 
-                CommandResponse data = jsonObject.getObject("data", CommandResponse.class);
+                CommandResponseV2 data = jsonObject.getObject("data", CommandResponseV2.class);
 
                 if (StringUtils.isNotBlank(data.getTbkPwd())) {
                     String replaceUrl = data.getTbkPwd();
@@ -100,9 +101,7 @@ public class TbApiService {
                     data.setTbkPwd(replaceUrl);
                 }
 
-                if (data != null) {
-                    return Result.OK(data);
-                }
+                return Result.OK(data);
             }
 
         } catch (Exception e) {
@@ -152,7 +151,7 @@ public class TbApiService {
                 }
             }
 
-            System.out.println(resp);
+
         } catch (Exception e) {
             log.error("decTbUrl 解密失败", e);
         }

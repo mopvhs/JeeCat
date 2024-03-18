@@ -33,6 +33,8 @@
 			<if test="createDate != null">create_date = #{createDate},</if>
 			<if test="updateDate != null">update_date = #{updateDate},</if>
 			<if test="remarks != null">remarks = #{remarks},</if>
+			<if test="englishBrand != null">english_brand = #{englishBrand},</if>
+			<if test="tag != null">tag = #{tag},</if>
 		</set>
 		WHERE id = #{id}
 
@@ -43,12 +45,12 @@
 		INSERT INTO maoche_push_task_rule (brand, product_name, keyword, category_id,
 		category_name, level_one_category_id, level_one_category_name, star,
 		description, polling, specifications, status, create_by,
-		update_by, create_date, update_date, remarks)
+		update_by, create_date, update_date, remarks, tag, english_brand)
 		VALUES
 		(#{brand}, #{productName}, #{keyword}, #{categoryId}, #{categoryName},
 		#{levelOneCategoryId}, #{levelOneCategoryName}, #{star}, #{description},
 		#{polling}, #{specifications}, #{status}, #{createBy}, #{updateBy},
-		#{createDate}, #{updateDate}, #{remarks});
+		#{createDate}, #{updateDate}, #{remarks}, #{tag}, #{englishBrand});
 
 	</insert>
 
@@ -61,5 +63,9 @@
 		</where>
 
 	</select>
+
+	<update id="deleteById">
+		DELETE FROM maoche_push_task_rule WHERE id = #{id}
+	</update>
 	
 </mapper>

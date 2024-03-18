@@ -14,6 +14,7 @@ import com.jeesite.modules.cat.service.cg.third.DingDanXiaApiService;
 import com.jeesite.modules.cat.service.cg.third.dto.JdUnionIdPromotion;
 import com.jeesite.modules.cat.service.cg.third.tb.TbApiService;
 import com.jeesite.modules.cat.service.cg.third.tb.dto.CommandResponse;
+import com.jeesite.modules.cat.service.cg.third.tb.dto.CommandResponseV2;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.stereotype.Component;
 
@@ -43,84 +44,54 @@ public class TaskDetailHelper {
         }
 
         Map<String, Object> objectMap = new HashMap<>();
-        objectMap.put("detail", 1);
+        objectMap.put("detail", 2);
         objectMap.put("deepcoupon", 1);
         // 口令解析
-        Result<CommandResponse> result = tbApiService.getCommonCommand(content, objectMap);
+        Result<CommandResponseV2> result = tbApiService.getCommonCommand(content, objectMap);
         if (!Result.isOK(result)) {
             return null;
         }
 
-        CommandResponse product = result.getResult();
+        CommandResponseV2 product = result.getResult();
+        CommandResponseV2.ItemBasicInfo itemBasicInfo = product.getItemBasicInfo();
+        CommandResponseV2.PricePromotionInfo pricePromotionInfo = product.getPricePromotionInfo();
 
         // todo short title需要加索引
-        String title = product.getShortTitle();
+        String title = itemBasicInfo.getShortTitle();
         if (StringUtils.isBlank(title)) {
-            title = product.getTitle();
+            title = itemBasicInfo.getTitle();
         }
-//        AbstraOceanStage.MatchContent matchContent = AbstraOceanStage.calMatchContent(CommandService.tb, messageSyncDO.getMsg());
-//        List<String> contents = matchContent.getContents();
 
-        CommandResponse tbProduct = result.getResult();
-
-        JSONObject productObject = JsonUtils.toJsonObject(JsonUtils.toJSONString(tbProduct));
+        JSONObject productObject = JsonUtils.toJsonObject(JsonUtils.toJSONString(itemBasicInfo));
 
         TaskDetail detail = new TaskDetail();
         ProductDetail productDetail = new ProductDetail();
-        productDetail.setResourceId(tbProduct.getNumIid());
+        productDetail.setResourceId(product.getNumIid());
         productDetail.setResourceType("tb");
         // todo yhq
         productDetail.setUniqueId("");
-        productDetail.setPrice(PriceHelper.formatPrice(product.getReservePrice()));
+        productDetail.setPrice(PriceHelper.formatPrice(pricePromotionInfo.getReservePrice()));
         productDetail.setPayPrice(ProductValueHelper.calVeApiPromotionPrice(productObject));
         productDetail.setTitle(title);
-        productDetail.setCategoryName(tbProduct.getCatLeafName());
+        productDetail.setCategoryName(itemBasicInfo.getCategoryName());
         productDetail.setCommand(product.getTbkPwd());
 
-        String pictUrl = product.getPictUrl();
+        String pictUrl = itemBasicInfo.getPictUrl();
         productDetail.setImgs(Collections.singletonList(pictUrl));
 
         productDetail.setNum(1);
 //        productDetail.setDiscountPrice(productDetail.getPayPrice());
         List<NameDetail> coupons = new ArrayList<>();
         // 优惠券是否可用
-        if (StringUtils.isNotBlank(tbProduct.getCouponInfo())) {
+        if (StringUtils.isNotBlank(product.getCouponInfo())) {
             NameDetail couponDetail = new NameDetail();
-            couponDetail.setName(tbProduct.getCouponInfo());
-            couponDetail.setContent(tbProduct.getCouponShortUrl());
+            couponDetail.setName(product.getCouponInfo());
+            couponDetail.setContent(product.getCouponShortUrl());
 
             coupons.add(couponDetail);
         }
 
         productDetail.setCoupons(coupons);
-
-//        List<PromotionTagTO> promotionTags = product.getPromotionTags();
-//        if (CollectionUtils.isNotEmpty(promotionTags)) {
-//            detail.setGoodProducts(promotionTags.stream().map(PromotionTagTO::getTagDisplay).toList());
-//        }
-
-        // sku信息
-//        if (bihaohuoDO != null && StringUtils.isNotEmpty(bihaohuoDO.getOrigContent())) {
-//            JSONObject jsonObject = JsonUtils.toJsonObject(bihaohuoDO.getOrigContent());
-//            JSONObject skuBase = ProductValueHelper.getSkuBase(jsonObject);
-//            if (skuBase != null) {
-//                Map<String, Map<String, Object>> skuMap = JsonUtils.toReferenceType(skuBase.toJSONString(), new TypeReference<Map<String, Map<String, Object>>>() {
-//                });
-//                if (MapUtils.isNotEmpty(skuMap)) {
-//                    for (Map.Entry<String, Map<String, Object>> entry : skuMap.entrySet()) {
-//                        Map<String, Object> value = entry.getValue();
-//                        if (MapUtils.isEmpty(value)) {
-//                            continue;
-//                        }
-//                        Long skuId = MapUtils.getLong(value, "skuId");
-//                        String skuProperty = MapUtils.getString(value, "skuProperty");
-//                        TaskSkuDetail skuDetail = new TaskSkuDetail(String.valueOf(skuId), skuProperty);
-//                        detail.setSku(skuDetail);
-//                        break;
-//                    }
-//                }
-//            }
-//        }
 
         detail.setDesc(content);
         detail.setProducts(Collections.singletonList(productDetail));

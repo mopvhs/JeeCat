@@ -149,9 +149,8 @@ public class PushTaskIndex implements Serializable {
 
         index.setBrandLibIds(new ArrayList<>());
         if (taskProductDetail != null) {
-            List<NameDetail> topics = taskProductDetail.getTopics();
-            if (CollectionUtils.isNotEmpty(topics)) {
-                List<Long> brandLibIds = topics.stream().filter(c -> StringUtils.isNotBlank(c.getId())).map(c -> NumberUtils.toLong(c.getId())).distinct().toList();
+            if (CollectionUtils.isNotEmpty(taskProductDetail.getTopics())) {
+                List<Long> brandLibIds = taskProductDetail.getTopics().stream().map(NumberUtils::toLong).filter(i -> i > 0).distinct().collect(Collectors.toList());
                 if (CollectionUtils.isNotEmpty(brandLibIds)) {
                     index.setBrandLibIds(brandLibIds);
                 }

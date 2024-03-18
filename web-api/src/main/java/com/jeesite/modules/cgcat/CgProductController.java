@@ -143,7 +143,7 @@ public class CgProductController {
 
         int from = (page.getPageNo() - 1) * page.getPageSize();
         int size = page.getPageSize();
-        ElasticSearchData<CarAlimamaUnionProductIndex, CatProductBucketTO> searchData = cgUnionProductService.searchProduct(condition, null, brandLibService::brandLibQuery, from, size);
+        ElasticSearchData<CarAlimamaUnionProductIndex, CatProductBucketTO> searchData = cgUnionProductService.searchProduct(condition, null, brandLibService::brandLibProductQuery, from, size);
         if (searchData == null) {
             return page;
         }
