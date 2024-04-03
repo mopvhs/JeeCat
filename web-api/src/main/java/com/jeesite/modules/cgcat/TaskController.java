@@ -96,7 +96,8 @@ public class TaskController {
             MaocheTaskDO taskDO = maocheTaskService.get(maocheTaskDO);
             if (taskDO == null) {
                 return null;
-            }            List<MaochePushTaskDO> pushTaskDOs = maochePushTaskService.getByTaskIds(Collections.singletonList(req.getTaskId()));
+            }
+            List<MaochePushTaskDO> pushTaskDOs = maochePushTaskService.getByTaskIds(Collections.singletonList(req.getTaskId()));
             if (CollectionUtils.isEmpty(pushTaskDOs) || pushTaskDOs.size() > 1) {
                 return null;
             }
@@ -126,7 +127,6 @@ public class TaskController {
             taskInfo.setPushTaskId(pushTaskDO.getId());
             String detail = pushTaskDO.getDetail();
             if (StringUtils.isNotBlank(detail)) {
-
                 TaskDetail taskDetail = JsonUtils.toReferenceType(detail, new TypeReference<TaskDetail>() {
                 });
                 taskInfo.setDetail(taskDetail);

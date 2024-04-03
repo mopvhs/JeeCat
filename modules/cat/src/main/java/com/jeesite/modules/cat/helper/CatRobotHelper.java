@@ -3,6 +3,7 @@ package com.jeesite.modules.cat.helper;
 import com.alibaba.fastjson.JSON;
 import com.jeesite.common.lang.StringUtils;
 import com.jeesite.modules.cat.aop.EsItemAspect;
+import com.jeesite.modules.cat.aop.MaocheBrandIndex;
 import com.jeesite.modules.cat.model.CarAlimamaUnionProductIndex;
 import com.jeesite.modules.cat.model.CatProductBucketTO;
 import com.jeesite.modules.cat.model.CarRobotCrawlerMessageIndex;
@@ -50,6 +51,10 @@ public class CatRobotHelper {
     public static CarAlimamaUnionProductIndex convertUnionProduct(String index) {
 
         return JSON.parseObject(index, CarAlimamaUnionProductIndex.class);
+    }
+    public static MaocheBrandIndex convertMaocheBrand(String index) {
+
+        return JSON.parseObject(index, MaocheBrandIndex.class);
     }
 
     public static MaocheProductIndex convertMaocheProduct(String index) {

@@ -18,6 +18,7 @@ import com.jeesite.modules.cat.helper.CatRobotHelper;
 import com.jeesite.modules.cat.model.BrandLibTO;
 import com.jeesite.modules.cat.model.CarAlimamaUnionProductIndex;
 import com.jeesite.modules.cat.model.CatProductBucketTO;
+import com.jeesite.modules.cat.model.SpecificationTO;
 import com.jeesite.modules.cat.model.condition.CatUnionProductCondition;
 import com.jeesite.modules.cat.model.MaocheBrandLibraryIndex;
 import com.jeesite.modules.cat.model.condition.PushTaskIndexCondition;
@@ -438,6 +439,7 @@ public class CgPushTaskRuleController {
 
         ruleDO.setStar(request.getStar());
         ruleDO.setPolling(request.getPolling());
+        ruleDO.setSpecifications(JsonUtils.toJSONString(request.getSpecifications()));
 
         ruleDO.setUpdateDate(new Date());
         ruleDO.setStatus("NORMAL");
@@ -533,6 +535,9 @@ public class CgPushTaskRuleController {
         dto.setStar(ruleDO.getStar());
         dto.setPolling(ruleDO.getPolling());
         dto.setDescribe(Optional.ofNullable(ruleDO.getDescription()).orElse(""));
+
+        dto.setSpecifications(JsonUtils.toReferenceType(ruleDO.getSpecifications(), new TypeReference<List<SpecificationTO>>() {
+        }));
 
         List<Long> tagIds = Optional.ofNullable(JsonUtils.toReferenceType(ruleDO.getTag(), new TypeReference<List<Long>>() {
         })).orElse(new ArrayList<>());

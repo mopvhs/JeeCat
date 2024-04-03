@@ -93,8 +93,9 @@ public final class JsonUtils {
 
             return OM.readValue(jsonString, typeReference);
         } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+            log.error("json转换异常 jsonString:{}", jsonString, e);
         }
+        return null;
     }
 
     /**

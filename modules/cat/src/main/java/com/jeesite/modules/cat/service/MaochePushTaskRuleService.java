@@ -160,6 +160,18 @@ public class MaochePushTaskRuleService extends CrudService<MaochePushTaskRuleDao
 		return new ArrayList<>();
 	}
 
+	public MaochePushTaskRuleDO getById(Long id) {
+
+		if (id == null || id <= 0) {
+			return null;
+		}
+		MaochePushTaskRuleDO ruleQuery = new MaochePushTaskRuleDO();
+		ruleQuery.setId(String.valueOf(id));
+		MaochePushTaskRuleDO rule = dao.getByEntity(ruleQuery);
+
+		return rule;
+	}
+
 	/**
 	 * 获取所有的品牌库
 	 * @return

@@ -42,6 +42,8 @@ import com.jeesite.modules.cat.service.cg.CgUserRcmdService;
 import com.jeesite.modules.cat.service.cg.DaTaoKeApiService;
 import com.jeesite.modules.cat.service.cg.inner.InnerApiService;
 import com.jeesite.modules.cat.service.cg.third.VeApiService;
+import com.jeesite.modules.cat.service.cg.third.tb.TbApiService;
+import com.jeesite.modules.cat.service.cg.third.tb.dto.CommandResponseV2;
 import com.jeesite.modules.cat.service.helper.ProductSearchHelper;
 import com.jeesite.modules.cat.service.message.DingDingService;
 import com.jeesite.modules.cgcat.dto.HistorySearchKeywordVO;
@@ -114,6 +116,9 @@ public class CgProductPushController {
 
     @Resource
     private InnerApiService innerApiService;
+
+    @Resource
+    private TbApiService tbApiService;
 
     // 微信企业 @推送商品
     @RequestMapping(value = "/product/rcmd/robot/at")
@@ -476,68 +481,73 @@ public class CgProductPushController {
         if (request == null || StringUtils.isBlank(request.getItemId())) {
             return Result.ERROR(404, "参数错误");
         }
-        String vekey = "V73687541H40026415";
-        String pid = "mm_30153430_909250463_109464700418";
-        Result<String> eApiUrl = cgUnionProductService.getEApiUrl(vekey, request.getItemId(), pid);
-        if (!Result.isOK(eApiUrl)) {
+//        String vekey = "V73687541H40026415";
+//        String pid = "mm_30153430_909250463_109464700418";
+//        Result<String> eApiUrl = cgUnionProductService.getEApiUrl(vekey, request.getItemId(), pid);
+        Map<String, Object> objectMap = new HashMap<>();
+        objectMap.put("detail", 2);
+        objectMap.put("deepcoupon", 1);
+        objectMap.put("couponId", 1);
+        Result<CommandResponseV2> commonCommand = tbApiService.getCommonCommand(request.getItemId(), objectMap);
+
+        if (!Result.isOK(commonCommand) || commonCommand.getResult() == null || StringUtils.isBlank(commonCommand.getResult().getTbkPwd())) {
             String errorMsg = "哎呀，来晚了，宝贝卖完啦！";
 
-            CatUnionProductCondition condition = new CatUnionProductCondition();
-            condition.setItemId(request.getItemId());
+//            CatUnionProductCondition condition = new CatUnionProductCondition();
+//            condition.setItemId(request.getItemId());
+//
+//            ElasticSearchData<CarAlimamaUnionProductIndex, CatProductBucketTO> search = cgUnionProductService.searchProduct(condition, null, 0, 1);
+//            if (search == null || CollectionUtils.isEmpty(search.getDocuments())) {
+                return Result.ERROR(500, errorMsg);
+//            }
 
-            ElasticSearchData<CarAlimamaUnionProductIndex, CatProductBucketTO> search = cgUnionProductService.searchProduct(condition, null, 0, 1);
-            if (search == null || CollectionUtils.isEmpty(search.getDocuments())) {
-                eApiUrl.setMessage(errorMsg);
-                return eApiUrl;
-            }
-
-            List<CarAlimamaUnionProductIndex> documents = search.getDocuments();
-            CarAlimamaUnionProductIndex product = documents.get(0);
+//            List<CarAlimamaUnionProductIndex> documents = search.getDocuments();
+//            CarAlimamaUnionProductIndex product = documents.get(0);
             // 判断错误信息
             // 该宝贝已下架或非淘客宝贝
-            String message = eApiUrl.getMessage();
-            if (StringUtils.isNotBlank(message) && message.contains("该宝贝已下架或非淘客宝贝")) {
-                Result<JSONArray> jsonArrayResult = veApiService.tbSearch(vekey, request.getItemId(), pid, null);
-                if (!Result.isOK(jsonArrayResult) || CollectionUtils.isEmpty(jsonArrayResult.getResult())) {
-                    List<Long> ids = Collections.singletonList(product.getId());
-                    // 下架商品
-                    int row = maocheAlimamaUnionProductDao.updateSaleStatus(ids, SaleStatusEnum.OFF_SHELF.getStatus(), null);
-                    // 日志
-                    CsOpLogDO item = new CsOpLogDO();
-                    item.setResourceId(String.valueOf(product.getId()));
-                    item.setResourceType("maoche_product");
-                    item.setOpType("shared_command_auto_off_shelf");
-                    item.setBizType("maoche");
-                    item.setDescribe("口令普通商品自动下架");
-                    item.setOrigionContent("");
-                    item.setChangeContent("操作结果:" + row);
-                    item.setCreateDate(new Date());
-                    item.setUpdateDate(new Date());
-                    item.setCreateBy("system");
-                    item.setUpdateBy("system");
-                    item.setRemarks("");
-                    csOpLogService.save(item);
-                    // 更新索引
-                    List<MaocheAlimamaUnionProductDO> productDOs = maocheAlimamaUnionProductService.listByIds(ids);
-                    cgUnionProductService.indexEs(productDOs, 10);
-                    dingDingService.sendParseDingDingMsg("口令普通商品自动下架操作完成，ids:{}", JsonUtils.toJSONString(ids));
-                    return Result.ERROR(jsonArrayResult.getCode(), errorMsg);
-                }
-                // 更新商品，重新获取口令
-                JSONObject jsonObject = jsonArrayResult.getResult().getJSONObject(0);
-                String newItemId = jsonObject.getString("item_id");
-
-                // 更新商品
-                innerApiService.syncTbProduct(newItemId);
-                eApiUrl = cgUnionProductService.getEApiUrl(vekey, newItemId, pid);
-                if (!Result.isOK(eApiUrl)) {
-                    eApiUrl.setMessage(errorMsg);
-                    return eApiUrl;
-                }
-            }
+//            String message = commonCommand.getMessage();
+//            if (StringUtils.isNotBlank(message) && message.contains("该宝贝已下架或非淘客宝贝")) {
+//                Result<JSONArray> jsonArrayResult = veApiService.tbSearch(vekey, request.getItemId(), pid, null);
+//                if (!Result.isOK(jsonArrayResult) || CollectionUtils.isEmpty(jsonArrayResult.getResult())) {
+//                    List<Long> ids = Collections.singletonList(product.getId());
+//                    // 下架商品
+//                    int row = maocheAlimamaUnionProductDao.updateSaleStatus(ids, SaleStatusEnum.OFF_SHELF.getStatus(), null);
+//                    // 日志
+//                    CsOpLogDO item = new CsOpLogDO();
+//                    item.setResourceId(String.valueOf(product.getId()));
+//                    item.setResourceType("maoche_product");
+//                    item.setOpType("shared_command_auto_off_shelf");
+//                    item.setBizType("maoche");
+//                    item.setDescribe("口令普通商品自动下架");
+//                    item.setOrigionContent("");
+//                    item.setChangeContent("操作结果:" + row);
+//                    item.setCreateDate(new Date());
+//                    item.setUpdateDate(new Date());
+//                    item.setCreateBy("system");
+//                    item.setUpdateBy("system");
+//                    item.setRemarks("");
+//                    csOpLogService.save(item);
+//                    // 更新索引
+//                    List<MaocheAlimamaUnionProductDO> productDOs = maocheAlimamaUnionProductService.listByIds(ids);
+//                    cgUnionProductService.indexEs(productDOs, 10);
+//                    dingDingService.sendParseDingDingMsg("口令普通商品自动下架操作完成，ids:{}", JsonUtils.toJSONString(ids));
+//                    return Result.ERROR(jsonArrayResult.getCode(), errorMsg);
+//                }
+//                // 更新商品，重新获取口令
+//                JSONObject jsonObject = jsonArrayResult.getResult().getJSONObject(0);
+//                String newItemId = jsonObject.getString("item_id");
+//
+//                // 更新商品
+//                innerApiService.syncTbProduct(newItemId);
+//                eApiUrl = cgUnionProductService.getEApiUrl(vekey, newItemId, pid);
+//                if (!Result.isOK(eApiUrl)) {
+//                    eApiUrl.setMessage(errorMsg);
+//                    return eApiUrl;
+//                }
+//            }
         }
-
-        return Result.OK(eApiUrl.getResult());
+        CommandResponseV2 result = commonCommand.getResult();
+        return Result.OK(result.getTbkPwd());
     }
 
     // 历史查询记录

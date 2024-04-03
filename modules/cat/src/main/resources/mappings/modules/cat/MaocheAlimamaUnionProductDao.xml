@@ -29,7 +29,7 @@
 
 	<sql id="Simple_Column_List">
 		id,
-		orig_content,
+<!--		orig_content,-->
 		iid,
 		item_id,
 		item_id_suffix,

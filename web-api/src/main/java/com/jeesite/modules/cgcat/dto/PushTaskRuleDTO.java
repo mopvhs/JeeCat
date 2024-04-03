@@ -1,5 +1,6 @@
 package com.jeesite.modules.cgcat.dto;
 
+import com.jeesite.modules.cat.model.SpecificationTO;
 import lombok.Data;
 
 import java.io.Serial;
@@ -47,4 +48,7 @@ public class PushTaskRuleDTO implements Serializable {
 
     // 标签
     private List<Long> tagIds;
+
+    // 规格
+    private List<SpecificationTO> specifications;
 }

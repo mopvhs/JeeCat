@@ -61,7 +61,6 @@ public class OceanSyncService {
         }
 
         String offset = String.valueOf(messages.get(messages.size() - 1).getId());
-        // todo yhq 处理数据
         // 一个一个的解析
         for (MaocheRobotCrawlerMessageDO message : messages) {
             offset = String.valueOf(message.getId());
@@ -75,59 +74,6 @@ public class OceanSyncService {
             } catch (Exception e) {
                 break;
             }
-
-//            else if (message.getAffType().equals("jd")) {
-//
-//                Map<String, String> urlMap = new HashMap<>();
-//                List<String> urls = new ArrayList<>();
-//                String[] split = StringUtils.split(content, "\n");
-//                for (String item : split) {
-//                    Matcher matcher = CommandService.jd.matcher(item);
-//                    if (matcher.find()) {
-//                        String group = matcher.group();
-//                        urlMap.put(group, "");
-//                        urls.add(group);
-//                    }
-//                }
-//
-//                if (MapUtils.isEmpty(urlMap)) {
-//                    Map<String, Object> remarks = new HashMap<>();
-//                    remarks.put("api_error", "正则匹配链接未找到");
-//                    messageSyncDO.setStatus("FAIL");
-//                    messageSyncDO.setRemarks(JsonUtils.toJSONString(remarks));
-//                    // 写入
-//                    maocheRobotCrawlerMessageSyncService.save(messageSyncDO);
-//                    return Result.ERROR(500, "需要替换的链接分析失败");
-//                }
-//
-//                List<JdUnionIdPromotion> promotions = new ArrayList<>();
-//                for (String url : urls) {
-//                    Result<JdUnionIdPromotion> result = dingDanXiaApiService.jdByUnionidPromotion("FHPOsYO7zki7tcrxp0amyGMP7wxVkbU3", url, 1002248572L, 3100684498L);
-//                    if (Result.isOK(result)) {
-//                        JdUnionIdPromotion promotion = result.getResult();
-//                        if (promotion.getSkuId() == null || promotion.getSkuId() <= 0) {
-//                            continue;
-//                        }
-//                        promotions.add(promotion);
-//                    }
-//                }
-//
-//                if (CollectionUtils.isEmpty(promotions)) {
-//                    continue;
-//                }
-//
-//                List<Long> skuIds = promotions.stream().map(JdUnionIdPromotion::getSkuId).toList();
-//
-//                messageSyncDO.setProcessed(1L);
-//                messageSyncDO.setResourceIds(StringUtils.join(skuIds, ","));
-//                messageSyncDO.setStatus("NORMAL");
-//                maocheRobotCrawlerMessageSyncService.save(messageSyncDO);
-//
-//                for (JdUnionIdPromotion promotion : promotions) {
-//                    MaocheRobotCrawlerMessageProductDO productDO = buildMessageProduct(messageSyncDO, promotion);
-//                    maocheRobotCrawlerMessageProductService.save(productDO);
-//                }
-//            }
         }
 
         // 更新位点

@@ -56,7 +56,6 @@ public class TaskDetailHelper {
         CommandResponseV2.ItemBasicInfo itemBasicInfo = product.getItemBasicInfo();
         CommandResponseV2.PricePromotionInfo pricePromotionInfo = product.getPricePromotionInfo();
 
-        // todo short title需要加索引
         String title = itemBasicInfo.getShortTitle();
         if (StringUtils.isBlank(title)) {
             title = itemBasicInfo.getTitle();
@@ -68,7 +67,6 @@ public class TaskDetailHelper {
         ProductDetail productDetail = new ProductDetail();
         productDetail.setResourceId(product.getNumIid());
         productDetail.setResourceType("tb");
-        // todo yhq
         productDetail.setUniqueId("");
         productDetail.setPrice(PriceHelper.formatPrice(pricePromotionInfo.getReservePrice()));
         productDetail.setPayPrice(ProductValueHelper.calVeApiPromotionPrice(productObject));
@@ -80,7 +78,6 @@ public class TaskDetailHelper {
         productDetail.setImgs(Collections.singletonList(pictUrl));
 
         productDetail.setNum(1);
-//        productDetail.setDiscountPrice(productDetail.getPayPrice());
         List<NameDetail> coupons = new ArrayList<>();
         // 优惠券是否可用
         if (StringUtils.isNotBlank(product.getCouponInfo())) {

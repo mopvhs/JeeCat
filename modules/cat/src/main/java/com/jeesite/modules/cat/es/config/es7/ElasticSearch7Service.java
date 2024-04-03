@@ -2,7 +2,10 @@ package com.jeesite.modules.cat.es.config.es7;
 
 import com.alibaba.fastjson.JSON;
 import com.google.common.collect.Lists;
+import com.jeesite.common.io.IOUtils;
+import com.jeesite.common.lang.NumberUtils;
 import com.jeesite.common.lang.StringUtils;
+import com.jeesite.common.utils.JsonUtils;
 import com.jeesite.modules.cat.enums.ElasticSearchIndexEnum;
 import com.jeesite.modules.cat.es.config.model.ElasticSearchData;
 import io.netty.util.concurrent.DefaultThreadFactory;
@@ -10,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.apache.http.nio.entity.ContentInputStream;
 import org.apache.lucene.search.TotalHits;
 import org.elasticsearch.action.DocWriteResponse;
 import org.elasticsearch.action.delete.DeleteRequest;
@@ -38,6 +42,11 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -450,5 +459,35 @@ public class ElasticSearch7Service {
 
         return 0;
     }
+
+
+//    public static void main(String[] args) {
+//
+//
+//        String fileName = "/Users/yhq/Downloads/mtx/brand";
+//
+//        String index = "{\"index\":{\"_index\":\"maoche_brand\",\"_type\":\"_doc\"}}";
+//        try {
+//            try (BufferedReader br = new BufferedReader(new FileReader(fileName))) {
+//                String line;
+//                while ((line = br.readLine()) != null) {
+//                    Map<String, Object> data = new HashMap<>();
+//                    // 处理读取到的每一行
+//                    String[] split = StringUtils.split(line, ",");
+//                    data.put("id", NumberUtils.toLong(split[0]));
+//                    data.put("brand", split[1]);
+//
+//                    System.out.println(index);
+//                    System.out.println(JsonUtils.toJSONString(data));
+//                }
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
+//
+//        }catch (Exception e) {
+//
+//        }
+//    }
+
 
 }

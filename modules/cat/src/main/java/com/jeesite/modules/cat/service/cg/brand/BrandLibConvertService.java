@@ -1,7 +1,9 @@
 package com.jeesite.modules.cat.service.cg.brand;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.jeesite.common.lang.StringUtils;
 import com.jeesite.common.utils.DateTimeUtils;
+import com.jeesite.common.utils.JsonUtils;
 import com.jeesite.modules.cat.enums.ElasticSearchIndexEnum;
 import com.jeesite.modules.cat.enums.task.TaskStatusEnum;
 import com.jeesite.modules.cat.es.config.es7.ElasticSearch7Service;
@@ -11,6 +13,7 @@ import com.jeesite.modules.cat.model.BrandLibTO;
 import com.jeesite.modules.cat.model.CarAlimamaUnionProductIndex;
 import com.jeesite.modules.cat.model.CatProductBucketTO;
 import com.jeesite.modules.cat.model.MaocheBrandLibraryIndex;
+import com.jeesite.modules.cat.model.SpecificationTO;
 import com.jeesite.modules.cat.model.condition.CatUnionProductCondition;
 import com.jeesite.modules.cat.model.condition.PushTaskIndexCondition;
 import com.jeesite.modules.cat.model.ocean.OceanMessageCondition;
@@ -90,6 +93,13 @@ public class BrandLibConvertService {
         }
 
         brandLibTO.setTagIds(index.getTags());
+
+        try {
+            brandLibTO.setSpecifications(JsonUtils.toReferenceType(index.getSpecifications(), new TypeReference<List<SpecificationTO>>() {
+            }));
+        } catch (Exception e) {
+            log.error("规格转换异常 id{}, {}", index.getId(), index.getSpecifications(), e);
+        }
         return brandLibTO;
     }
 }

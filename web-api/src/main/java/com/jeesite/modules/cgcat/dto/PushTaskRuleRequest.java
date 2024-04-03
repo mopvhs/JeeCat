@@ -58,5 +58,5 @@ public class PushTaskRuleRequest implements Serializable {
     private List<String> tagIds;
 
     // 规格
-    private List<String> specifications;
+    private List<SpecificationVO> specifications;
 }

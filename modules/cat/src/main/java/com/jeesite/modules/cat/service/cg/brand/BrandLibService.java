@@ -3,6 +3,7 @@ package com.jeesite.modules.cat.service.cg.brand;
 import com.jeesite.common.lang.StringUtils;
 import com.jeesite.common.utils.DateTimeUtils;
 import com.jeesite.modules.cat.BrandLibCondition;
+import com.jeesite.modules.cat.aop.MaocheBrandIndex;
 import com.jeesite.modules.cat.enums.ElasticSearchIndexEnum;
 import com.jeesite.modules.cat.enums.task.TaskStatusEnum;
 import com.jeesite.modules.cat.es.config.es7.ElasticSearch7Service;
@@ -35,6 +36,9 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static com.jeesite.modules.cat.enums.ElasticSearchIndexEnum.MAOCHE_BRAND_INDEX;
+import static com.jeesite.modules.cat.enums.ElasticSearchIndexEnum.MAOCHE_BRAND_LIBRARY_INDEX;
 
 @Slf4j
 @Component
@@ -321,5 +325,21 @@ public class BrandLibService {
         return keywords.stream().filter(allKeywords::contains).collect(Collectors.toList());
     }
 
+    // 品牌信息
+    public ElasticSearchData<MaocheBrandIndex, Object> suggestBrands(String keyword, int from, int size) {
+
+        if (size <= 0) {
+            size = 20;
+        }
+        BoolQueryBuilder queryBuilder = new BoolQueryBuilder();
+        queryBuilder.must(QueryBuilders.matchPhrasePrefixQuery("brand.kw", keyword));
+
+        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+        searchSourceBuilder.from(from)
+                .size(size)
+                .query(queryBuilder);
+
+        return elasticSearch7Service.search(searchSourceBuilder, MAOCHE_BRAND_INDEX, CatRobotHelper::convertMaocheBrand, null);
+    }
 
 }

@@ -5,20 +5,28 @@ import com.jeesite.common.lang.DateUtils;
 import com.jeesite.common.lang.NumberUtils;
 import com.jeesite.common.lang.StringUtils;
 import com.jeesite.common.web.Result;
+import com.jeesite.modules.cat.BrandLibCondition;
 import com.jeesite.modules.cat.entity.MaocheCategoryMappingDO;
+import com.jeesite.modules.cat.entity.MaochePushTaskRuleDO;
 import com.jeesite.modules.cat.es.config.model.ElasticSearchData;
 import com.jeesite.modules.cat.helper.CatRobotHelper;
+import com.jeesite.modules.cat.model.BrandLibTO;
 import com.jeesite.modules.cat.model.CarAlimamaUnionProductIndex;
 import com.jeesite.modules.cat.model.CatProductBucketTO;
+import com.jeesite.modules.cat.model.MaocheBrandLibraryIndex;
 import com.jeesite.modules.cat.model.condition.CatUnionProductCondition;
 import com.jeesite.modules.cat.model.UnionProductTO;
 import com.jeesite.modules.cat.model.ocean.OceanMessageCondition;
 import com.jeesite.modules.cat.model.ocean.OceanMessageProductCondition;
 import com.jeesite.modules.cat.service.FlameHttpService;
 import com.jeesite.modules.cat.service.MaocheCategoryMappingService;
+import com.jeesite.modules.cat.service.MaochePushTaskRuleService;
 import com.jeesite.modules.cat.service.MaocheRobotCrawlerMessageProductService;
 import com.jeesite.modules.cat.service.cg.CgUnionProductService;
+import com.jeesite.modules.cat.service.cg.brand.BrandLibConvertService;
+import com.jeesite.modules.cat.service.cg.brand.BrandLibService;
 import com.jeesite.modules.cat.service.cg.ocean.OceanSearchService;
+import com.jeesite.modules.cat.service.cg.search.BrandLibSearchService;
 import com.jeesite.modules.cat.service.es.dto.MaocheMessageProductIndex;
 import com.jeesite.modules.cat.service.es.dto.MaocheMessageSyncIndex;
 import com.jeesite.modules.cgcat.dto.ProductCategoryVO;
@@ -71,72 +79,88 @@ public class OceanController {
     @Resource
     private MaocheCategoryMappingService maocheCategoryMappingService;
 
-    @RequestMapping(value = "ocean/msg/product/search")
-    public Page<OceanMessageProductVO> oceanMsgProductSearch(@RequestBody OceanMsgProductSearchRequest query,
-                                                             HttpServletRequest request, HttpServletResponse response) {
-        Page<OceanMessageProductVO> page = new Page<>(request, response);
-        if (query == null) {
-            return page;
-        }
+    @Resource
+    private BrandLibConvertService brandLibConvertService;
 
-        OceanMessageProductCondition condition = new OceanMessageProductCondition();
-        // todo yhq 默认先写时间倒序
-        condition.setSorts(Collections.singletonList("createDate desc"));
-        if (StringUtils.isNotBlank(query.getKeyword())) {
-            condition.setTitle(query.getKeyword());
-        }
-        int size = page.getPageSize();
-        if (size <= 0) {
-            size = 10;
-        }
+    @Resource
+    private BrandLibSearchService brandLibSearchService;
 
-        int from = (page.getPageNo() - 1) * size;
+    @Resource
+    private BrandLibService brandLibService;
 
-        ElasticSearchData<MaocheMessageProductIndex, CatProductBucketTO> searchData = oceanSearchService.searchProduct(condition, null, null, from, size);
-        if (searchData == null || CollectionUtils.isEmpty(searchData.getDocuments())) {
-            return page;
-        }
+//    @RequestMapping(value = "ocean/msg/product/search")
+//    public Page<OceanMessageProductVO> oceanMsgProductSearch(@RequestBody OceanMsgProductSearchRequest query,
+//                                                             HttpServletRequest request, HttpServletResponse response) {
+//        Page<OceanMessageProductVO> page = new Page<>(request, response);
+//        if (query == null) {
+//            return page;
+//        }
+//
+//        OceanMessageProductCondition condition = new OceanMessageProductCondition();
+//        // todo yhq 默认先写时间倒序
+//        condition.setSorts(Collections.singletonList("createDate desc"));
+//        if (StringUtils.isNotBlank(query.getKeyword())) {
+//            condition.setTitle(query.getKeyword());
+//        }
+//        int size = page.getPageSize();
+//        if (size <= 0) {
+//            size = 10;
+//        }
+//
+//        int from = (page.getPageNo() - 1) * size;
+//
+//        ElasticSearchData<MaocheMessageProductIndex, CatProductBucketTO> searchData = oceanSearchService.searchProduct(condition, null, null, from, size);
+//        if (searchData == null || CollectionUtils.isEmpty(searchData.getDocuments())) {
+//            return page;
+//        }
+//
+//        List<MaocheMessageProductIndex> documents = searchData.getDocuments();
+//        List<OceanMessageProductVO> vos = new ArrayList<>();
+//
+//        Map<Long, UnionProductTO> productMap = new HashMap<>();
+//        // 获取到innerId->猫车product的id
+//        List<Long> ids = documents.stream().filter(i -> StringUtils.isNotBlank(i.getInnerId())).map(i -> NumberUtils.toLong(i.getInnerId())).distinct().toList();
+//        if (CollectionUtils.isNotEmpty(ids)) {
+//            CatUnionProductCondition productCondition = new CatUnionProductCondition();
+//            productCondition.setIds(ids);
+//            ElasticSearchData<CarAlimamaUnionProductIndex, CatProductBucketTO> products =
+//                    cgUnionProductService.searchProduct(productCondition, null, from, size);
+//            List<UnionProductTO> productTOs = cgUnionProductService.listProductInfo(products);
+//
+//            productMap = productTOs.stream().collect(Collectors.toMap(UnionProductTO::getId, i -> i));
+//        }
+//
+//
+//        for (MaocheMessageProductIndex index : documents) {
+//            OceanMessageProductVO vo = OceanMessageProductVO.toVO(index);
+//            if (vo == null) {
+//                continue;
+//            }
+//
+//            String innerId = index.getInnerId();
+//            if (StringUtils.isNotBlank(innerId)) {
+//                UnionProductTO productTO = productMap.get(NumberUtils.toLong(innerId));
+//                if (productTO != null) {
+//                    vo.setInnerProduct(productTO);
+//                }
+//            }
+//
+//            vos.add(vo);
+//        }
+//
+//        Page<OceanMessageProductVO> toPage = new Page<>(page.getPageNo() + 1, page.getPageSize(), searchData.getTotal(), vos);
+//
+//        return toPage;
+//    }
 
-        List<MaocheMessageProductIndex> documents = searchData.getDocuments();
-        List<OceanMessageProductVO> vos = new ArrayList<>();
 
-        Map<Long, UnionProductTO> productMap = new HashMap<>();
-        // 获取到innerId->猫车product的id
-        List<Long> ids = documents.stream().filter(i -> StringUtils.isNotBlank(i.getInnerId())).map(i -> NumberUtils.toLong(i.getInnerId())).distinct().toList();
-        if (CollectionUtils.isNotEmpty(ids)) {
-            CatUnionProductCondition productCondition = new CatUnionProductCondition();
-            productCondition.setIds(ids);
-            ElasticSearchData<CarAlimamaUnionProductIndex, CatProductBucketTO> products =
-                    cgUnionProductService.searchProduct(productCondition, null, from, size);
-            List<UnionProductTO> productTOs = cgUnionProductService.listProductInfo(products);
-
-            productMap = productTOs.stream().collect(Collectors.toMap(UnionProductTO::getId, i -> i));
-        }
-
-
-        for (MaocheMessageProductIndex index : documents) {
-            OceanMessageProductVO vo = OceanMessageProductVO.toVO(index);
-            if (vo == null) {
-                continue;
-            }
-
-            String innerId = index.getInnerId();
-            if (StringUtils.isNotBlank(innerId)) {
-                UnionProductTO productTO = productMap.get(NumberUtils.toLong(innerId));
-                if (productTO != null) {
-                    vo.setInnerProduct(productTO);
-                }
-            }
-
-            vos.add(vo);
-        }
-
-        Page<OceanMessageProductVO> toPage = new Page<>(page.getPageNo() + 1, page.getPageSize(), searchData.getTotal(), vos);
-
-        return toPage;
-    }
-
-
+    /**
+     * 公海搜索
+     * @param query
+     * @param request
+     * @param response
+     * @return
+     */
     @RequestMapping(value = "ocean/msg/search")
     public Page<OceanMessageVO> oceanMessageSearch(@RequestBody OceanMsgSearchRequest query,
                                                              HttpServletRequest request, HttpServletResponse response) {
@@ -148,13 +172,36 @@ public class OceanController {
         }
         int from = (page.getPageNo() - 1) * size;
 
+        List<String> keywords = new ArrayList<>();
+        BrandLibTO brandLibTO = null;
+        // 获取品牌库
+        Long brandLibId = query.getBrandLibId();
+        if (brandLibId != null && brandLibId > 0) {
+            // 获取所有的5星规则
+            BrandLibCondition condition = new BrandLibCondition();
+            condition.setId(brandLibId);
+            ElasticSearchData<MaocheBrandLibraryIndex, CatProductBucketTO> search = brandLibSearchService.search(condition, null, null, 0, 1);
+            if (search != null && CollectionUtils.isNotEmpty(search.getDocuments())) {
+                MaocheBrandLibraryIndex brandLibraryIndex = search.getDocuments().get(0);
+                if (brandLibraryIndex != null && CollectionUtils.isNotEmpty(brandLibraryIndex.getKeyword())) {
+                    keywords = brandLibraryIndex.getKeyword();
+                }
+
+                brandLibTO = brandLibConvertService.convertBrandLibTO(brandLibraryIndex);
+
+            }
+        }
+
         // 获取3天前的开始时间
         long startTime = DateUtils.getOfDayFirst(DateUtils.addDays(new Date(), -3)).getTime();
 
         // 根据商品id查询关联的商品
         OceanMessageCondition messageCondition = new OceanMessageCondition();
-//        messageCondition.setAffType("tb");
-        messageCondition.setCustomMsgSearch(query.getKeyword());
+//        messageCondition.setCustomMsgSearch(query.getKeyword())
+        if (StringUtils.isNotBlank(query.getKeyword())) {
+            keywords.add(query.getKeyword());
+        }
+        messageCondition.setKeywords(keywords);
         messageCondition.setStatus("NORMAL");
 
         if (StringUtils.isNotBlank(query.getCategoryName())) {
@@ -176,7 +223,7 @@ public class OceanController {
                 messageCondition,
                 OceanController::getCategoryNameAgg,
                 CatRobotHelper::convertUnionProductAggregationMap,
-                this::msgSearchBoolQuery,
+                brandLibService::brandLibOceanQuery,
                 from, size);
         if (searchMsg == null || CollectionUtils.isEmpty(searchMsg.getDocuments())) {
             return page;
@@ -192,10 +239,6 @@ public class OceanController {
             return page;
         }
         long start = System.currentTimeMillis();
-//        MaocheRobotCrawlerMessageProductDO queryProduct = new MaocheRobotCrawlerMessageProductDO();
-//        queryProduct.setMsgId_in(msgIds);
-//        queryProduct.setStatus("NORMAL");
-//        List<MaocheRobotCrawlerMessageProductDO> msgProducts = maocheRobotCrawlerMessageProductService.findList(queryProduct);
 
         OceanMessageProductCondition msgProductCondition = new OceanMessageProductCondition();
         msgProductCondition.setMsgIds(msgIds);
@@ -243,23 +286,10 @@ public class OceanController {
         //count = {Long@20509} 1078
         Map<String, List<CatProductBucketTO>> bucketMap = searchMsg.getBucketMap();
         toPage.addOtherData("categoryName", bucketMap.get("categoryName"));
+        toPage.addOtherData("brandLib", brandLibTO);
         return toPage;
     }
 
-
-    public void msgSearchBoolQuery(OceanMessageCondition condition, BoolQueryBuilder boolQueryBuilder) {
-        if (condition == null || StringUtils.isBlank(condition.getCustomMsgSearch())) {
-            return;
-        }
-        String customMsgSearch = condition.getCustomMsgSearch();
-
-        BoolQueryBuilder should = new BoolQueryBuilder();
-
-        should.should(new MatchPhraseQueryBuilder("msg", customMsgSearch).slop(50));
-        should.should(new MatchPhraseQueryBuilder("msgNgram", customMsgSearch).slop(50));
-
-        boolQueryBuilder.must(should);
-    }
 
     public static List<AggregationBuilder> getCategoryNameAgg(OceanMessageCondition condition) {
         List<AggregationBuilder> aggregations = new ArrayList<>();
@@ -273,16 +303,6 @@ public class OceanController {
     @ResponseBody
     public Result<ProductCategoryVO> msgProductCategoryTab(HttpServletRequest request, HttpServletResponse response) {
 
-
-//        condition.setLevelOneCategoryName(null);
-//        if (StringUtils.isNotBlank(condition.getPrefixSkuCompareDesc())) {
-//            if (condition.getPrefixSkuCompareDesc().equals("empty")) {
-//                condition.setPrefixSkuCompareDesc(null);
-//            } else if (condition.getPrefixSkuCompareDesc().equals("all")) {
-//                condition.setPrefixSkuCompareDesc(null);
-//                condition.setHadSkuCompareDesc(true);
-//            }
-//        }
         OceanMessageProductCondition condition = new OceanMessageProductCondition();
 
         ElasticSearchData<MaocheMessageProductIndex, CatProductBucketTO> searchData = oceanSearchService.searchProduct(condition, this::buildRootCategoryAgg, CatRobotHelper::convertUnionProductAggregationMap, 0, 0);

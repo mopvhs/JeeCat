@@ -365,9 +365,6 @@ public class CgProductController {
             rootNameMap.put("agg_" + item.getId(), item.getName());
         }
 
-        long time2 = System.currentTimeMillis();
-        log.info("查询类目:{}, 耗时：{}", JsonUtils.toJSONString(roots), time2 - time1);
-
         List<CatProductBucketTO> carProductBucketTOs = new ArrayList<>();
         Map<String, List<CatProductBucketTO>> bucketMap = searchData.getBucketMap();
         for (Map.Entry<String, List<CatProductBucketTO>> entry : bucketMap.entrySet()) {

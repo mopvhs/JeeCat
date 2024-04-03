@@ -59,4 +59,7 @@ public class MaocheBrandLibraryIndex implements Serializable {
 
     // 标签
     private List<Long> tags;
+
+    // 规格
+    private String specifications;
 }

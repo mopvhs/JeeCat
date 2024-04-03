@@ -275,10 +275,16 @@ public class ProductV2Helper {
         if (item.getSaleStatusDate() != null) {
             index.setSaleStatusTime(item.getSaleStatusDate().getTime());
         }
+
+        long updateTime = item.getUpdateTime() != null ? item.getUpdateTime().getTime() : 0L;
+        long syncTime = item.getSyncTime() != null ? item.getSyncTime().getTime() : 0L;
+        if (syncTime > updateTime) {
+            updateTime = syncTime;
+        }
         index.setDataSource(item.getDataSource());
         index.setCreateTime(item.getCreateTime().getTime());
-        index.setUpdateTime(item.getUpdateTime() != null ? item.getUpdateTime().getTime() : 0L);
-        index.setSyncTime(item.getSyncTime() != null ? item.getSyncTime().getTime() : 0L);
+        index.setUpdateTime(updateTime);
+        index.setSyncTime(syncTime);
         index.setQualityStatus(item.getQualityStatus());
     }
 

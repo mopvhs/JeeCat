@@ -53,7 +53,7 @@ public class OceanMessageCondition implements Serializable {
     // updateTime asc
     private List<String> sorts;
 
-    private String customMsgSearch;
+//    private String customMsgSearch;
 
     @EsItemAspect
     private String uniqueHash;

@@ -22,6 +22,8 @@ import com.jeesite.modules.cat.model.task.dto.TaskRequest;
 import com.jeesite.modules.cat.service.MaochePushTaskService;
 import com.jeesite.modules.cat.service.MaocheTaskService;
 import com.jeesite.modules.cat.service.cg.CgUnionProductService;
+import com.jeesite.modules.cat.service.cg.third.tb.TbApiService;
+import com.jeesite.modules.cat.service.cg.third.tb.dto.CommandResponseV2;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.stereotype.Component;
@@ -29,6 +31,7 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -48,6 +51,9 @@ public class PushTaskCreateService {
 
     @Resource
     private MaochePushTaskService maochePushTaskService;
+
+    @Resource
+    private TbApiService tbApiService;
 
     /**
      * 创建任务
@@ -295,12 +301,20 @@ public class PushTaskCreateService {
         }
 
         // 淘宝口令
-        Result<String> eApiUrl = cgUnionProductService.getEApiUrl("V73687541H40026415", index.getItemId(), "mm_30153430_909250463_109464700418");
-        if (!Result.isOK(eApiUrl)) {
+//        Result<String> eApiUrl = cgUnionProductService.getEApiUrl("V73687541H40026415", index.getItemId(), "mm_30153430_909250463_109464700418");
+        Map<String, Object> objectMap = new HashMap<>();
+        objectMap.put("detail", 2);
+        objectMap.put("deepcoupon", 1);
+        objectMap.put("couponId", 1);
+        Result<CommandResponseV2> commonCommand = tbApiService.getCommonCommand(index.getItemId(), objectMap);
+        if (!Result.isOK(commonCommand)) {
             return null;
         }
-
-        content.append(eApiUrl.getResult()).append("\n");
+        CommandResponseV2 result = commonCommand.getResult();
+        if (result == null) {
+            return null;
+        }
+        content.append(result.getTbkPwd()).append("\n");
         content.append("---------------------\n");
         content.append("整段复制后打开\uD83C\uDF51\n自助查车@猫车选品官 +产品名");
 

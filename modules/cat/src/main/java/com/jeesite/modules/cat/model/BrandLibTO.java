@@ -36,8 +36,6 @@ public class BrandLibTO implements Serializable {
 
     private Long polling;		// polling
 
-    private String specifications;		// specifications
-
     // 历史推送
     private Long historyPush;		// history_push
 
@@ -66,6 +64,8 @@ public class BrandLibTO implements Serializable {
     // 标签
     private List<Long> tagIds;
 
+    // 规格
+    private List<SpecificationTO> specifications;
 
 
 }

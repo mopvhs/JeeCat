@@ -123,7 +123,7 @@ public class TbOceanStage extends AbstraOceanStage {
         productDO.setInnerId("0");
         productDO.setItemId(tbProduct.getNumIid());
         productDO.setApiContent(JsonUtils.toJSONString(tbProduct));
-        productDO.setCategory(tbProduct.getCategoryId());
+        productDO.setCategory(itemBasicInfo.getCategoryName());
         productDO.setTitle(itemBasicInfo.getTitle());
         productDO.setShortTitle(itemBasicInfo.getShortTitle());
         // detail = 2之后，字段被移除了
