@@ -40,6 +40,10 @@ public class OceanContext implements Serializable {
     // 京东api商品 (京东的消息一般会一条消息多个商品)
     private List<JdUnionIdPromotion> jdProducts;
 
+    // 是否只存在特殊的uri
+    // y-03.cn   3.cn    jd.cn   t.cn    q5url.cn    kurl06.cn
+    private boolean onlySpecialUri = false;
+
     // 查询失败remarks
     private String failRemarks;
 

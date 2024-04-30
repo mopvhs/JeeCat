@@ -88,18 +88,21 @@ public class JdOceanStage extends AbstraOceanStage {
         MaocheRobotCrawlerMessageDO crawlerMessage = context.getCrawlerMessage();
         String content = crawlerMessage.getMsg();
 
-
+        boolean isSpecialUri = false;
         Map<String, String> urlMap = new HashMap<>();
-            List<String> urls = new ArrayList<>();
-            String[] split = StringUtils.split(content, "\n");
-            for (String item : split) {
-                Matcher matcher = CommandService.jd.matcher(item);
-                if (matcher.find()) {
-                    String group = matcher.group();
-                    urlMap.put(group, "");
-                    urls.add(group);
+        List<String> urls = new ArrayList<>();
+        String[] split = StringUtils.split(content, "\n");
+        for (String item : split) {
+            Matcher matcher = CommandService.jd.matcher(item);
+            if (matcher.find()) {
+                String group = matcher.group();
+                urlMap.put(group, "");
+                urls.add(group);
+                if (isSpecialUri(group) && !isSpecialUri) {
+                    isSpecialUri = true;
                 }
             }
+        }
 
         if (MapUtils.isEmpty(urlMap)) {
             Map<String, Object> remarks = new HashMap<>();
@@ -109,16 +112,22 @@ public class JdOceanStage extends AbstraOceanStage {
         }
 
         List<JdUnionIdPromotion> promotions = new ArrayList<>();
-            for (String url : urls) {
-                Result<JdUnionIdPromotion> result = dingDanXiaApiService.jdByUnionidPromotion("FHPOsYO7zki7tcrxp0amyGMP7wxVkbU3", url, 1002248572L, 3100684498L);
-                if (Result.isOK(result)) {
-                    JdUnionIdPromotion promotion = result.getResult();
-                    if (promotion.getSkuId() == null || promotion.getSkuId() <= 0) {
-                        continue;
-                    }
-                    promotions.add(promotion);
+        for (String url : urls) {
+            Result<JdUnionIdPromotion> result = dingDanXiaApiService.jdByUnionidPromotion("FHPOsYO7zki7tcrxp0amyGMP7wxVkbU3", url, 1002248572L, 3100684498L);
+            if (Result.isOK(result)) {
+                JdUnionIdPromotion promotion = result.getResult();
+                if (promotion.getSkuId() == null || promotion.getSkuId() <= 0) {
+                    continue;
                 }
+                promotions.add(promotion);
             }
+        }
+        // 如果不存在商品，并且只存在特殊uri
+        if (CollectionUtils.isEmpty(promotions) && isSpecialUri) {
+            context.setOnlySpecialUri(true);
+            context.setJdProducts(promotions);
+            return;
+        }
         if (CollectionUtils.isEmpty(promotions)) {
             Map<String, Object> remarks = new HashMap<>();
             remarks.put("api_error", "订单侠jd接口信息查询未找到数据");
@@ -133,6 +142,10 @@ public class JdOceanStage extends AbstraOceanStage {
     public void buildBaseMessageProducts(OceanContext context) {
 
         List<JdUnionIdPromotion> promotions = context.getJdProducts();
+        if (context.isOnlySpecialUri()) {
+            buildUriMessageProducts(context);
+            return;
+        }
         if (CollectionUtils.isEmpty(promotions)) {
             throw new IllegalArgumentException("jdProduct is null");
         }
@@ -227,14 +240,17 @@ public class JdOceanStage extends AbstraOceanStage {
         MaocheRobotCrawlerMessageSyncDO messageSync = context.getMessageSync();
         List<JdUnionIdPromotion> jdProducts = context.getJdProducts();
         List<MaocheRobotCrawlerMessageProductDO> messageProducts = context.getMessageProducts();
-
-        if (messageSync == null || CollectionUtils.isEmpty(jdProducts) || CollectionUtils.isEmpty(messageProducts)) {
+        if (messageSync == null || CollectionUtils.isEmpty(messageProducts)) {
             throw new IllegalArgumentException("messageSync or data or messageProducts is null");
         }
-
-
-        List<String> resourceIds = jdProducts.stream().map(i -> String.valueOf(i.getSkuId())).distinct().toList();
-
+        List<String> resourceIds = null;
+        if (CollectionUtils.isNotEmpty(jdProducts)) {
+            resourceIds = jdProducts.stream().map(i -> String.valueOf(i.getSkuId())).distinct().toList();
+        } else if (context.isOnlySpecialUri()) {
+            resourceIds = Collections.singletonList(messageSync.getUniqueHash());
+        } else {
+            throw new IllegalArgumentException("messageSync or data or jdProducts is null");
+        }
 
         // 获取商品额时间
         Date createDate = messageSync.getCreateDate();
@@ -287,5 +303,57 @@ public class JdOceanStage extends AbstraOceanStage {
         productDO.setAffType(message.getAffType());
         productDO.setCreateDate(message.getCreateDate());
         productDO.setUpdateDate(message.getUpdateDate());
+    }
+
+    public void buildUriMessageProducts(OceanContext context) {
+        List<MaocheRobotCrawlerMessageProductDO> productDOs = new ArrayList<>();
+        MaocheRobotCrawlerMessageSyncDO messageSync = context.getMessageSync();
+        String resourceId = messageSync.getUniqueHash();
+
+        MaocheRobotCrawlerMessageProductDO productDO = new MaocheRobotCrawlerMessageProductDO();
+
+        long reservePrice = 0L;
+        long commissionRate = 0L;
+        String imgUrl = "https://cat.zhizher.com/assets/userfiles/fileupload/202404/1784101138316550144.png";
+        // 获取不到的话 取视频的封面图
+        String sellerId = "";
+        String shopTitle = "";
+
+        // 商品标题
+        productDO.setAffType(getAffType());
+        productDO.setResourceId(resourceId);
+        productDO.setInnerId("0");
+
+        productDO.setCategory("京东");
+        productDO.setTitle("外部链接");
+
+        productDO.setShortTitle("");
+        productDO.setShopDsr("0");
+        productDO.setCommissionRate(commissionRate);
+        productDO.setShopName(shopTitle);
+        productDO.setSellerId(sellerId);
+        productDO.setApiContent("");
+        productDO.setPrice(reservePrice);
+        productDO.setPictUrl(imgUrl);
+        productDO.setVolume(0L);
+        productDO.setStatus("NORMAL");
+        productDO.setCreateBy("admin");
+        productDO.setUpdateBy("admin");
+        productDO.setRemarks("{}");
+
+        productDOs.add(productDO);
+        context.setMessageProducts(productDOs);
+    }
+
+    private boolean isSpecialUri(String uri) {
+        if (StringUtils.isBlank(uri)) {
+            return false;
+        }
+        return uri.contains("y-03.cn") ||
+                uri.contains("3.cn") ||
+                uri.contains("jd.cn") ||
+                uri.contains("t.cn") ||
+                uri.contains("q5url.cn") ||
+                uri.contains("kurl06.cn");
     }
 }

@@ -201,9 +201,9 @@ public class TbOceanStage extends AbstraOceanStage {
 //        if (shopDsr < 48000) {
 //            status = "LOW_SHOP_DSR";
 //        }
-        if (volume < 10) {
-            status = "LOW_SHOP_DSR";
-        }
+//        if (volume < 10) {
+//            status = "LOW_SHOP_DSR";
+//        }
 
         // 获取商品额时间
         Date createDate = messageSync.getCreateDate();

@@ -231,6 +231,9 @@ public class OceanController {
 
         List<MaocheMessageSyncIndex> documents = searchMsg.getDocuments();
         List<OceanMessageVO> vos = OceanMessageVO.toVOs(documents);
+        // 对url加html <a>标签
+        OceanMessageVO.replaceUrl2Html(vos);
+
         Map<Long, OceanMessageVO> messageVOMap = vos.stream().collect(Collectors.toMap(OceanMessageVO::getId, i -> i, (a, b) -> b));
 
         // 获取商品信息，根据msgid查询

@@ -2,16 +2,22 @@ package com.jeesite.modules.cat.service.toolbox;
 
 import cn.hutool.json.JSONUtil;
 import com.alibaba.fastjson.JSONObject;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.jeesite.common.codec.Md5Utils;
 import com.jeesite.common.collect.MapUtils;
 import com.jeesite.common.lang.NumberUtils;
 import com.jeesite.common.lang.StringUtils;
 import com.jeesite.common.utils.JsonUtils;
 import com.jeesite.common.web.Result;
 import com.jeesite.modules.cat.cache.CacheService;
+import com.jeesite.modules.cat.dao.MaocheAlimamaUnionProductDao;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductDO;
+import com.jeesite.modules.cat.entity.MaocheProductV2DO;
+import com.jeesite.modules.cat.enums.SaleStatusEnum;
 import com.jeesite.modules.cat.helper.ProductValueHelper;
 import com.jeesite.modules.cat.service.CsOpLogService;
 import com.jeesite.modules.cat.service.MaocheAlimamaUnionProductService;
+import com.jeesite.modules.cat.service.MaocheProductV2Service;
 import com.jeesite.modules.cat.service.cg.CgUnionProductService;
 import com.jeesite.modules.cat.service.cg.third.DingDanXiaApiService;
 import com.jeesite.modules.cat.service.cg.third.dto.JdUnionIdPromotion;
@@ -60,6 +66,12 @@ public class CommandService {
     private CacheService cacheService;
 
     @Resource
+    private MaocheProductV2Service maocheProductV2Service;
+
+    @Resource
+    private MaocheAlimamaUnionProductDao maocheAlimamaUnionProductDao;
+
+    @Resource
     private MaocheAlimamaUnionProductService maocheAlimamaUnionProductService;
 
     // 淘宝
@@ -96,14 +108,18 @@ public class CommandService {
         objectMap.put("detail", 2);
         objectMap.put("deepcoupon", 2);
 
+        String redisKey = Md5Utils.md5(content) + "_v2";
+        String redisValue = cacheService.get(redisKey);
+        if (StringUtils.isNotBlank(redisValue)) {
+            return JsonUtils.toReferenceType(redisValue, new TypeReference<Result<CommandDTO>>() {
+            });
+        }
+
         Result<CommandResponseV2> response = tbApiService.getCommonCommand(content, objectMap);
-
         // 日志记录
-        csOpLogService.addLog("tb", "doExchangeTb", "tb_command", "maoche", "tb转链",
-                content, JsonUtils.toJSONString(response));
-
+//        csOpLogService.addLog("tb", "doExchangeTb", "tb_command", "maoche", "tb转链",
+//                content, JsonUtils.toJSONString(response));
         CommandDTO commandDTO = new CommandDTO();
-
         if (Result.isOK(response)) {
             CommandResponseV2 data = response.getResult();
             CommandResponseV2.ItemBasicInfo itemBasicInfo = data.getItemBasicInfo();
@@ -143,16 +159,46 @@ public class CommandService {
             // XgBGorXFGtXxwmvX5BT0oYcAUg-yz3oeZi6a2bapxdcyb
             String[] idArr = StringUtils.split(numIid, "-");
             String itemId = idArr[1];
-            MaocheAlimamaUnionProductDO unionProductDO = maocheAlimamaUnionProductService.getProduct(itemId, "NORMAL");
+            MaocheProductV2DO unionProductDO = maocheProductV2Service.getProduct(itemId, "NORMAL");
             if (unionProductDO != null) {
-                Long uiid = unionProductDO.getUiid();
+                Long uiid = unionProductDO.getProductId();
                 item.setId(uiid);
             }
             product.setItem(item);
             products.add(product);
 
             commandDTO.setProducts(products);
-            return Result.OK(commandDTO);
+            Result<CommandDTO> result = Result.OK(commandDTO);
+            if (item.getId() != null) {
+                cacheService.setWithExpireTime(redisKey, JsonUtils.toJSONString(result), 600);
+            }
+            return result;
+        }
+        String message = response.getMessage();
+        if (message.contains("该商品已下架或非淘宝联盟")) {
+            // 判断是否是库内商品，是的话直接下架
+            // 判断是否是商品的itemId
+            String[] split = StringUtils.split(content, "-");
+            if (split.length == 2) {
+                // 插叙是否再在库内
+                String itemId = split[1];
+                MaocheProductV2DO unionProductDO = maocheProductV2Service.getProduct(itemId, "NORMAL");
+                if (unionProductDO != null) {
+                    // 执行下架
+                    List<Long> productIds = Collections.singletonList(unionProductDO.getProductId());
+                    int auditStatus = maocheAlimamaUnionProductDao.updateSaleStatus(productIds,
+                            SaleStatusEnum.AUTO_OFF_SHELF.getStatus(),
+                            null);
+
+                    if (auditStatus > 0) {
+                        // 重新查一次数据库
+                        List<MaocheAlimamaUnionProductDO> productDOs = maocheAlimamaUnionProductService.listByIds(productIds);
+                        cgUnionProductService.indexEs(productDOs, 10);
+                    }
+                    String msgFormat = "{} \n 口令获取商品失效，自动下架：{}, 下架结果：{}";
+                    dingDingService.sendParseDingDingMsg(msgFormat, 1, content, JSONUtil.toJsonStr(response), auditStatus);
+                }
+            }
         }
 
         String msgFormat = "{} \n 转链结果：{}";

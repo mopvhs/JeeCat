@@ -31,6 +31,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -200,6 +201,9 @@ public abstract class AbstraOceanStage implements OceanStage {
 
     @Override
     public void similarMsgCheck(OceanContext context) {
+//        if (context.isOnlySpecialUri()) {
+//            return;
+//        }
         // 获取文案的md5
         MaocheRobotCrawlerMessageSyncDO messageSync = context.getMessageSync();
         String uniqueHash = messageSync.getUniqueHash();
@@ -229,7 +233,7 @@ public abstract class AbstraOceanStage implements OceanStage {
         // 先对比资源id是否一样，数量，以及集合的差集是否为0
         for (MaocheMessageSyncIndex doc : documents) {
             List<String> tempIds = new ArrayList<>(resourceIds);
-            List<String> itemResourceIds = doc.getResourceIds();
+            List<String> itemResourceIds = Optional.ofNullable(doc.getResourceIds()).orElse(new ArrayList<>());
 
             if (tempIds.size() != itemResourceIds.size()) {
                 continue;

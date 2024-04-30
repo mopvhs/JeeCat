@@ -5,6 +5,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.jeesite.common.lang.StringUtils;
+import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductDO;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -97,6 +99,15 @@ public class MaocheProductV2Service extends CrudService<MaocheProductV2Dao, Maoc
 		query.setStatus(status);
 
 		return findList(query);
+	}
+
+	public MaocheProductV2DO getProduct(String itemIdSuffix, String status) {
+		if (StringUtils.isBlank(itemIdSuffix) || StringUtils.isBlank(status)) {
+			return null;
+		}
+
+		MaocheProductV2DO item = dao.getByItemIdSuffix(itemIdSuffix, status);
+		return item;
 	}
 	
 }

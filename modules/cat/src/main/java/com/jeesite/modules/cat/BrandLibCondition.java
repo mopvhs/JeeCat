@@ -52,4 +52,8 @@ public class BrandLibCondition implements Serializable {
     private boolean detail = false;
 
     private String rootCategoryName;
+
+    private Integer pageNo;
+
+    private Integer pageSize;
 }

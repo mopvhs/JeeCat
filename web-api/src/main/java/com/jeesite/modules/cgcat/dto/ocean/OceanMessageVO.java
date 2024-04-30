@@ -9,6 +9,7 @@ import com.jeesite.modules.cat.model.ProductPriceTO;
 import com.jeesite.modules.cat.model.UnionProductTO;
 import com.jeesite.modules.cat.service.es.dto.MaocheMessageProductIndex;
 import com.jeesite.modules.cat.service.es.dto.MaocheMessageSyncIndex;
+import com.jeesite.modules.cat.service.toolbox.CommandService;
 import lombok.Data;
 import org.apache.commons.collections.CollectionUtils;
 
@@ -18,8 +19,11 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Matcher;
 
 @Data
 public class OceanMessageVO implements Serializable {
@@ -148,6 +152,29 @@ public class OceanMessageVO implements Serializable {
         }
 
         return dtos;
+    }
+
+    public static void replaceUrl2Html(List<OceanMessageVO> msgs) {
+        if (CollectionUtils.isEmpty(msgs)) {
+            return;
+        }
+        String urlFormat = "<a href=\"%s\" target=\"_blank\">%s</a >";
+        for (OceanMessageVO product : msgs) {
+            StringBuilder msg = new StringBuilder();
+            String content = product.getMsg();
+            String[] split = StringUtils.split(content, "\n");
+            for (String item : split) {
+                Matcher matcher = CommandService.jd.matcher(item);
+                if (matcher.find()) {
+                    String group = matcher.group();
+                    String url = String.format(urlFormat, group, group);
+                    msg.append(url).append("\n");
+                } else {
+                    msg.append(item).append("\n");
+                }
+            }
+            product.setMsg(msg.toString());
+        }
     }
 
 

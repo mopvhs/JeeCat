@@ -11,5 +11,15 @@
 		</where>
 		ORDER BY ${sqlMap.order.toSql()}
 	</select> -->
-	
+
+	<select id="getByItemIdSuffix" resultType="MaocheProductV2DO">
+		SELECT *
+		FROM maoche_product_v2
+		<where>
+			status = #{status}
+			AND item_id_suffix = #{suffixId}
+		</where>
+			order by sync_time desc
+			limit 1
+	</select>
 </mapper>

@@ -137,6 +137,7 @@ public class BrandController {
         if (size <= 0) {
             size = 20;
         }
+        size = 50;
 
         int page = request.getPage();
         if (page <= 0) {
