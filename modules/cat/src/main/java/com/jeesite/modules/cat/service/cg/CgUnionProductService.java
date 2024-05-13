@@ -117,9 +117,6 @@ public class CgUnionProductService {
     private MaocheProductV2Service maocheProductV2Service;
 
     @Resource
-    private DingDingService dingDingService;
-
-    @Resource
     private SearchService searchService;
 
     /**

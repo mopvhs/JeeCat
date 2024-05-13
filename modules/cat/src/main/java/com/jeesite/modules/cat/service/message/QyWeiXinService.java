@@ -26,9 +26,6 @@ import java.util.Map;
 @Component
 public class QyWeiXinService {
 
-    @Resource
-    private FlameHttpService flameHttpService;
-
     private static final String URL_FORMAT = "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=%s";
 
     public Result<String> sendText(String text, String webHook) {
@@ -53,7 +50,7 @@ public class QyWeiXinService {
         Map<String, Object> params = new HashMap<>();
         params.put("msgtype", "text");
         params.put("text", textMap);
-        String doPost = flameHttpService.doPost(url, JsonUtils.toJSONString(params));
+        String doPost = FlameHttpService.doPost(url, JsonUtils.toJSONString(params));
 
         return Result.OK(doPost);
     }
@@ -84,7 +81,7 @@ public class QyWeiXinService {
             Map<String, Object> params = new HashMap<>();
             params.put("msgtype", "image");
             params.put("image", imageMap);
-            String doPost = flameHttpService.doPost(url, JsonUtils.toJSONString(params));
+            String doPost = FlameHttpService.doPost(url, JsonUtils.toJSONString(params));
             // 解析错误信息
             try {
                 JSONObject res = JSONObject.parseObject(doPost);

@@ -345,7 +345,7 @@ public class CgPushTaskRuleController {
         }
 
         int pageNo = condition.getPageNo() == null ? 1 : condition.getPageNo();
-        int pageSize = condition.getPageSize() <= 0 ? 10 : condition.getPageSize();
+        int pageSize = condition.getPageSize() == null || condition.getPageSize() <= 0 ? 100 : condition.getPageSize();
         int from = (pageNo - 1) * pageSize;
 
         processSorts(condition);

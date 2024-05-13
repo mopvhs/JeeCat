@@ -16,13 +16,11 @@ import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Random;
 
 @Slf4j
 @Component
 public class DingDanXiaApiService {
-
-    @Resource
-    private FlameHttpService flameHttpService;
 
     /**
      * 通过unionId获取京东商品链接/活动链接/店铺链接【转链】【升级版】
@@ -101,7 +99,7 @@ public class DingDanXiaApiService {
      */
     public Result<JdUnionIdPromotion> doGetJdByUnionidPromotion(String apiKey, String materialId, long unionId, long positionId, String couponUrl) {
 
-        String url = "http://api.tbk.dingdanxia.com/jd/by_unionid_promotion?apikey=%s&materialId=%s&unionId=%d&positionId=%d&autoSearch=true";
+        String url = "http://api.tbk.dingdanxia.com/jd/by_unionid_promotion?apikey=%s&materialId=%s&unionId=%d&positionId=%d&autoSearch=true&sceneId=1";
 
         try {
             String encode = URLEncoder.encode(materialId);
@@ -112,7 +110,7 @@ public class DingDanXiaApiService {
                 url = url + "&couponUrl=" + cl;
             }
 
-            String s = flameHttpService.doGet(url);
+            String s = FlameHttpService.doGet(url);
             // {"code":-1,"msg":"数据返回失败【materialId链接无法识别】","data":[]}
             if (StringUtils.isBlank(s)) {
                 return Result.ERROR(500, "转换失败");
@@ -158,7 +156,7 @@ public class DingDanXiaApiService {
 
         try {
             url = String.format(url, apiKey, keyword, positionId);
-            String s = flameHttpService.doGet(url);
+            String s = FlameHttpService.doGet(url);
             // {"code":-1,"msg":"数据返回失败【materialId链接无法识别】","data":[]}
             if (StringUtils.isBlank(s)) {
                 return Result.ERROR(500, "转换失败");
@@ -250,7 +248,7 @@ public class DingDanXiaApiService {
         params.put("pid", pid);
         params.put("tpwd", true);
 
-        String s = flameHttpService.doPost(url, JsonUtils.toJSONString(params));
+        String s = FlameHttpService.doPost(url, JsonUtils.toJSONString(params));
         // {"code":-1,"msg":"数据返回失败【materialId链接无法识别】","data":[]}
         if (StringUtils.isBlank(s)) {
             return Result.ERROR(500, "转换失败");

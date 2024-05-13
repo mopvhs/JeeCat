@@ -53,9 +53,6 @@ public class CgProductSyncXxlJob extends IJobHandler {
     @Resource
     private CacheService cacheService;
 
-    @Resource
-    private DingDingService dingDingService;
-
     @Override
     @XxlJob("cgProductSyncXxlJob")
     public void execute() throws Exception {
@@ -93,13 +90,13 @@ public class CgProductSyncXxlJob extends IJobHandler {
                     break;
                 }
             } catch (Exception e) {
-                dingDingService.sendParseDingDingMsg("全量同步异常 起始id:{}, 异常{}", null, id, e.getMessage());
+                DingDingService.sendParseDingDingMsg("全量同步异常 起始id:{}, 异常{}", null, id, e.getMessage());
                 log.error(e.getMessage(), e);
             }
         }
         stopWatch.stop();
 
-        dingDingService.sendParseDingDingMsg("xxl job 全量同步索引数据完成，total:{}, 耗时：{}", null, total, stopWatch.toString());
+        DingDingService.sendParseDingDingMsg("xxl job 全量同步索引数据完成，total:{}, 耗时：{}", null, total, stopWatch.toString());
 
         XxlJobHelper.log("CgProductSyncXxlJob xxl job end 耗时：" + stopWatch.toString());
     }

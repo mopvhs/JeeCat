@@ -21,9 +21,6 @@ import java.util.Map;
 @Component
 public class VeApiService {
 
-    @Resource
-    private FlameHttpService flameHttpService;
-
 
     // 超级搜索
     public Result<JSONArray> tbSearch(String veKey, String id, String pid, Long relationId) {
@@ -50,7 +47,7 @@ public class VeApiService {
 //        objectMap.put("pid", pid);
 
         try {
-            String response = flameHttpService.doGet(url);
+            String response = FlameHttpService.doGet(url);
             if (StringUtils.isBlank(response)) {
                 return Result.ERROR(500, "请求失败，数据为空");
             }

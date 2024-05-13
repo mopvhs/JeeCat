@@ -16,8 +16,8 @@ import java.util.Map;
 @Component
 public class ImageBizService {
 
-    @Resource
-    private FlameHttpService flameHttpService;
+//    @Resource
+//    private FlameHttpService flameHttpService;
 
     public String getToken(String email, String password) {
 
@@ -27,7 +27,7 @@ public class ImageBizService {
 
 
         // {\"code\":200,\"msg\":\"success\",\"data\":{\"token\":\"f985a48d5f828254ce2ff7225d0479cd\"},\"time\":1691507022}
-        String doPost = flameHttpService.doPost("http://static.zhizher.com/api/token", JsonUtils.toJSONString(jsonMap));
+        String doPost = FlameHttpService.doPost("http://static.zhizher.com/api/token", JsonUtils.toJSONString(jsonMap));
         if (StringUtils.isBlank(doPost)) {
             return null;
         }

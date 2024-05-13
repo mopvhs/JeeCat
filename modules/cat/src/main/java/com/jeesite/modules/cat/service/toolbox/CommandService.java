@@ -57,9 +57,6 @@ public class CommandService {
     private TbApiService tbApiService;
 
     @Resource
-    private DingDingService dingDingService;
-
-    @Resource
     private CsOpLogService csOpLogService;
 
     @Resource
@@ -175,7 +172,8 @@ public class CommandService {
             return result;
         }
         String message = response.getMessage();
-        if (message.contains("该商品已下架或非淘宝联盟")) {
+        // 产品或活动转链失败，请检查参数。高佣转链提示 :  该宝贝已下架或非淘客宝贝
+        if (message.contains("该商品已下架或非淘宝联盟") || message.contains("该宝贝已下架或非淘客宝贝")) {
             // 判断是否是库内商品，是的话直接下架
             // 判断是否是商品的itemId
             String[] split = StringUtils.split(content, "-");
@@ -196,13 +194,13 @@ public class CommandService {
                         cgUnionProductService.indexEs(productDOs, 10);
                     }
                     String msgFormat = "{} \n 口令获取商品失效，自动下架：{}, 下架结果：{}";
-                    dingDingService.sendParseDingDingMsg(msgFormat, 1, content, JSONUtil.toJsonStr(response), auditStatus);
+                    DingDingService.sendParseDingDingMsg(msgFormat, 1, content, JSONUtil.toJsonStr(response), auditStatus);
                 }
             }
         }
 
         String msgFormat = "{} \n 转链结果：{}";
-        dingDingService.sendParseDingDingMsg(msgFormat, 1, content, JSONUtil.toJsonStr(response));
+        DingDingService.sendParseDingDingMsg(msgFormat, 1, content, JSONUtil.toJsonStr(response));
 
         return Result.ERROR(response.getCode(), response.getMessage());
     }
@@ -257,7 +255,7 @@ public class CommandService {
 
         if (!match) {
             String msgFormat = "{} \n 转链结果：{}";
-            dingDingService.sendParseDingDingMsg(msgFormat, 1, content, errorMsg.toString());
+            DingDingService.sendParseDingDingMsg(msgFormat, 1, content, errorMsg.toString());
             return Result.ERROR(500, errorMsg.toString());
         }
 

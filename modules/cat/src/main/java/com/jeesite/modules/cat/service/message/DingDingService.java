@@ -4,16 +4,9 @@ import com.google.gson.JsonObject;
 import com.jeesite.common.lang.StringUtils;
 import com.jeesite.modules.cat.service.FlameHttpService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-
-import javax.annotation.Resource;
 
 @Slf4j
-@Component
 public class DingDingService {
-
-    @Resource
-    private FlameHttpService flameHttpService;
 
     // 群名：猫车索引
     private static final String WEB_HOOK = "https://oapi.dingtalk.com/robot/send?access_token=5ea41e511ba998b6c2035209df2431193abf48c1003e6635a0aaea4e5256b3d6";
@@ -21,19 +14,19 @@ public class DingDingService {
     // 猫车告警
     private static final String WEB_HOOK_CAT = "https://oapi.dingtalk.com/robot/send?access_token=faabc57115e2b8b26a1472ce9e428b0dbd41ed1fb8efc9f1beae8cc143579ab6";
 
-    public void sendDingDingMsg(String msg) {
+    public static void sendDingDingMsg(String msg) {
         String hook = getHook(null);
         doSend(msg, hook);
     }
 
-    public void sendParseDingDingMsg(String msg, Object... varArr) {
+    public static void sendParseDingDingMsg(String msg, Object... varArr) {
         // 占位符
         msg = parse1(msg, varArr);
         String hook = getHook(null);
         doSend(msg, hook);
     }
 
-    public void sendParseDingDingMsg(String msg, Integer sceneType, Object... varArr) {
+    public static void sendParseDingDingMsg(String msg, Integer sceneType, Object... varArr) {
         // 占位符
         msg = parse1(msg, varArr);
         String hook = getHook(sceneType);
@@ -41,7 +34,7 @@ public class DingDingService {
     }
 
 
-    public void sendDingDingMsg(String msg, String webHook) {
+    public static void sendDingDingMsg(String msg, String webHook) {
         if (StringUtils.isBlank(webHook)) {
             sendDingDingMsg(msg);
         } else {
@@ -49,12 +42,12 @@ public class DingDingService {
         }
     }
 
-    public void sendDingDingMsg(String msg, Integer sceneType) {
+    public static void sendDingDingMsg(String msg, Integer sceneType) {
         String hook = getHook(sceneType);
         doSend(msg, hook);
     }
 
-    private void doSend(String msg, String hook) {
+    private static void doSend(String msg, String hook) {
 
         JsonObject jsonObject = new JsonObject();
         jsonObject.addProperty("msgtype", "text");
@@ -66,14 +59,14 @@ public class DingDingService {
         try {
 //            String post = HttpClientUtils.post(hook, JsonUtils.toReferenceType(jsonObject.toString(), new TypeReference<Map<String, String>>() {
 //            }));
-            String post = flameHttpService.doPost(hook, jsonObject.toString());
+            String post = FlameHttpService.doPost(hook, jsonObject.toString());
 
         } catch (Exception e) {
             log.error("发送钉钉消息失败 ", e);
         }
     }
 
-    private String getHook(Integer sceneType) {
+    private static String getHook(Integer sceneType) {
         if (sceneType == null) {
             return WEB_HOOK;
         }

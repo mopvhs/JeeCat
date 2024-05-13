@@ -43,17 +43,11 @@ public class TopicController {
         log.info("getTaskInfo");
 
 
-
-
-
     }
 
     @RequestMapping(value = "/topic/search")
     public void searchTopics(@RequestBody TopicSearchRequest request) {
         log.info("getTaskInfo");
-
-
-
 
 
     }

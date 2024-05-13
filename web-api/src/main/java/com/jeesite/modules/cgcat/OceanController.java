@@ -7,20 +7,17 @@ import com.jeesite.common.lang.StringUtils;
 import com.jeesite.common.web.Result;
 import com.jeesite.modules.cat.BrandLibCondition;
 import com.jeesite.modules.cat.entity.MaocheCategoryMappingDO;
-import com.jeesite.modules.cat.entity.MaochePushTaskRuleDO;
 import com.jeesite.modules.cat.es.config.model.ElasticSearchData;
 import com.jeesite.modules.cat.helper.CatRobotHelper;
 import com.jeesite.modules.cat.model.BrandLibTO;
 import com.jeesite.modules.cat.model.CarAlimamaUnionProductIndex;
 import com.jeesite.modules.cat.model.CatProductBucketTO;
 import com.jeesite.modules.cat.model.MaocheBrandLibraryIndex;
-import com.jeesite.modules.cat.model.condition.CatUnionProductCondition;
 import com.jeesite.modules.cat.model.UnionProductTO;
+import com.jeesite.modules.cat.model.condition.CatUnionProductCondition;
 import com.jeesite.modules.cat.model.ocean.OceanMessageCondition;
 import com.jeesite.modules.cat.model.ocean.OceanMessageProductCondition;
-import com.jeesite.modules.cat.service.FlameHttpService;
 import com.jeesite.modules.cat.service.MaocheCategoryMappingService;
-import com.jeesite.modules.cat.service.MaochePushTaskRuleService;
 import com.jeesite.modules.cat.service.MaocheRobotCrawlerMessageProductService;
 import com.jeesite.modules.cat.service.cg.CgUnionProductService;
 import com.jeesite.modules.cat.service.cg.brand.BrandLibConvertService;
@@ -30,14 +27,10 @@ import com.jeesite.modules.cat.service.cg.search.BrandLibSearchService;
 import com.jeesite.modules.cat.service.es.dto.MaocheMessageProductIndex;
 import com.jeesite.modules.cat.service.es.dto.MaocheMessageSyncIndex;
 import com.jeesite.modules.cgcat.dto.ProductCategoryVO;
-import com.jeesite.modules.cgcat.dto.ocean.OceanMessageProductVO;
 import com.jeesite.modules.cgcat.dto.ocean.OceanMessageVO;
-import com.jeesite.modules.cgcat.dto.ocean.OceanMsgProductSearchRequest;
 import com.jeesite.modules.cgcat.dto.ocean.OceanMsgSearchRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.MatchPhraseQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
@@ -64,8 +57,8 @@ import java.util.stream.Collectors;
 @RequestMapping(value = "${adminPath}/api/")
 public class OceanController {
 
-    @Resource
-    private FlameHttpService flameHttpService;
+//    @Resource
+//    private FlameHttpService flameHttpService;
 
     @Resource
     private OceanSearchService oceanSearchService;

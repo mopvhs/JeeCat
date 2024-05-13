@@ -26,8 +26,8 @@ public class QwService {
     @Resource
     private MaocheChatroomInfoDao maocheChatroomInfoDao;
 
-    @Resource
-    private FlameHttpService flameHttpService;
+//    @Resource
+//    private FlameHttpService flameHttpService;
 
     public boolean send(String uniqueId, Map<String, Object> msg) {
         if (StringUtils.isBlank(uniqueId) || MapUtils.isEmpty(msg)) {
@@ -51,7 +51,7 @@ public class QwService {
         data.put("cmd_json", JsonUtils.toJSONString(msg));
 
         try {
-            String doPost = flameHttpService.doFormPost(url, data);
+            String doPost = FlameHttpService.doFormPost(url, data);
             log.info("QwService send data: {}, result: {}", JsonUtils.toJSONString(data), doPost);
         } catch (Exception e) {
             log.error("send_cmd exception ", e);

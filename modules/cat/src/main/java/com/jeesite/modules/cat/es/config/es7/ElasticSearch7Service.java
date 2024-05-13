@@ -2,18 +2,15 @@ package com.jeesite.modules.cat.es.config.es7;
 
 import com.alibaba.fastjson.JSON;
 import com.google.common.collect.Lists;
-import com.jeesite.common.io.IOUtils;
-import com.jeesite.common.lang.NumberUtils;
 import com.jeesite.common.lang.StringUtils;
-import com.jeesite.common.utils.JsonUtils;
 import com.jeesite.modules.cat.enums.ElasticSearchIndexEnum;
 import com.jeesite.modules.cat.es.config.model.ElasticSearchData;
+import com.jeesite.modules.cat.service.message.DingDingService;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.time.StopWatch;
-import org.apache.http.nio.entity.ContentInputStream;
 import org.apache.lucene.search.TotalHits;
 import org.elasticsearch.action.DocWriteResponse;
 import org.elasticsearch.action.delete.DeleteRequest;
@@ -42,11 +39,6 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileReader;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -348,7 +340,7 @@ public class ElasticSearch7Service {
             for (Map<String, Object> item : list) {
                 String id = String.valueOf(item.get(resourceIdKey));
 
-                UpdateRequest updateRequest = new UpdateRequest(indexEnum.getIndex(), indexEnum.getType(), id);
+                UpdateRequest updateRequest = new UpdateRequest(indexEnum.getIndex(), id);
                 updateRequest.doc(item);
                 Future<Boolean> submit = executor.submit(new Callable<Boolean>() {
                     @Override
@@ -356,7 +348,8 @@ public class ElasticSearch7Service {
                         try {
                             UpdateResponse response = restHighLevelClient.update(updateRequest, RequestOptions.DEFAULT);
                             DocWriteResponse.Result result = response.getResult();
-//                            log.info("indexEs resourceId {}, indexEnum {}, result {}", id, indexEnum.getIndex(), JSON.toJSONString(result));
+                            DingDingService.sendParseDingDingMsg("indexEs resourceId {}, indexEnum {}, result {}", id, indexEnum.getIndex(), JSON.toJSONString(result));
+                            log.info("indexEs resourceId {}, indexEnum {}, result {}", id, indexEnum.getIndex(), JSON.toJSONString(result));
                         } catch (Exception e) {
                             log.error("update es error data {}, resourceId {}", JSON.toJSONString(data), id, e);
 

@@ -37,6 +37,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Slf4j
@@ -103,6 +104,25 @@ public class TbOceanStage extends AbstraOceanStage {
         context.setTbProduct(commandResponse);
     }
 
+    public static void main(String[] args) {
+        String s = "囤货装❗❗\n" +
+                "淘豆玩国混合猫砂2.3kg*4包\n" +
+                "\uD83D\uDCB051.6，折\uD83D\uDCB012.9/包\n" +
+                "(TkxDWsy56jI)/ AC01";
+
+        String[] split = s.split("\n");
+        Map<String, String> urlMap = new HashMap<>();
+        for (String item : split) {
+            Matcher matcher = CommandService.tb.matcher(item);
+            if (matcher.find()) {
+                String group = matcher.group();
+                urlMap.put(group, "");
+            }
+        }
+
+        System.out.println(urlMap);
+    }
+
     @Override
     public void buildBaseMessageProducts(OceanContext context) {
 
@@ -153,6 +173,24 @@ public class TbOceanStage extends AbstraOceanStage {
         if (messageSync == null || data == null || CollectionUtils.isEmpty(messageProducts)) {
             throw new IllegalArgumentException("messageSync or data or messageProducts is null");
         }
+
+        CommandResponseV2 tbProduct = context.getTbProduct();
+        String tbkPwd = tbProduct.getTbkPwd();
+
+        String msg = messageSync.getMsg();
+        String[] split = msg.split("\n");
+        StringBuilder msgBuilder = new StringBuilder();
+        for (String item : split) {
+            Matcher matcher = CommandService.tb.matcher(item);
+            if (matcher.find()) {
+                String group = matcher.group();
+                msgBuilder.append(tbkPwd).append("\n");
+            } else {
+                msgBuilder.append(item).append("\n");
+            }
+        }
+        msg = msgBuilder.toString();
+        messageSync.setMsg(msg);
 
         String numIid = data.getNumIid();
         // XgBGorXFGtXxwmvX5BT0oYcAUg-yz3oeZi6a2bapxdcyb

@@ -33,9 +33,6 @@ import java.util.regex.Pattern;
 public class InnerApiService {
 
     @Resource
-    private FlameHttpService flameHttpService;
-
-    @Resource
     private FlameProxyHttpService flameProxyHttpService;
 
     private RateLimiter proxyUrlLimiter = RateLimiter.create(1);
@@ -52,7 +49,7 @@ public class InnerApiService {
         params.put("data", base64);
 
         // {"success":false,"message":"商品已存在，ID：196154，请勿重复添加！","results":[]}
-        String response = flameHttpService.doFormPost(url, params);
+        String response = FlameHttpService.doFormPost(url, params);
         if (StringUtils.isBlank(response)) {
             return Result.ERROR(500, "接口数据为空");
         }

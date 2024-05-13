@@ -60,12 +60,9 @@ public class SlowSqlInterceptor implements Interceptor {
 
         long left = System.currentTimeMillis() - start;
         if (slowSqlTime > 0 && left >= slowSqlTime) {
-            DingDingService dingDingService = SpringContextUtil.getBean("dingDingService", DingDingService.class);
-            if (dingDingService != null) {
-                // 记录慢sql
-                String formatContent = getFormatContent(invocation, left);
-                dingDingService.sendDingDingMsg(formatContent);
-            }
+            // 记录慢sql
+            String formatContent = getFormatContent(invocation, left);
+            DingDingService.sendDingDingMsg(formatContent);
         }
 
         // Add post-processing logic if needed

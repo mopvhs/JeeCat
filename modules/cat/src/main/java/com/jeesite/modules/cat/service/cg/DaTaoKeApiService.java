@@ -14,9 +14,6 @@ import javax.annotation.Resource;
 @Component
 public class DaTaoKeApiService {
 
-    @Resource
-    private FlameHttpService flameHttpService;
-
     // https://openapi.dataoke.com/api/goods/get-history-low-price-list
 
     /**
@@ -35,7 +32,7 @@ public class DaTaoKeApiService {
 
         try {
 
-            String response = flameHttpService.doGet(apiUrl);
+            String response = FlameHttpService.doGet(apiUrl);
 
             log.info("getHistoryLowPriceList apiUrl:{}, response:{}", apiUrl, response);
 

@@ -41,9 +41,6 @@ public class PushTaskIndexXxlJob extends IJobHandler {
     @Resource
     private TaskEsService taskEsService;
 
-    @Resource
-    private DingDingService dingDingService;
-
     @Override
     @XxlJob("pushTaskIndexXxlJob")
     public void execute() throws Exception {
@@ -83,6 +80,6 @@ public class PushTaskIndexXxlJob extends IJobHandler {
         long left = endTime.getTime() - startTime.getTime();
 
         String msg = "推送任务全量索引成功。\n整体耗时：{}分钟\n总数据量为：{}\n开始时间为：{}\n结束时间为：{}";
-        dingDingService.sendParseDingDingMsg(msg, TimeUtils.formatTime(left), num, DateTimeUtils.getStringDate(startTime), DateTimeUtils.getStringDate(endTime));
+        DingDingService.sendParseDingDingMsg(msg, TimeUtils.formatTime(left), num, DateTimeUtils.getStringDate(startTime), DateTimeUtils.getStringDate(endTime));
     }
 }

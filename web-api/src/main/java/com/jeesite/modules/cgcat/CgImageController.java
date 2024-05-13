@@ -2,8 +2,6 @@ package com.jeesite.modules.cgcat;
 
 import com.jeesite.common.lang.StringUtils;
 import com.jeesite.common.web.Result;
-import com.jeesite.modules.cat.common.MtxHttpClientUtils;
-import com.jeesite.modules.cat.service.FlameHttpService;
 import com.jeesite.modules.cat.service.cg.image.ImageBizService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
@@ -18,9 +16,6 @@ import javax.annotation.Resource;
 @Controller
 @RequestMapping(value = "${adminPath}/api")
 public class CgImageController {
-
-    @Resource
-    private FlameHttpService flameHttpService;
 
     @Resource
     private ImageBizService imageBizService;

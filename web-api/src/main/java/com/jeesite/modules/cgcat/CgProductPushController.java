@@ -97,9 +97,6 @@ public class CgProductPushController {
     private MaocheCategoryService maocheCategoryService;
 
     @Resource
-    private DingDingService dingDingService;
-
-    @Resource
     private MaocheCategoryMappingService maocheCategoryMappingService;
 
     @Resource
@@ -454,7 +451,7 @@ public class CgProductPushController {
 
             return Result.OK(productTOs);
         } catch (Exception e) {
-            dingDingService.sendParseDingDingMsg("H5 推荐商品异常，{}", e.getMessage());
+            DingDingService.sendParseDingDingMsg("H5 推荐商品异常，{}", e.getMessage());
             log.error("rcmdProductWarehouseDetail exception ", e);
         }
 

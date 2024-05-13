@@ -96,6 +96,7 @@ public abstract class AbstraOceanStage implements OceanStage {
         MaocheRobotCrawlerMessageDO message = context.getCrawlerMessage();
 
         // 1. 构建基础的消息结构
+        MatchContent matchContent = calMatchContent(getPattern(), message.getMsg());
 
         MaocheRobotCrawlerMessageSyncDO sync = new MaocheRobotCrawlerMessageSyncDO();
 
@@ -112,8 +113,6 @@ public abstract class AbstraOceanStage implements OceanStage {
         sync.setUpdateDate(new Date());
         sync.setRemarks("");
         sync.setStatus("INIT");
-
-        MatchContent matchContent = calMatchContent(getPattern(), message.getMsg());
         sync.setUniqueHash(matchContent.getCalMd5());
 
         // 写入到context中
@@ -135,7 +134,8 @@ public abstract class AbstraOceanStage implements OceanStage {
         List<Long> ids = similarMessages.stream().map(MaocheMessageSyncIndex::getId).toList();
         // 获取相似的消息
         MaocheRobotCrawlerMessageSyncDO query = new MaocheRobotCrawlerMessageSyncDO();
-        query.setUiid_in(ids);query.setStatus("NORMAL");
+        query.setUiid_in(ids);
+        query.setStatus("NORMAL");
         List<MaocheRobotCrawlerMessageSyncDO> similarMsgs = maocheRobotCrawlerMessageSyncService.findList(query);
 
         // 更新相似消息的状态
@@ -219,6 +219,11 @@ public abstract class AbstraOceanStage implements OceanStage {
             searchData = oceanSearchService.searchMsg(condition, null, null, null, 0, 1000);
         }
         if (searchData == null || CollectionUtils.isEmpty(searchData.getDocuments())) {
+            // 为空的时候 做一次db的查询，es刷磁盘需要时间，短时间内可能会查询不出来
+//            MaocheRobotCrawlerMessageSyncDO query = new MaocheRobotCrawlerMessageSyncDO();
+//            query.setUniqueHash(uniqueHash);
+//            query.setStatus("NORMAL");
+//            List<MaocheRobotCrawlerMessageSyncDO> similarMsgs = maocheRobotCrawlerMessageSyncService.findList(query);
             return;
         }
         List<MaocheMessageSyncIndex> documents = searchData.getDocuments();

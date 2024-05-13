@@ -30,17 +30,18 @@ import java.util.List;
 import java.util.Map;
 
 @Slf4j
-@Component
+//@Component
 public class FlameHttpService {
 
-    private CloseableHttpClient httpClient;
+    private static final CloseableHttpClient HTTP_CLIENT = MtxHttpClientUtils.getHttpsClient();
 
-    @PostConstruct
-    public void init() {
-        httpClient = MtxHttpClientUtils.getHttpsClient();
-    }
+//    @PostConstruct
+//    public void init() {
+//        httpClient = MtxHttpClientUtils.getHttpsClient();
+//    }
 
-    public String doPost(String url, String stringEntity) {
+
+    public static String doPost(String url, String stringEntity) {
 
         String method = "POST";
         RequestBuilder builder = RequestBuilder.create(method);
@@ -53,7 +54,7 @@ public class FlameHttpService {
 
         String resp = null;
         try {
-            CloseableHttpResponse response = httpClient.execute(builder.build());
+            CloseableHttpResponse response = HTTP_CLIENT.execute(builder.build());
             HttpEntity entity = response.getEntity();
             resp = EntityUtils.toString(entity, "UTF-8");
         } catch (Exception e) {
@@ -63,7 +64,7 @@ public class FlameHttpService {
         return resp;
     }
 
-    public String doFormPost(String url, Map<String, String> params) {
+    public static String doFormPost(String url, Map<String, String> params) {
 
         HttpPost post = new HttpPost(url);
         post.addHeader("Content-type", "application/x-www-form-urlencoded; Charset=utf-8");
@@ -78,7 +79,7 @@ public class FlameHttpService {
         String resp = null;
         try {
             post.setEntity(new UrlEncodedFormEntity(pairList, "utf-8"));
-            CloseableHttpResponse response = httpClient.execute(post);
+            CloseableHttpResponse response = HTTP_CLIENT.execute(post);
 
             HttpEntity entity = response.getEntity();
             resp = EntityUtils.toString(entity, "UTF-8");
@@ -89,7 +90,7 @@ public class FlameHttpService {
         return resp;
     }
 
-    public String doUploadFilePost(String url, File file) {
+    public static String doUploadFilePost(String url, File file) {
 
         HttpPost post = new HttpPost(url);
         post.addHeader("Content-type", "image/png; multipart/form-data; Charset=utf-8");
@@ -103,7 +104,7 @@ public class FlameHttpService {
 
         String resp = null;
         try {
-            CloseableHttpResponse response = httpClient.execute(post);
+            CloseableHttpResponse response = HTTP_CLIENT.execute(post);
 
             HttpEntity entity = response.getEntity();
             resp = EntityUtils.toString(entity, "UTF-8");
@@ -114,7 +115,7 @@ public class FlameHttpService {
         return resp;
     }
 
-    public String doGet(String url) {
+    public static String doGet(String url) {
 
         String method = "GET";
         RequestBuilder builder = RequestBuilder.create(method);
@@ -124,7 +125,7 @@ public class FlameHttpService {
 
         String resp = null;
         try {
-            CloseableHttpResponse response = httpClient.execute(builder.build());
+            CloseableHttpResponse response = HTTP_CLIENT.execute(builder.build());
             HttpEntity entity = response.getEntity();
             resp = EntityUtils.toString(entity, "UTF-8");
         } catch (Exception e) {

@@ -47,9 +47,6 @@ public class CatSyncAlimamaUnionProductController {
     @Resource
     private CgUnionProductService cgUnionProductService;
 
-    @Resource
-    private DingDingService dingDingService;
-
     private static ExecutorService executor = null;
 
     @PostConstruct
@@ -161,7 +158,7 @@ public class CatSyncAlimamaUnionProductController {
         if (!token.equals("catcar")) {
             return Result.ERROR(500, "参数错误");
         }
-        dingDingService.sendDingDingMsg("全量同步执行开始");
+        DingDingService.sendDingDingMsg("全量同步执行开始");
 
 
         long startTime = System.currentTimeMillis();
@@ -192,7 +189,7 @@ public class CatSyncAlimamaUnionProductController {
                     // 每20000条打一次日志
                     if (inc.getNum() % step == 0) {
                         long t = System.currentTimeMillis() - startTime;
-                        dingDingService.sendParseDingDingMsg("全量同步执行当前数量为:{}, 已耗时：{} 毫秒", inc.getNum(), t);
+                        DingDingService.sendParseDingDingMsg("全量同步执行当前数量为:{}, 已耗时：{} 毫秒", inc.getNum(), t);
                     }
 
                     id = list.get(list.size() - 1).getUiid();
@@ -202,7 +199,7 @@ public class CatSyncAlimamaUnionProductController {
                 }
                 stopWatch.stop();
                 String msg = "全量猫车商品索引执行完成，总时间:{}";
-                dingDingService.sendParseDingDingMsg(msg, stopWatch.toString());
+                DingDingService.sendParseDingDingMsg(msg, stopWatch.toString());
             }
         };
 

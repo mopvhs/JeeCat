@@ -53,9 +53,6 @@ public class PushTaskBizService {
     @Resource
     private QyWeiXinService qyWeiXinService;
 
-    @Resource
-    private DingDingService dingDingService;
-
     public void push() {
         log.info("【推送】推送数据入队列成功");
 
@@ -156,7 +153,7 @@ public class PushTaskBizService {
                 }
             }
             if (!Result.isOK(imgRes)) {
-                dingDingService.sendDingDingMsg("图片发送失败，img: " + img + ", imgRes: " + imgRes);
+                DingDingService.sendDingDingMsg("图片发送失败，img: " + img + ", imgRes: " + imgRes);
             }
             try {
                 Thread.sleep(3000);

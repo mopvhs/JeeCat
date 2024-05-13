@@ -55,9 +55,6 @@ public class AutoProductService {
     private CgUnionProductService cgUnionProductService;
 
     @Resource
-    private DingDingService dingDingService;
-
-    @Resource
     private CsOpLogService csOpLogService;
 
     @Resource
@@ -108,7 +105,7 @@ public class AutoProductService {
 
         cgUnionProductService.indexEs(productDOs, 10);
 
-        dingDingService.sendParseDingDingMsg("自动入库操作完成，ids:{}", JsonUtils.toJSONString(ids));
+        DingDingService.sendParseDingDingMsg("自动入库操作完成，ids:{}", JsonUtils.toJSONString(ids));
     }
 
     public void autoGoodProductAudit() {
@@ -159,7 +156,7 @@ public class AutoProductService {
 
         cgUnionProductService.indexEs(productDOs, 10);
 
-        dingDingService.sendParseDingDingMsg("有好价自动入库操作完成，ids:{}", JsonUtils.toJSONString(ids));
+        DingDingService.sendParseDingDingMsg("有好价自动入库操作完成，ids:{}", JsonUtils.toJSONString(ids));
     }
 
 
@@ -205,7 +202,7 @@ public class AutoProductService {
 
             cgUnionProductService.indexEs(productDOs, 10);
 
-            dingDingService.sendParseDingDingMsg("普通商品自动入库上架操作完成，ids:{}", JsonUtils.toJSONString(ids));
+            DingDingService.sendParseDingDingMsg("普通商品自动入库上架操作完成，ids:{}", JsonUtils.toJSONString(ids));
         }
     }
 
@@ -332,6 +329,6 @@ public class AutoProductService {
 
         cgUnionProductService.indexEs(productDOs, 10);
 
-        dingDingService.sendParseDingDingMsg("普通商品自动下架操作完成，ids:{}", JsonUtils.toJSONString(ids));
+        DingDingService.sendParseDingDingMsg("普通商品自动下架操作完成，ids:{}", JsonUtils.toJSONString(ids));
     }
 }
