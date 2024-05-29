@@ -245,7 +245,7 @@ public class CommandService {
                 }
                 products.add(product);
             } else {
-                errorMsg.append(result.getMessage()).append("\n");
+                errorMsg.append(url).append("\n");
             }
         }
 
@@ -262,7 +262,12 @@ public class CommandService {
         CommandDTO commandDTO = new CommandDTO();
         commandDTO.setContent(content);
         commandDTO.setProducts(products);
-        return Result.OK(commandDTO);
+        Result<CommandDTO> result = Result.OK(commandDTO);
+        if (StringUtils.isNotBlank(errorMsg.toString())) {
+            errorMsg.append("以上链接未转链，请辨别");
+            result.setMessage(errorMsg.toString());
+        }
+        return result;
     }
 
     private CommandDTO.Product buildJdProduct(JdUnionIdPromotion promotion) {

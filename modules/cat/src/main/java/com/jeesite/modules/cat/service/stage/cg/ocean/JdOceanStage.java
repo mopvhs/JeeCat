@@ -91,6 +91,8 @@ public class JdOceanStage extends AbstraOceanStage {
         boolean isSpecialUri = false;
         Map<String, String> urlMap = new HashMap<>();
         List<String> urls = new ArrayList<>();
+        Map<String, JdUnionIdPromotion> jdUrlProductMap = new HashMap<>();
+        Map<String, String> successUrlMap = new HashMap<>();
         String[] split = StringUtils.split(content, "\n");
         for (String item : split) {
             Matcher matcher = CommandService.jd.matcher(item);
@@ -111,6 +113,7 @@ public class JdOceanStage extends AbstraOceanStage {
             throw new QueryThirdApiException(QueryThirdApiException.QUERY_FAIL, "正则匹配链接未找到");
         }
 
+        List<String> otherUrls = new ArrayList<>();
         List<JdUnionIdPromotion> promotions = new ArrayList<>();
         for (String url : urls) {
             Result<JdUnionIdPromotion> result = dingDanXiaApiService.jdByUnionidPromotion("FHPOsYO7zki7tcrxp0amyGMP7wxVkbU3", url, 1002248572L, 3100684498L);
@@ -119,9 +122,18 @@ public class JdOceanStage extends AbstraOceanStage {
                 if (promotion.getSkuId() == null || promotion.getSkuId() <= 0) {
                     continue;
                 }
+                jdUrlProductMap.put(url, promotion);
+                successUrlMap.put(url, promotion.getShortURL());
                 promotions.add(promotion);
+            } else {
+                otherUrls.add(url);
             }
         }
+
+        context.setJdOtherUrls(otherUrls);
+        context.setJdUrlProductMap(jdUrlProductMap);
+        context.setSuccessJdUrlMap(successUrlMap);
+
         // 如果不存在商品，并且只存在特殊uri
         if (CollectionUtils.isEmpty(promotions) && isSpecialUri) {
             context.setOnlySpecialUri(true);
@@ -276,10 +288,22 @@ public class JdOceanStage extends AbstraOceanStage {
         }
 
         messageSync.addRemarks("newProduct", newProduct);
+        messageSync.addRemarks("jdOtherUrls", context.getJdOtherUrls());
+        messageSync.addRemarks("successJdUrlMap", context.getSuccessJdUrlMap());
 
         messageSync.setProcessed(1L);
         messageSync.setResourceIds(StringUtils.join(resourceIds, ","));
         messageSync.setStatus("NORMAL");
+        // 替换已经转链完成的链接
+        if (MapUtils.isNotEmpty(context.getJdUrlProductMap())) {
+            String msg = messageSync.getMsg();
+            // 替换
+            for (Map.Entry<String, JdUnionIdPromotion> url : context.getJdUrlProductMap().entrySet()) {
+                msg = msg.replace(url.getKey(), url.getValue().getShortURL());
+            }
+            messageSync.setMsg(msg);
+        }
+
         boolean res = maocheRobotCrawlerMessageSyncService.addIfAbsent(messageSync);
         if (!res) {
             log.error("messageSync is exist message:{}", JsonUtils.toJSONString(context.getCrawlerMessage()));

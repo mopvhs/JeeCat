@@ -12,6 +12,7 @@ import lombok.Data;
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.List;
+import java.util.Map;
 
 @Data
 public class OceanContext implements Serializable {
@@ -39,6 +40,12 @@ public class OceanContext implements Serializable {
 
     // 京东api商品 (京东的消息一般会一条消息多个商品)
     private List<JdUnionIdPromotion> jdProducts;
+    // 京东url和商品对应关系
+    private Map<String, JdUnionIdPromotion> jdUrlProductMap;
+    // 京东非转链的url
+    private List<String> jdOtherUrls;
+    // origin,change
+    private Map<String, String> successJdUrlMap;
 
     // 是否只存在特殊的uri
     // y-03.cn   3.cn    jd.cn   t.cn    q5url.cn    kurl06.cn

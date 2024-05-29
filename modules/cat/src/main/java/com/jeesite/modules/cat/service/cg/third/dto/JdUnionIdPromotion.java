@@ -16,6 +16,7 @@ public class JdUnionIdPromotion implements Serializable {
     @Serial
     private static final long serialVersionUID = 6372896366402717458L;
 
+    // 转链地址
     private String shortURL;
 
     private String note;

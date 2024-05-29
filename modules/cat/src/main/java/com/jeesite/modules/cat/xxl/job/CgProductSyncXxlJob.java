@@ -60,7 +60,7 @@ public class CgProductSyncXxlJob extends IJobHandler {
 
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
-        String status = "NORMAL";
+        String status = null;
         int total = 0;
 
         long id = 0L;
@@ -72,7 +72,7 @@ public class CgProductSyncXxlJob extends IJobHandler {
                 if (CollectionUtils.isEmpty(list)) {
                     break;
                 }
-
+                
                 total += list.size();
                 id = list.get(list.size() - 1).getUiid();
 

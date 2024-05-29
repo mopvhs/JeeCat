@@ -1,10 +1,12 @@
 package com.jeesite.modules.cgcat.dto.ocean;
 
 import com.alibaba.fastjson.JSONObject;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.jeesite.common.lang.NumberUtils;
 import com.jeesite.common.lang.StringUtils;
 import com.jeesite.common.utils.JsonUtils;
 import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageProductDO;
+import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageSyncDO;
 import com.jeesite.modules.cat.model.ProductPriceTO;
 import com.jeesite.modules.cat.model.UnionProductTO;
 import com.jeesite.modules.cat.service.es.dto.MaocheMessageProductIndex;
@@ -12,6 +14,7 @@ import com.jeesite.modules.cat.service.es.dto.MaocheMessageSyncIndex;
 import com.jeesite.modules.cat.service.toolbox.CommandService;
 import lombok.Data;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -154,20 +157,37 @@ public class OceanMessageVO implements Serializable {
         return dtos;
     }
 
-    public static void replaceUrl2Html(List<OceanMessageVO> msgs) {
+    public static void replaceUrl2Html(List<OceanMessageVO> msgs, Map<Long, MaocheRobotCrawlerMessageSyncDO> syncDOMap) {
         if (CollectionUtils.isEmpty(msgs)) {
             return;
         }
         String urlFormat = "<a href=\"%s\" target=\"_blank\">%s</a >";
+        String colorUrlFormat = "<a href=\"%s\" style=\"color:%s\" target=\"_blank\">%s</a >";
         for (OceanMessageVO product : msgs) {
             StringBuilder msg = new StringBuilder();
+            MaocheRobotCrawlerMessageSyncDO messageSyncDO = syncDOMap.get(product.getId());
+            Map<String, Object> remarksMap = getRemarksMap(messageSyncDO);
+            List<String> jdOtherUrls = jdOtherUrls(remarksMap);
+            Map<String, String> successJdUrlMap = successJdUrlMap(remarksMap);
+            List<String> successUrls = new ArrayList<>();
+            if (MapUtils.isNotEmpty(successJdUrlMap)) {
+                successUrls = new ArrayList<>(successJdUrlMap.values());
+            }
+
             String content = product.getMsg();
             String[] split = StringUtils.split(content, "\n");
             for (String item : split) {
                 Matcher matcher = CommandService.jd.matcher(item);
                 if (matcher.find()) {
                     String group = matcher.group();
-                    String url = String.format(urlFormat, group, group);
+                    String url = null;
+                    if (jdOtherUrls.contains(group)) {
+                        url = String.format(colorUrlFormat, group, "red", group);
+                    } else if (successUrls.contains(group)) {
+                        url = String.format(colorUrlFormat, group, "#90EE90", group);
+                    } else {
+                        url = String.format(urlFormat, group, group);
+                    }
                     msg.append(url).append("\n");
                 } else {
                     msg.append(item).append("\n");
@@ -177,5 +197,60 @@ public class OceanMessageVO implements Serializable {
         }
     }
 
+    public static List<String> jdOtherUrls(Map<String, Object> remarksMap) {
+        if (MapUtils.isEmpty(remarksMap)) {
+            return new ArrayList<>();
+        }
+        Object jdOtherUrls = remarksMap.get("jdOtherUrls");
+        if (jdOtherUrls == null) {
+            return new ArrayList<>();
+        }
 
+        if (jdOtherUrls instanceof List) {
+            return (List<String>) jdOtherUrls;
+        }
+
+        return new ArrayList<>();
+    }
+
+    public static Map<String, String> successJdUrlMap(Map<String, Object> remarksMap) {
+        if (MapUtils.isEmpty(remarksMap)) {
+            return new HashMap<>();
+        }
+        Object obj = remarksMap.get("successJdUrlMap");
+        if (obj == null) {
+            return new HashMap<>();
+        }
+
+        if (obj instanceof Map) {
+            return (Map<String, String>) obj;
+        }
+
+        return new HashMap<>();
+    }
+
+//    public <T> T getRemarks(Map<String, Object> remarksMap, String key) {
+//        if (MapUtils.isEmpty(remarksMap) || StringUtils.isBlank(key)) {
+//            return null;
+//        }
+//
+//        Object obj = remarksMap.get(key);
+//
+//        return JsonUtils.toReferenceType(JsonUtils.toJSONString(obj), new TypeReference<T>() {
+//        });
+//    }
+
+    public static Map<String, Object> getRemarksMap(MaocheRobotCrawlerMessageSyncDO syncDO) {
+        if (syncDO == null || StringUtils.isBlank(syncDO.getRemarks())) {
+            return new HashMap<>();
+        }
+
+        Map<String, Object> referenceType = JsonUtils.toReferenceType(syncDO.getRemarks(), new TypeReference<Map<String, Object>>() {
+        });
+        if (referenceType == null) {
+            referenceType = new HashMap<>();
+        }
+
+        return referenceType;
+    }
 }

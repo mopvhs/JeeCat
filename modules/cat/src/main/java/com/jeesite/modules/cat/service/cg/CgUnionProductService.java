@@ -344,14 +344,19 @@ public class CgUnionProductService {
         Map<Long, MaocheProductV2DO> productV2DOMap = productV2DOs.stream().collect(Collectors.toMap(MaocheProductV2DO::getProductId, Function.identity(), (o1, o2) -> o1));
 
         List<Map<String, Object>> list = new ArrayList<>();
+        List<Long> delProductIds = new ArrayList<>();
         for (MaocheAlimamaUnionProductDO item : items) {
             try {
                 if (!"宠物/宠物食品及用品".equals(item.getLevelOneCategoryName())) {
                     elasticSearch7Service.delIndex(Collections.singletonList(item.getUiid()), ElasticSearchIndexEnum.CAT_PRODUCT_INDEX);
                     continue;
                 }
+                MaocheProductV2DO productV2DO = productV2DOMap.get(item.getUiid());
+                if (productV2DO != null && productV2DO.getStatus().equals("NORMAL")) {
+                    item.setStatus(productV2DO.getStatus());
+                }
 
-                if (!"NORMAL".equalsIgnoreCase(item.getStatus())) {
+                if (!"NORMAL".equalsIgnoreCase(item.getStatus()) || productV2DO == null) {
                     elasticSearch7Service.delIndex(Collections.singletonList(item.getUiid()), ElasticSearchIndexEnum.CAT_PRODUCT_INDEX);
                     continue;
                 }
@@ -359,7 +364,6 @@ public class CgUnionProductService {
 //                MaocheAlimamaUnionGoodPriceDO goodPriceDO = unionGoodPriceMap.get(item.getItemIdSuffix());
                 MaocheAlimamaUnionProductDetailDO productDetailDO = productDetailMap.get(item.getItemIdSuffix());
 //                MaocheAlimamaUnionProductBihaohuoDO priceChartDO = priceChartDOMap.get(item.getIid());
-                MaocheProductV2DO productV2DO = productV2DOMap.get(item.getUiid());
 
 //                CarAlimamaUnionProductIndex catIndex = CatEsHelper.buildCatAlimamaUnionProductIndex(item,
 //                        titleKeywordDO,
@@ -373,6 +377,7 @@ public class CgUnionProductService {
                         productV2DO);
 
                 if (catIndex == null) {
+                    elasticSearch7Service.delIndex(Collections.singletonList(item.getUiid()), ElasticSearchIndexEnum.CAT_PRODUCT_INDEX);
                     continue;
                 }
                 Map<String, Object> data = JsonUtils.toReferenceType(JSON.toJSONString(catIndex), new TypeReference<Map<String, Object>>() {
@@ -383,6 +388,9 @@ public class CgUnionProductService {
                 log.error("index error1 item:{} ", JSON.toJSONString(item), e);
             }
         }
+
+        // 删除
+
 
         elasticSearch7Service.index(list, ElasticSearchIndexEnum.CAT_PRODUCT_INDEX, "id", corePoolSize);
     }

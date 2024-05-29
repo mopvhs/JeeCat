@@ -20,5 +20,15 @@ public interface MaocheRobotCrawlerMessageSyncDao extends CrudDao<MaocheRobotCra
     List<MaocheRobotCrawlerMessageSyncDO> findAll(@Param("id") Long id, @Param("limit") Integer limit);
 
     int updateBatchById(@Param("data") List<MaocheRobotCrawlerMessageSyncDO> list);
-	
+
+    List<MaocheRobotCrawlerMessageSyncDO> listByIds(@Param("ids") List<Long> ids);
+
+    /**
+     * 获取最新的n条相似消息
+     * @param date
+     * @param limit
+     * @return
+     */
+    List<MaocheRobotCrawlerMessageSyncDO> listSimilar(@Param("date") String date, @Param("limit") int limit);
+
 }

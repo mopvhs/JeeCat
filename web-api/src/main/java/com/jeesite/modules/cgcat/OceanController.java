@@ -7,6 +7,7 @@ import com.jeesite.common.lang.StringUtils;
 import com.jeesite.common.web.Result;
 import com.jeesite.modules.cat.BrandLibCondition;
 import com.jeesite.modules.cat.entity.MaocheCategoryMappingDO;
+import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageSyncDO;
 import com.jeesite.modules.cat.es.config.model.ElasticSearchData;
 import com.jeesite.modules.cat.helper.CatRobotHelper;
 import com.jeesite.modules.cat.model.BrandLibTO;
@@ -19,6 +20,7 @@ import com.jeesite.modules.cat.model.ocean.OceanMessageCondition;
 import com.jeesite.modules.cat.model.ocean.OceanMessageProductCondition;
 import com.jeesite.modules.cat.service.MaocheCategoryMappingService;
 import com.jeesite.modules.cat.service.MaocheRobotCrawlerMessageProductService;
+import com.jeesite.modules.cat.service.MaocheRobotCrawlerMessageSyncService;
 import com.jeesite.modules.cat.service.cg.CgUnionProductService;
 import com.jeesite.modules.cat.service.cg.brand.BrandLibConvertService;
 import com.jeesite.modules.cat.service.cg.brand.BrandLibService;
@@ -50,6 +52,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -68,6 +71,9 @@ public class OceanController {
 
     @Resource
     private MaocheRobotCrawlerMessageProductService maocheRobotCrawlerMessageProductService;
+
+    @Resource
+    private MaocheRobotCrawlerMessageSyncService maocheRobotCrawlerMessageSyncService;
 
     @Resource
     private MaocheCategoryMappingService maocheCategoryMappingService;
@@ -223,9 +229,15 @@ public class OceanController {
         }
 
         List<MaocheMessageSyncIndex> documents = searchMsg.getDocuments();
+        List<Long> ids = documents.stream().map(MaocheMessageSyncIndex::getId).distinct().toList();
+
+        // 根据id查询同步的消息
+        List<MaocheRobotCrawlerMessageSyncDO> messageSyncDOs = maocheRobotCrawlerMessageSyncService.listByIds(ids);
+        Map<Long, MaocheRobotCrawlerMessageSyncDO> syncDOMap = messageSyncDOs.stream().collect(Collectors.toMap(MaocheRobotCrawlerMessageSyncDO::getUiid, Function.identity(), (o, n) -> n));
+
         List<OceanMessageVO> vos = OceanMessageVO.toVOs(documents);
         // 对url加html <a>标签
-        OceanMessageVO.replaceUrl2Html(vos);
+        OceanMessageVO.replaceUrl2Html(vos, syncDOMap);
 
         Map<Long, OceanMessageVO> messageVOMap = vos.stream().collect(Collectors.toMap(OceanMessageVO::getId, i -> i, (a, b) -> b));
 

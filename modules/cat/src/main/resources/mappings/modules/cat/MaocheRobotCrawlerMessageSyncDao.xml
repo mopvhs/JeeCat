@@ -98,4 +98,24 @@
 			</foreach>
 		</where>
 	</update>
+
+	<select id="listByIds" resultType="MaocheRobotCrawlerMessageSyncDO">
+		SELECT *
+		FROM maoche_robot_crawler_message_sync
+		<where>
+			id in
+			<foreach collection="ids" open="(" close=")" separator="," item="id">
+				#{id}
+			</foreach>
+		</where>
+	</select>
+
+	<select id="listSimilar" resultType="MaocheRobotCrawlerMessageSyncDO">
+		SELECT *
+		FROM maoche_robot_crawler_message_sync
+		<where>
+			status = "SIMILAR" and create_date >= #{date} order by create_date desc limit #{limit}
+		</where>
+	</select>
+
 </mapper>

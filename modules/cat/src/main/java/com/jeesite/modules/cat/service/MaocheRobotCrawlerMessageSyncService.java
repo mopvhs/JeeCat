@@ -1,5 +1,6 @@
 package com.jeesite.modules.cat.service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import com.jeesite.common.lang.StringUtils;
@@ -108,5 +109,14 @@ public class MaocheRobotCrawlerMessageSyncService extends CrudService<MaocheRobo
 		}
 
 		return dao.updateBatchById(updateList) > 0;
+	}
+
+	// 查询列表
+	public List<MaocheRobotCrawlerMessageSyncDO> listByIds(List<Long> ids) {
+		if (CollectionUtils.isEmpty(ids)) {
+			return new ArrayList<>();
+		}
+
+		return dao.listByIds(ids);
 	}
 }
