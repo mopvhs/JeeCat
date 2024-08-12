@@ -7,6 +7,7 @@ import com.jeesite.modules.cat.service.cg.third.dto.JdUnionIdPromotion;
 import com.jeesite.modules.cat.service.cg.third.tb.dto.CommandResponse;
 import com.jeesite.modules.cat.service.cg.third.tb.dto.CommandResponseV2;
 import com.jeesite.modules.cat.service.es.dto.MaocheMessageSyncIndex;
+import com.jeesite.modules.cat.service.toolbox.dto.CommandContext;
 import lombok.Data;
 
 import java.io.Serial;
@@ -37,15 +38,24 @@ public class OceanContext implements Serializable {
 
     // 淘宝api商品
     private CommandResponseV2 tbProduct;
+    private Map<String, CommandResponseV2> tbProductMap;
 
     // 京东api商品 (京东的消息一般会一条消息多个商品)
     private List<JdUnionIdPromotion> jdProducts;
-    // 京东url和商品对应关系
+    /**
+     * @deprecated 京东url和商品对应关系 -> commandContext
+     */
     private Map<String, JdUnionIdPromotion> jdUrlProductMap;
-    // 京东非转链的url
+    /**
+     * @deprecated 京东非转链的url -> commandContext
+     */
     private List<String> jdOtherUrls;
-    // origin,change
+    /**
+     * @deprecated origin,change -> commandContext
+     */
     private Map<String, String> successJdUrlMap;
+    // 转链详情
+    private CommandContext commandContext;
 
     // 是否只存在特殊的uri
     // y-03.cn   3.cn    jd.cn   t.cn    q5url.cn    kurl06.cn

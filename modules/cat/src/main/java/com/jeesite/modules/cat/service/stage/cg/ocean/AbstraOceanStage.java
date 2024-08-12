@@ -18,17 +18,23 @@ import com.jeesite.modules.cat.service.es.OceanEsService;
 import com.jeesite.modules.cat.service.es.dto.MaocheMessageProductIndex;
 import com.jeesite.modules.cat.service.es.dto.MaocheMessageSyncIndex;
 import com.jeesite.modules.cat.service.stage.cg.ocean.exception.QueryThirdApiException;
+import com.jeesite.modules.cat.service.toolbox.CommandService;
+import com.mchange.lang.ByteUtils;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import com.google.common.collect.Lists;
 
 import javax.annotation.Resource;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -39,6 +45,113 @@ import java.util.stream.Collectors;
 
 @Slf4j
 public abstract class AbstraOceanStage implements OceanStage {
+
+    public static List<String> deletions = new ArrayList<>();
+    public static List<TextBO> deletionTexts = new ArrayList<>();
+    static {
+        deletions.add("豪车");
+        deletions.add("❗");
+        deletions.add("速度❗❗✋慢无~");
+        deletions.add("✋慢无~");
+        deletions.add("✋慢无");
+        deletions.add("漏栋价");
+        deletions.add("漏栋");
+        deletions.add("随时无~");
+        deletions.add("超超豪车‼手慢无无无");
+        deletions.add("☞复制去桃宝弹出：");
+        deletions.add("☞复制去桃宝弹出:");
+        deletions.add("🦆");
+        deletions.add("\uD83E\uDD86"); // 🦆
+        deletions.add("🐱");
+        deletions.add("\uD83D\uDC31"); // 🐱
+        deletions.add("🐔");
+        deletions.add("\uD83D\uDC14");
+        deletions.add("⚠");
+        deletions.add("🐦");
+        deletions.add("\uD83D\uDC26");
+        deletions.add("👇");
+        deletions.add("\uD83D\uDC47");
+        deletions.add("✅");
+        deletions.add("👉复制去🍑宝");
+        deletions.add("\uD83D\uDC49复制去\uD83C\uDF51宝");
+        deletions.add("--");
+        deletions.add("復zhi打开𝙏𝙖𝙤𝘽𝙖𝙤 𝘼𝙋𝙋");
+        deletions.add("復zhi打开\uD835\uDE4F\uD835\uDE56\uD835\uDE64\uD835\uDE3D\uD835\uDE56\uD835\uDE64 \uD835\uDE3C\uD835\uDE4B\uD835\uDE4B");
+        deletions.add("可可独家");
+        deletions.add("可可首发");
+        deletions.add("可可");
+
+        deletions.add("好价");
+        deletions.add("简单车");
+        deletions.add("速度");
+        deletions.add("速度手慢无");
+        deletions.add("活动稀少");
+        deletions.add("手慢无~");
+        deletions.add("手慢无");
+        deletions.add("\uD83D\uDC36"); // 🐶
+        deletions.add("☞复制去淘宝弹出：");
+        deletions.add("快冲‼");
+        deletions.add("‼");
+        deletions.add("！");
+        deletions.add("!");
+        deletions.add("进猫车群#COCO猫舍");
+        deletions.add("_________________");
+
+        for (String item : deletions) {
+            TextBO textBO = new TextBO(item, item.length());
+            deletionTexts.add(textBO);
+        }
+
+        // 排序，按大到小
+        // 使用Collections.sort方法和自定义Comparator进行排序
+        deletionTexts.sort(new Comparator<TextBO>() {
+            @Override
+            public int compare(TextBO o1, TextBO o2) {
+                // 按照size字段从大到小排序
+                return Integer.compare(o2.getSize(), o1.getSize());
+            }
+        });
+    }
+
+    public static List<String> deletionUrls = new ArrayList<>();
+    static {
+        deletionUrls.add("车:s.q5url.cn/yA7U");
+        deletionUrls.add("\uD83D\uDC31车:s.q5url.cn/yA7U");
+    }
+
+    /**
+     * 命中关键词，直接不进公海
+     */
+    public static List<String> failTexts = new ArrayList<>();
+    static {
+        failTexts.add("冠军标");
+        failTexts.add("元佑双标");
+    }
+
+    public static Map<String, String> replacements = new LinkedHashMap<>();
+    static {
+        replacements.put("卷", "券");
+        replacements.put("锩", "券");
+        replacements.put("蕞低", "最低");
+        replacements.put("加车1件", "加购一件");
+        replacements.put("plus\\+首单", "Plus叠首单");
+        replacements.put("plus", "Plus");
+        replacements.put("亓", "元");
+        replacements.put("旗见店", "旗舰店");
+        replacements.put("好萍仮", "好返");
+        replacements.put("到✋", "到手价");
+        replacements.put("拼\\.团\\.", "拼团");
+        replacements.put("帼际", "国际");
+        replacements.put("桃宝", "淘宝");
+        replacements.put("✖", "*");
+        replacements.put("坤", "鸡");
+        replacements.put("➕", "&");
+        replacements.put("普素羊肉", "经典鲜羊肉");
+        replacements.put("好萍", "好评");
+        replacements.put("原本", "日常");
+        replacements.put("不吃包tui", "不吃包退");
+        replacements.put("好反", "好返");
+    }
 
     @Resource
     private MaocheRobotCrawlerMessageSyncService maocheRobotCrawlerMessageSyncService;
@@ -55,10 +168,10 @@ public abstract class AbstraOceanStage implements OceanStage {
     @Override
     public void process(OceanContext context) {
 
-        // 1. 构建基础的消息结构
-        buildBaseMessageSync(context);
-
         try {
+            // 1. 构建基础的消息结构
+            buildBaseMessageSync(context);
+
             // 2. 查询第三方接口获取商品数据
             queryProductFromThirdApi(context);
 
@@ -94,6 +207,9 @@ public abstract class AbstraOceanStage implements OceanStage {
     public void buildBaseMessageSync(OceanContext context) {
 
         MaocheRobotCrawlerMessageDO message = context.getCrawlerMessage();
+        String msg = message.getMsg();
+        String s = interposeMsg(msg);
+        message.setMsg(s);
 
         // 1. 构建基础的消息结构
         MatchContent matchContent = calMatchContent(getPattern(), message.getMsg());
@@ -336,5 +452,78 @@ public abstract class AbstraOceanStage implements OceanStage {
         private List<String> contents;
 
         private String calMd5;
+    }
+
+    public String interposeMsg(String msg) {
+        if (StringUtils.isBlank(msg)) {
+            return msg;
+        }
+
+        // 规则
+        // 先做replace
+        // 遍历替换规则并进行替换
+        for (Map.Entry<String, String> entry : replacements.entrySet()) {
+            msg = msg.replaceAll(entry.getKey(), entry.getValue());
+        }
+
+        // 构建排序，长的文本需要先匹配做删除
+        String[] split = msg.split("\n");
+        StringBuilder builder = new StringBuilder();
+
+        // 特殊空格
+        byte[] bytes = new byte[]{-17, -72, -113};
+        String hexAscii = ByteUtils.toHexAscii(bytes);
+
+        for (String failText : failTexts) {
+            if (msg.contains(failText)) {
+                throw new IllegalArgumentException("messageSync contains fail . msg: " + msg + ", text " + failText);
+            }
+        }
+
+        for (String line : split) {
+            String replace = line;
+            // 是否包含 url
+            for (String url : deletionUrls) {
+                if (replace.contains(url)) {
+                    replace = null;
+                    break;
+                }
+            }
+            String replaceAscii = ByteUtils.toHexAscii(replace.getBytes(StandardCharsets.UTF_8));
+
+            if (StringUtils.isBlank(replace) || replace.equals("\n") || replace.equals("\uFE0F\uFE0F") || hexAscii.equals(replace) || hexAscii.equals(replaceAscii)) {
+                continue;
+            }
+
+            for (TextBO textBO : deletionTexts) {
+                replace = replace.replaceAll(textBO.getText(), "");
+            }
+            replaceAscii = ByteUtils.toHexAscii(replace.getBytes(StandardCharsets.UTF_8));
+            if (StringUtils.isBlank(replace) || replace.equals("\n") || replace.equals("\uFE0F\uFE0F") || hexAscii.equals(replaceAscii)) {
+                continue;
+            }
+
+            builder.append(replace).append("\n");
+        }
+
+        return builder.toString();
+    }
+
+    public static String fixAffType(String msg, String affType) {
+        if (StringUtils.isBlank(msg)) {
+            return affType;
+        }
+        boolean contains = msg.contains("y.q5url.cn");
+
+        return contains ? "tb" : affType;
+    }
+
+    @Data
+    @AllArgsConstructor
+    public static class TextBO {
+
+        private String text;
+
+        private Integer size;
     }
 }

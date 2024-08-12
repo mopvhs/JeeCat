@@ -1,12 +1,14 @@
 package com.jeesite.modules.cat.service.cg;
 
 import com.jeesite.common.lang.NumberUtils;
+import com.jeesite.common.lang.StringUtils;
 import com.jeesite.common.web.Result;
 import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageDO;
 import com.jeesite.modules.cat.entity.MaocheSyncDataInfoDO;
 import com.jeesite.modules.cat.service.MaocheRobotCrawlerMessageService;
 import com.jeesite.modules.cat.service.MaocheRobotCrawlerMessageSyncService;
 import com.jeesite.modules.cat.service.MaocheSyncDataInfoService;
+import com.jeesite.modules.cat.service.stage.cg.ocean.AbstraOceanStage;
 import com.jeesite.modules.cat.service.stage.cg.ocean.OceanContext;
 import com.jeesite.modules.cat.service.stage.cg.ocean.OceanStage;
 import org.apache.commons.collections.CollectionUtils;
@@ -64,11 +66,16 @@ public class OceanSyncService {
         // 一个一个的解析
         for (MaocheRobotCrawlerMessageDO message : messages) {
             offset = String.valueOf(message.getId());
+            // afftype干预订正
+            String affType = message.getAffType();
+            String msg = message.getMsg();
+            affType = AbstraOceanStage.fixAffType(msg, affType);
+            message.setAffType(affType);
             try {
                 OceanContext context = new OceanContext(message);
-                if (message.getAffType().equals("tb")) {
+                if (affType.equals("tb")) {
                     tbOceanStage.process(context);
-                } else if (message.getAffType().equals("jd")) {
+                } else if (affType.equals("jd")) {
                     jdOceanStage.process(context);
                 }
             } catch (Exception e) {
@@ -81,4 +88,6 @@ public class OceanSyncService {
 
         return Result.OK("操作完成");
     }
+
+
 }

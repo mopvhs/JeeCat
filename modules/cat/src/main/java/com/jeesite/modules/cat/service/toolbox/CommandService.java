@@ -18,25 +18,33 @@ import com.jeesite.modules.cat.helper.ProductValueHelper;
 import com.jeesite.modules.cat.service.CsOpLogService;
 import com.jeesite.modules.cat.service.MaocheAlimamaUnionProductService;
 import com.jeesite.modules.cat.service.MaocheProductV2Service;
+import com.jeesite.modules.cat.service.OkHttpService;
 import com.jeesite.modules.cat.service.cg.CgUnionProductService;
 import com.jeesite.modules.cat.service.cg.third.DingDanXiaApiService;
+import com.jeesite.modules.cat.service.cg.third.DwzApiService;
+import com.jeesite.modules.cat.service.cg.third.dto.DwzShortUrlDetail;
 import com.jeesite.modules.cat.service.cg.third.dto.JdUnionIdPromotion;
+import com.jeesite.modules.cat.service.cg.third.dto.ShortUrlDetail;
 import com.jeesite.modules.cat.service.cg.third.tb.TbApiService;
-import com.jeesite.modules.cat.service.cg.third.tb.dto.CommandResponse;
 import com.jeesite.modules.cat.service.cg.third.tb.dto.CommandResponseV2;
 import com.jeesite.modules.cat.service.message.DingDingService;
+import com.jeesite.modules.cat.service.toolbox.dto.CommandContext;
 import com.jeesite.modules.cat.service.toolbox.dto.CommandDTO;
 import lombok.extern.slf4j.Slf4j;
+import okhttp3.HttpUrl;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.math.BigDecimal;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -71,6 +79,9 @@ public class CommandService {
     @Resource
     private MaocheAlimamaUnionProductService maocheAlimamaUnionProductService;
 
+    @Resource
+    private DwzApiService dwzApiService;
+
     // 淘宝
     public static Pattern tb = Pattern.compile("\\((.*?)\\)\\/|\\/(.*?)\\/\\/");
 
@@ -87,12 +98,117 @@ public class CommandService {
             return doExchangeTb(content);
         }
 
-        if ("jd".equals(type)) {
-            return doExchangeJd(content);
-
+        if ("jd".equals(type) || "dwz".equals(type)) {
+            CommandContext context = new CommandContext();
+            context.setContent(content);
+            return doDwz(context);
         }
 
         return Result.OK(null);
+    }
+
+    public Result<CommandDTO> doDwz(CommandContext context) {
+
+        Result<CommandDTO> exchangeJd = doExchangeJd(context);
+        if (exchangeJd == null) {
+            return exchangeJd;
+        }
+        CommandDTO data = exchangeJd.getResult();
+
+        String jdResultContent = data.getContent();
+        if (StringUtils.isBlank(jdResultContent)) {
+            return Result.ERROR(500, "参数不能为空");
+        }
+
+        // 判断是否支持 dwz
+        matchDwzUrl(context);
+
+        for (ShortUrlDetail detail : context.listShortDetails()) {
+            if (!detail.isSupportDwz() || StringUtils.isBlank(detail.getSupportDwzUrl())) {
+                continue;
+            }
+
+            String oriUrl = detail.getSupportDwzUrl();
+            // 获取短地址md5
+            String shortUrl = getDwzByUrl(oriUrl);
+            if (StringUtils.isBlank(shortUrl)) {
+                continue;
+            }
+
+            detail.addExchangeLog(shortUrl);
+            detail.setReplaceUrl(shortUrl);
+            detail.setApiRes(true);
+            jdResultContent = jdResultContent.replace(oriUrl, shortUrl);
+        }
+
+        data.setContent(jdResultContent);
+        context.setResContent(jdResultContent);
+        if (data.getProducts() == null) {
+            data.setProducts(new ArrayList<>());
+        }
+        exchangeJd.setCode(200);
+        exchangeJd.setSuccess(true);
+        return exchangeJd;
+    }
+
+    /**
+     * 获取短地址
+     * @param url
+     * @return
+     */
+    public String getDwzByUrl(String url) {
+        if (StringUtils.isBlank(url)) {
+            return null;
+        }
+        // 获取短地址md5
+        String key = "dwz_" + Md5Utils.md5(url);
+        String shortUrl = cacheService.get(key);
+        if (StringUtils.isBlank(shortUrl)) {
+            Result<DwzShortUrlDetail> rpcRes = dwzApiService.shortUrl(url, false);
+            if (rpcRes.isSuccess() && rpcRes.getResult() != null && StringUtils.isNotBlank(rpcRes.getResult().getShortUrl())) {
+                shortUrl = rpcRes.getResult().getShortUrl();
+                cacheService.setWithExpireTime(key, shortUrl, (int) TimeUnit.DAYS.toSeconds(7));
+            }
+        }
+
+        return shortUrl;
+    }
+
+    /**
+     * 匹配是否支持短网址转换
+     * @param context
+     */
+    private void matchDwzUrl(CommandContext context) {
+        if (context == null || MapUtils.isEmpty(context.getShortUrlDetailMap())) {
+            return;
+        }
+
+        List<String> containUrls = new ArrayList<>();
+        containUrls.add("coupon.m.jd.com");
+        containUrls.add("pro.m.jd.com");
+        containUrls.add("h5static.m.jd.com");
+        containUrls.add("shopmember.m.jd.com");
+        containUrls.add("coupon.jd.com");
+        containUrls.add("activities.m.jd.com");
+
+        List<ShortUrlDetail> shortDetails = context.listShortDetails();
+        for (ShortUrlDetail detail : shortDetails) {
+            String checkUrl = detail.getContentUrl();
+            if (StringUtils.isNotBlank(detail.getReplaceUrl())) {
+                checkUrl = detail.getReplaceUrl();
+            }
+            try {
+                URL url = new URL(checkUrl);
+                String host = url.getHost();
+
+                if (containUrls.contains(host)) {
+                    detail.setSupportDwz(true);
+                    detail.setSupportDwzUrl(checkUrl);
+                }
+            } catch (Exception e) {
+                log.error("短地址转换失败", e);
+            }
+        }
     }
 
     private Result<CommandDTO> doExchangeTb(String content) {
@@ -205,24 +321,29 @@ public class CommandService {
         return Result.ERROR(response.getCode(), response.getMessage());
     }
 
-    private Result<CommandDTO> doExchangeJd(String content) {
-        if (StringUtils.isBlank(content)) {
+    private Result<CommandDTO> doExchangeJd(CommandContext context) {
+        if (context == null || StringUtils.isBlank(context.getContent())) {
             return Result.ERROR(500, "参数不能为空");
         }
 
-        Map<String, String> urlMap = new HashMap<>();
-        List<String> urls = new ArrayList<>();
+        String content = context.getContent();
+        Map<String, ShortUrlDetail> shortUrlDetailMap = new HashMap<>();
+        context.setShortUrlDetailMap(shortUrlDetailMap);
+
         String[] split = StringUtils.split(content, "\n");
         for (String item : split) {
             Matcher matcher = jd.matcher(item);
             if (matcher.find()) {
-
+                ShortUrlDetail detail = new ShortUrlDetail();
                 String group = matcher.group();
-                urlMap.put(group, "");
-                urls.add(group);
+
+                detail.setContentUrl(group);
+                // 原始地址
+                detail.addExchangeLog(group);
+                shortUrlDetailMap.put(group, detail);
             }
         }
-        if (MapUtils.isEmpty(urlMap)) {
+        if (MapUtils.isEmpty(shortUrlDetailMap)) {
             return Result.ERROR(500, "分析需要替换的链接失败");
         }
 
@@ -230,11 +351,25 @@ public class CommandService {
         StringBuilder errorMsg = new StringBuilder();
         Map<String, String> commandMap = new HashMap<>();
         List<CommandDTO.Product> products = new ArrayList<>();
-        for (String url : urls) {
-            Result<JdUnionIdPromotion> result = dingDanXiaApiService.jdByUnionidPromotionWithCoupon("FHPOsYO7zki7tcrxp0amyGMP7wxVkbU3", url, 1002248572L, 3100684498L);
+        for (Map.Entry<String, ShortUrlDetail> entry : shortUrlDetailMap.entrySet()) {
+            String url = entry.getKey();
+            ShortUrlDetail detail = entry.getValue();
+
+            // 获取原地址
+            String redirectUrl = getRedirectUrl(url);
+            String searchUrl = Optional.ofNullable(redirectUrl).orElse(url);
+            detail.setSearchUrl(searchUrl);
+
+            Result<JdUnionIdPromotion> result = dingDanXiaApiService.jdByUnionidPromotionWithCoupon("FHPOsYO7zki7tcrxp0amyGMP7wxVkbU3", searchUrl, 1002248572L, 3100684498L);
             commandMap.put(url, JsonUtils.toJSONString(result));
             if (Result.isOK(result)) {
                 JdUnionIdPromotion promotion = result.getResult();
+
+                // 获取到转链后的地址
+                detail.setApiRes(true);
+                detail.setReplaceUrl(promotion.getShortURL());
+                detail.addExchangeLog(promotion.getShortURL());
+                detail.setPromotion(promotion);
                 content = content.replace(url, promotion.getShortURL());
 
                 match = true;
@@ -245,18 +380,31 @@ public class CommandService {
                 }
                 products.add(product);
             } else {
+                if (StringUtils.isNotBlank(redirectUrl)) {
+                    content = content.replace(url, redirectUrl);
+                    detail.setReplaceUrl(redirectUrl);
+                    detail.addExchangeLog(redirectUrl);
+                }
                 errorMsg.append(url).append("\n");
             }
         }
 
+        String resourceId = Optional.ofNullable(context.getRelationId()).orElse("jd");
         // 日志记录
-        csOpLogService.addLog("jd", "doExchangeJd", "jd_command", "maoche", "jd转链",
+        csOpLogService.addLog(resourceId, "doExchangeJd", "jd_command", "maoche", "jd转链",
                 content, JsonUtils.toJSONString(commandMap));
+
+        // 最终转换后的结果
+        context.setResContent(content);
 
         if (!match) {
             String msgFormat = "{} \n 转链结果：{}";
             DingDingService.sendParseDingDingMsg(msgFormat, 1, content, errorMsg.toString());
-            return Result.ERROR(500, errorMsg.toString());
+            Result<CommandDTO> error = Result.ERROR(401, errorMsg.toString());
+            CommandDTO commandDTO = new CommandDTO();
+            commandDTO.setContent(content);
+            error.setResult(commandDTO);
+            return error;
         }
 
         CommandDTO commandDTO = new CommandDTO();
@@ -268,6 +416,57 @@ public class CommandService {
             result.setMessage(errorMsg.toString());
         }
         return result;
+    }
+
+    /**
+     * 获取原地址
+     * @param url
+     * @return
+     */
+    private String getRedirectUrl(String url) {
+
+        log.info("jd 获取重定向地址 {}", url);
+        if (StringUtils.isBlank(url)) {
+            return null;
+        }
+        String redirectUrl = null;
+        if (needRedirect(url)) {
+            HttpUrl httpUrl = OkHttpService.doGetHttpUrl(url);
+            if (httpUrl != null) {
+                String realUrl = httpUrl.toString();
+                if (StringUtils.isNotBlank(realUrl) && !realUrl.equals(url)) {
+                    redirectUrl = realUrl;
+                }
+            }
+        }
+
+        return redirectUrl;
+    }
+
+    private boolean needRedirect(String uri) {
+        if (StringUtils.isBlank(uri)) {
+            return false;
+        }
+        // 不需要重定向的域名
+        List<String> list = new ArrayList<>();
+        list.add("item.jd.com");
+        list.add("u.jd.com");
+        list.add("coupon.m.jd.com");
+        list.add("3.cn");
+        list.add("pro.m.jd.com");
+        list.add("prodev.m.jd.com");
+        list.add("coupon.jd.com");
+        String host = null;
+        try {
+            URL url = new URL(uri);
+            host = url.getHost();
+
+            return !list.contains(host);
+        } catch (Exception e) {
+            log.error("needRedirect 异常， uri:{}", uri, e);
+        }
+
+        return false;
     }
 
     private CommandDTO.Product buildJdProduct(JdUnionIdPromotion promotion) {

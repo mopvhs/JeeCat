@@ -69,12 +69,13 @@ public class AutoProductService {
         queryBuilder.must(QueryBuilders.termQuery("auditStatus", AuditStatusEnum.INIT.getStatus()));
         queryBuilder.must(QueryBuilders.termQuery("levelOneCategoryName", "宠物/宠物食品及用品"));
 
-        RangeQueryBuilder rangeQuery = QueryBuilders.rangeQuery("shopDsr");
-        rangeQuery.gte(48000);
+        RangeQueryBuilder rangeQuery = QueryBuilders.rangeQuery("commissionRate");
+        // 佣金率大于 1.6%
+        rangeQuery.gte(160);
         queryBuilder.must(rangeQuery);
-        RangeQueryBuilder volumeRange = QueryBuilders.rangeQuery("volume");
-        volumeRange.gte(100);
-        queryBuilder.must(volumeRange);
+//        RangeQueryBuilder volumeRange = QueryBuilders.rangeQuery("volume");
+//        volumeRange.gte(100);
+//        queryBuilder.must(volumeRange);
 
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
         searchSourceBuilder.from(0)
@@ -212,13 +213,11 @@ public class AutoProductService {
         queryBuilder.must(QueryBuilders.termQuery("auditStatus", AuditStatusEnum.INIT.getStatus()));
         queryBuilder.mustNot(QueryBuilders.termsQuery("activity", Collections.singletonList(CatActivityEnum.GOOD_PRICE.getActivity())));
         queryBuilder.must(QueryBuilders.termQuery("levelOneCategoryName", "宠物/宠物食品及用品"));
-        // 进库标准：dsr 4.8，销量大于等于100
-        RangeQueryBuilder rangeQuery = QueryBuilders.rangeQuery("shopDsr");
-        rangeQuery.gte(48000);
+        // 进库标准：
+        RangeQueryBuilder rangeQuery = QueryBuilders.rangeQuery("commissionRate");
+        // 佣金率大于 1.6%
+        rangeQuery.gte(160);
         queryBuilder.must(rangeQuery);
-        RangeQueryBuilder volumeRange = QueryBuilders.rangeQuery("volume");
-        volumeRange.gte(100);
-        queryBuilder.must(volumeRange);
 
         return queryBuilder;
     }

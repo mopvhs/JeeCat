@@ -25,6 +25,7 @@ import com.jeesite.modules.cat.service.cg.CgUnionProductService;
 import com.jeesite.modules.cat.service.cg.task.PushTaskBizService;
 import com.jeesite.modules.cat.service.cg.task.PushTaskCreateService;
 import com.jeesite.modules.cat.service.cg.task.TaskSearchBizService;
+import com.jeesite.modules.cat.service.stage.cg.ocean.JdOceanStage;
 import com.jeesite.modules.cgcat.dto.PushTaskDetail;
 import com.jeesite.modules.cgcat.dto.PushTaskEditRequest;
 import com.jeesite.modules.cgcat.dto.PushTaskResponse;
@@ -79,6 +80,9 @@ public class CgMaocheTaskController {
 
     @Resource
     private MaocheTaskDao maocheTaskDao;
+
+    @Resource
+    private JdOceanStage jdOceanStage;
 
     @RequestMapping(value = "/push/task/list")
     @ResponseBody
@@ -393,6 +397,23 @@ public class CgMaocheTaskController {
             maochePushTaskService.updateStatus(pushIds, TaskStatusEnum.STOP.name());
 
             return Result.OK("更新成功");
+        }
+
+        // 如果是开启，判断是否包含黑名单网址
+        for (MaochePushTaskDO item : pushtaskList) {
+            try {
+                PushTaskContentDetail pushTaskContent = JsonUtils.toReferenceType(item.getContent(), new TypeReference<>() {
+                });
+                if (pushTaskContent == null) {
+                    continue;
+                }
+                boolean specialUri = jdOceanStage.hadSpecialUri(pushTaskContent.getDetail());
+                if (specialUri) {
+                    return Result.ERROR(500, "存在黑名单网址");
+                }
+            } catch (Exception e) {
+                log.error("判断是否包含黑名单网址 异常，push task {}", JsonUtils.toJSONString(item), e);
+            }
         }
 
         String content = task.getContent();

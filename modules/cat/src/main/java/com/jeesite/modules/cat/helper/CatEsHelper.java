@@ -254,7 +254,7 @@ public class CatEsHelper {
             ProductV2Helper.fillCouponInfo(index, product);
 
             // 填充审核信息
-            ProductV2Helper.fillAuditInfo(index, item);
+            ProductV2Helper.fillAuditInfo(index, item, productV2DO);
 
             // 价格信息
             ProductV2Helper.fillPriceInfo(index, product);

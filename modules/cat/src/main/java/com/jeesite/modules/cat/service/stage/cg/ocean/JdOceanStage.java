@@ -1,17 +1,13 @@
 package com.jeesite.modules.cat.service.stage.cg.ocean;
 
-import com.alibaba.fastjson.JSONObject;
 import com.jeesite.common.lang.DateUtils;
-import com.jeesite.common.lang.NumberUtils;
 import com.jeesite.common.lang.StringUtils;
 import com.jeesite.common.utils.JsonUtils;
 import com.jeesite.common.web.Result;
-import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductDO;
 import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageDO;
 import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageProductDO;
 import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageSyncDO;
 import com.jeesite.modules.cat.es.config.model.ElasticSearchData;
-import com.jeesite.modules.cat.helper.ProductValueHelper;
 import com.jeesite.modules.cat.model.CatProductBucketTO;
 import com.jeesite.modules.cat.model.ocean.OceanMessageCondition;
 import com.jeesite.modules.cat.service.MaocheAlimamaUnionProductService;
@@ -22,14 +18,16 @@ import com.jeesite.modules.cat.service.cg.inner.InnerApiService;
 import com.jeesite.modules.cat.service.cg.ocean.OceanSearchService;
 import com.jeesite.modules.cat.service.cg.third.DingDanXiaApiService;
 import com.jeesite.modules.cat.service.cg.third.dto.JdUnionIdPromotion;
-import com.jeesite.modules.cat.service.cg.third.tb.TbApiService;
-import com.jeesite.modules.cat.service.cg.third.tb.dto.CommandResponse;
+import com.jeesite.modules.cat.service.cg.third.dto.ShortUrlDetail;
 import com.jeesite.modules.cat.service.es.dto.MaocheMessageSyncIndex;
 import com.jeesite.modules.cat.service.stage.cg.ocean.exception.QueryThirdApiException;
 import com.jeesite.modules.cat.service.toolbox.CommandService;
+import com.jeesite.modules.cat.service.toolbox.dto.CommandContext;
+import com.jeesite.modules.cat.service.toolbox.dto.CommandDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
+import org.apache.commons.lang3.BooleanUtils;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -42,7 +40,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -69,6 +66,9 @@ public class JdOceanStage extends AbstraOceanStage {
     @Resource
     private OceanSearchService oceanSearchService;
 
+    @Resource
+    private CommandService commandService;
+
     @Override
     public String getAffType() {
         return "jd";
@@ -79,6 +79,97 @@ public class JdOceanStage extends AbstraOceanStage {
         return CommandService.jd;
     }
 
+//    @Override
+//    public void queryProductFromThirdApi(OceanContext context) {
+//        // 1. 查询淘宝api获取商品数据
+//        // 2. 保存商品数据
+//        // 3. 保存商品数据到消息中
+//
+//        MaocheRobotCrawlerMessageDO crawlerMessage = context.getCrawlerMessage();
+//        String content = crawlerMessage.getMsg();
+//
+//        boolean isSpecialUri = false;
+//        Map<String, String> urlMap = new HashMap<>();
+//        List<String> urls = new ArrayList<>();
+//        Map<String, JdUnionIdPromotion> jdUrlProductMap = new HashMap<>();
+//        Map<String, String> successUrlMap = new HashMap<>();
+//        String[] split = StringUtils.split(content, "\n");
+//        for (String item : split) {
+//            Matcher matcher = CommandService.jd.matcher(item);
+//            if (matcher.find()) {
+//                String group = matcher.group();
+//                urlMap.put(group, "");
+//                urls.add(group);
+//                if (isSpecialUri(group) && !isSpecialUri) {
+//                    isSpecialUri = true;
+//                }
+//            }
+//        }
+//
+//        if (MapUtils.isEmpty(urlMap)) {
+//            Map<String, Object> remarks = new HashMap<>();
+//            remarks.put("api_error", "正则匹配链接未找到");
+//            context.setFailRemarks(JsonUtils.toJSONString(remarks));
+//            throw new QueryThirdApiException(QueryThirdApiException.QUERY_FAIL, "正则匹配链接未找到");
+//        }
+//
+//        // 京东转链
+//        CommandContext command = new CommandContext();
+//        command.setContent(content);
+//        Result<CommandDTO> doDwz = commandService.doDwz(command);
+//        if (doDwz == null || !doDwz.isSuccess()) {
+//            throw new QueryThirdApiException(QueryThirdApiException.QUERY_FAIL, "转换异常");
+//        }
+//
+//        List<JdUnionIdPromotion> promotions = new ArrayList<>();
+//        List<ShortUrlDetail> shortDetails = command.getShortDetails();
+//        for (ShortUrlDetail urlDetail : shortDetails) {
+//            JdUnionIdPromotion promotion = urlDetail.getPromotion();
+//            if (promotion != null) {
+//                promotions.add(promotion);
+//            }
+//
+//        }
+//
+//
+//        List<String> otherUrls = new ArrayList<>();
+//        for (String url : urls) {
+//            Result<JdUnionIdPromotion> result = dingDanXiaApiService.jdByUnionidPromotion("FHPOsYO7zki7tcrxp0amyGMP7wxVkbU3", url, 1002248572L, 3100684498L);
+//            if (Result.isOK(result)) {
+//                JdUnionIdPromotion promotion = result.getResult();
+//                // 可能是券，也可能是商品
+//                successUrlMap.put(url, promotion.getShortURL());
+//                if (promotion.getSkuId() == null || promotion.getSkuId() <= 0) {
+//                    continue;
+//                }
+//                jdUrlProductMap.put(url, promotion);
+//                promotions.add(promotion);
+//            } else {
+//                otherUrls.add(url);
+//            }
+//        }
+//
+//        context.setJdOtherUrls(otherUrls);
+//        context.setJdUrlProductMap(jdUrlProductMap);
+//        context.setSuccessJdUrlMap(successUrlMap);
+//
+//        // 如果不存在商品，并且只存在特殊uri
+//        if (CollectionUtils.isEmpty(promotions) && isSpecialUri) {
+//            context.setOnlySpecialUri(true);
+//            context.setJdProducts(promotions);
+//            return;
+//        }
+//        if (CollectionUtils.isEmpty(promotions)) {
+//            Map<String, Object> remarks = new HashMap<>();
+//            remarks.put("api_error", "订单侠jd接口信息查询未找到数据");
+//            context.setFailRemarks(JsonUtils.toJSONString(remarks));
+//            throw new QueryThirdApiException(QueryThirdApiException.QUERY_FAIL, "订单侠jd接口信息查询未找到数据");
+//        }
+//
+//        context.setJdProducts(promotions);
+//    }
+//
+//
     @Override
     public void queryProductFromThirdApi(OceanContext context) {
         // 1. 查询淘宝api获取商品数据
@@ -88,66 +179,55 @@ public class JdOceanStage extends AbstraOceanStage {
         MaocheRobotCrawlerMessageDO crawlerMessage = context.getCrawlerMessage();
         String content = crawlerMessage.getMsg();
 
-        boolean isSpecialUri = false;
-        Map<String, String> urlMap = new HashMap<>();
-        List<String> urls = new ArrayList<>();
-        Map<String, JdUnionIdPromotion> jdUrlProductMap = new HashMap<>();
-        Map<String, String> successUrlMap = new HashMap<>();
-        String[] split = StringUtils.split(content, "\n");
-        for (String item : split) {
-            Matcher matcher = CommandService.jd.matcher(item);
-            if (matcher.find()) {
-                String group = matcher.group();
-                urlMap.put(group, "");
-                urls.add(group);
-                if (isSpecialUri(group) && !isSpecialUri) {
-                    isSpecialUri = true;
-                }
-            }
+        // 京东转链
+        CommandContext command = new CommandContext();
+        command.setContent(content);
+        command.setRelationId(context.getCrawlerMessage().getId());
+        Result<CommandDTO> doDwz = commandService.doDwz(command);
+        if (doDwz == null || !doDwz.isSuccess()) {
+            throw new QueryThirdApiException(QueryThirdApiException.QUERY_FAIL, "转换异常");
         }
 
-        if (MapUtils.isEmpty(urlMap)) {
+        List<ShortUrlDetail> urlDetails = command.listShortDetails();
+        if (CollectionUtils.isEmpty(urlDetails)) {
             Map<String, Object> remarks = new HashMap<>();
             remarks.put("api_error", "正则匹配链接未找到");
             context.setFailRemarks(JsonUtils.toJSONString(remarks));
             throw new QueryThirdApiException(QueryThirdApiException.QUERY_FAIL, "正则匹配链接未找到");
         }
 
-        List<String> otherUrls = new ArrayList<>();
+        boolean isSpecialUri = false;
         List<JdUnionIdPromotion> promotions = new ArrayList<>();
-        for (String url : urls) {
-            Result<JdUnionIdPromotion> result = dingDanXiaApiService.jdByUnionidPromotion("FHPOsYO7zki7tcrxp0amyGMP7wxVkbU3", url, 1002248572L, 3100684498L);
-            if (Result.isOK(result)) {
-                JdUnionIdPromotion promotion = result.getResult();
-                if (promotion.getSkuId() == null || promotion.getSkuId() <= 0) {
-                    continue;
-                }
-                jdUrlProductMap.put(url, promotion);
-                successUrlMap.put(url, promotion.getShortURL());
+
+        for (ShortUrlDetail item : urlDetails) {
+            if (isSpecialUri(item.getContentUrl()) && !isSpecialUri) {
+                isSpecialUri = true;
+            }
+
+            JdUnionIdPromotion promotion = item.getPromotion();
+            if (promotion != null) {
                 promotions.add(promotion);
-            } else {
-                otherUrls.add(url);
             }
         }
 
-        context.setJdOtherUrls(otherUrls);
-        context.setJdUrlProductMap(jdUrlProductMap);
-        context.setSuccessJdUrlMap(successUrlMap);
+//        context.setJdOtherUrls(otherUrls);
+//        context.setJdUrlProductMap(jdUrlProductMap);
+//        context.setSuccessJdUrlMap(successUrlMap);
+        context.setCommandContext(command);
+        context.setJdProducts(promotions);
 
         // 如果不存在商品，并且只存在特殊uri
         if (CollectionUtils.isEmpty(promotions) && isSpecialUri) {
             context.setOnlySpecialUri(true);
-            context.setJdProducts(promotions);
             return;
         }
+
         if (CollectionUtils.isEmpty(promotions)) {
             Map<String, Object> remarks = new HashMap<>();
             remarks.put("api_error", "订单侠jd接口信息查询未找到数据");
             context.setFailRemarks(JsonUtils.toJSONString(remarks));
             throw new QueryThirdApiException(QueryThirdApiException.QUERY_FAIL, "订单侠jd接口信息查询未找到数据");
         }
-
-        context.setJdProducts(promotions);
     }
 
     @Override
@@ -290,18 +370,41 @@ public class JdOceanStage extends AbstraOceanStage {
         messageSync.addRemarks("newProduct", newProduct);
         messageSync.addRemarks("jdOtherUrls", context.getJdOtherUrls());
         messageSync.addRemarks("successJdUrlMap", context.getSuccessJdUrlMap());
+        messageSync.addRemarks("commandContext", context.getCommandContext());
 
         messageSync.setProcessed(1L);
         messageSync.setResourceIds(StringUtils.join(resourceIds, ","));
         messageSync.setStatus("NORMAL");
-        // 替换已经转链完成的链接
-        if (MapUtils.isNotEmpty(context.getJdUrlProductMap())) {
-            String msg = messageSync.getMsg();
-            // 替换
-            for (Map.Entry<String, JdUnionIdPromotion> url : context.getJdUrlProductMap().entrySet()) {
-                msg = msg.replace(url.getKey(), url.getValue().getShortURL());
+        CommandContext commandContext = context.getCommandContext();
+        boolean allSuccess = true;
+        if (commandContext != null && StringUtils.isNotBlank(commandContext.getResContent())) {
+
+            List<ShortUrlDetail> shortUrlDetails = commandContext.listShortDetails();
+            // 判断是否全部成功
+            for (ShortUrlDetail detail : shortUrlDetails) {
+                if (StringUtils.isBlank(detail.getReplaceUrl())) {
+                    allSuccess = false;
+                    break;
+                }
             }
-            messageSync.setMsg(msg);
+            String resContent = commandContext.getResContent();
+            // 添加头尾
+            if (allSuccess) {
+                resContent = "✨有好价✨\n" + resContent;
+                resContent = resContent + "---------------------\n" + "自助查车@猫车选品官 +产品名";
+            }
+
+            messageSync.setMsg(resContent);
+        } else {
+            // 替换已经转链完成的链接
+            if (MapUtils.isNotEmpty(context.getJdUrlProductMap())) {
+                String msg = messageSync.getMsg();
+                // 替换
+                for (Map.Entry<String, JdUnionIdPromotion> url : context.getJdUrlProductMap().entrySet()) {
+                    msg = msg.replace(url.getKey(), url.getValue().getShortURL());
+                }
+                messageSync.setMsg(msg);
+            }
         }
 
         boolean res = maocheRobotCrawlerMessageSyncService.addIfAbsent(messageSync);
@@ -369,15 +472,45 @@ public class JdOceanStage extends AbstraOceanStage {
         context.setMessageProducts(productDOs);
     }
 
-    private boolean isSpecialUri(String uri) {
+    public boolean isSpecialUri(String uri) {
         if (StringUtils.isBlank(uri)) {
             return false;
         }
         return uri.contains("y-03.cn") ||
-                uri.contains("3.cn") ||
+//                uri.contains("3.cn") ||
                 uri.contains("jd.cn") ||
                 uri.contains("t.cn") ||
-                uri.contains("q5url.cn") ||
+                uri.contains("s.q5url.cn/yA7U") ||
+                uri.contains("985.so") ||
+                uri.contains("kzurl11.cn") ||
                 uri.contains("kurl06.cn");
+    }
+
+    /**
+     * 是否包含特殊uri
+     * @param content
+     * @return
+     */
+    public boolean hadSpecialUri(String content) {
+        if (StringUtils.isBlank(content)) {
+            return false;
+        }
+        String[] split = StringUtils.split(content, "\n");
+
+        for (String item : split) {
+            Matcher matcher = CommandService.jd.matcher(item);
+            if (matcher.find()) {
+                String group = matcher.group();
+                if (isSpecialUri(group)) {
+                    return true;
+                }
+            } else {
+                if (isSpecialUri(item)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 }

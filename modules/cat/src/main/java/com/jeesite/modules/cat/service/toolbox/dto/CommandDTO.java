@@ -1,11 +1,15 @@
 
 package com.jeesite.modules.cat.service.toolbox.dto;
 
+import com.jeesite.common.collect.MapUtils;
+import com.jeesite.modules.cat.service.cg.third.dto.ShortUrlDetail;
 import lombok.Data;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Data
 public class CommandDTO implements Serializable {

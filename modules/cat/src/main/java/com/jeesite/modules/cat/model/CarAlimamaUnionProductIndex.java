@@ -65,8 +65,10 @@ public class CarAlimamaUnionProductIndex implements Serializable {
 //    private Float tkTotalSales;
 //    private String url;
 //    private Integer userType;
-    // 30天销量
+    // 年销量-数字
     private Long volume;
+    // 年销量，不是实时变化。是T+1更新过去365天的数据，显示规则：0，展示“0”
+    private String annualVol;
 //    private String whiteImage;
 //    private String xId;
 //    private Float zkFinalPrice;

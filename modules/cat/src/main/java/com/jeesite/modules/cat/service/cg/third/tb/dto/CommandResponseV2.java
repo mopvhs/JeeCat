@@ -144,6 +144,12 @@ public class CommandResponseV2 implements Serializable {
         @JsonProperty("volume")
         private String volume;
 
+        // 年销量，不是实时变化。是T+1更新过去365天的数据，显示规则：0，展示“0”
+        // (0,100]，展示精确值
+        // (100,1000]，每层100递增，如展示100+、200+、900+
+        @JsonProperty("annual_vol")
+        private String annualVol;
+
         @JsonProperty("white_image")
         private String whiteImage;
 

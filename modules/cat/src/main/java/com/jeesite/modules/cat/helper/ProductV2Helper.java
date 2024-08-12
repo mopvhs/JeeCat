@@ -7,6 +7,7 @@ import com.jeesite.common.lang.StringUtils;
 import com.jeesite.common.utils.JsonUtils;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductDO;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductDetailDO;
+import com.jeesite.modules.cat.entity.MaocheProductV2DO;
 import com.jeesite.modules.cat.enums.SaleStatusEnum;
 import com.jeesite.modules.cat.model.CarAlimamaUnionProductIndex;
 import com.jeesite.modules.cat.model.PriceChartSkuBaseTO;
@@ -147,7 +148,6 @@ public class ProductV2Helper {
         }
 
         index.setItemId(itemId);
-        index.setVolume(NumberUtils.toLong(itemBasicInfo.getVolume()));
         index.setTitle(itemBasicInfo.getTitle());
         index.setItemIdSuffix(itemIdSuffix);
         index.setShopTitle(itemBasicInfo.getShopTitle());
@@ -157,12 +157,33 @@ public class ProductV2Helper {
         index.setLevelOneCategoryName(itemBasicInfo.getLevelOneCategoryName());
         index.setTkTotalSales(NumberUtils.toLong(itemBasicInfo.getTkTotalSales()));
 
+        // 销量使用其他的替代
+        index.setVolume(exchangeAnnualVol(itemBasicInfo.getAnnualVol()));
+        index.setAnnualVol(itemBasicInfo.getAnnualVol());
+
         CommandResponseV2.PublishInfo publishInfo = product.getPublishInfo();
         if (publishInfo != null && publishInfo.getIncomeInfo() != null) {
             CommandResponseV2.IncomeInfo incomeInfo = publishInfo.getIncomeInfo();
             index.setCommissionRate(NumberUtils.toLong(incomeInfo.getCommissionRate()));
         }
 
+    }
+
+    private static Long exchangeAnnualVol(String annualVol) {
+        if (StringUtils.isBlank(annualVol) || "0".equals(annualVol)) {
+            return 0L;
+        }
+        long num = NumberUtils.toLong(annualVol);
+        if (num > 0) {
+            return num;
+        }
+        String replace = "";
+        if (annualVol.contains("万")) {
+            replace = annualVol.replaceAll("万\\+", "");
+            return NumberUtils.toLong(replace) * 10000;
+        }
+        replace = annualVol.replaceAll("\\+", "");
+        return NumberUtils.toLong(replace);
     }
 
     /**
@@ -262,7 +283,7 @@ public class ProductV2Helper {
      * @param index
      * @param item
      */
-    public static void fillAuditInfo(CarAlimamaUnionProductIndex index, MaocheAlimamaUnionProductDO item) {
+    public static void fillAuditInfo(CarAlimamaUnionProductIndex index, MaocheAlimamaUnionProductDO item, MaocheProductV2DO product) {
         if (index == null || item == null) {
             return;
         }
@@ -282,7 +303,7 @@ public class ProductV2Helper {
             updateTime = syncTime;
         }
         index.setDataSource(item.getDataSource());
-        index.setCreateTime(item.getCreateTime().getTime());
+        index.setCreateTime(product.getCreateTime().getTime());
         index.setUpdateTime(updateTime);
         index.setSyncTime(syncTime);
         index.setQualityStatus(item.getQualityStatus());

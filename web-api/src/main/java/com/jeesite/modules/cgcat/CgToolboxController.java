@@ -31,12 +31,14 @@ import com.jeesite.modules.cat.service.cg.third.VeApiService;
 import com.jeesite.modules.cat.service.cg.third.dto.JdUnionIdPromotion;
 import com.jeesite.modules.cat.service.cg.third.tb.TbApiService;
 import com.jeesite.modules.cat.service.cg.third.tb.dto.CommandResponse;
+import com.jeesite.modules.cat.service.stage.cg.ocean.AbstraOceanStage;
 import com.jeesite.modules.cat.service.stage.cg.ocean.OceanContext;
 import com.jeesite.modules.cat.service.stage.cg.ocean.OceanStage;
 import com.jeesite.modules.cat.service.toolbox.CommandService;
 import com.jeesite.modules.cat.service.toolbox.dto.CommandDTO;
 import com.jeesite.modules.cat.xxl.job.CgProductDeleteSyncXxlJob;
 import com.jeesite.modules.cat.xxl.job.CgProductSyncXxlJob;
+import com.jeesite.modules.cat.xxl.job.ProductAutoAuditXxlJob;
 import com.jeesite.modules.cgcat.dto.CommandRequest;
 import com.jeesite.modules.cgcat.dto.TbProductRequest;
 import lombok.Data;
@@ -158,6 +160,21 @@ public class CgToolboxController {
         return Result.OK("OK");
     }
 
+    @Resource
+    private ProductAutoAuditXxlJob productAutoAuditXxlJob;
+
+    @RequestMapping(value = "toolbox/product/online/productAutoAuditXxlJob")
+    public Result<?> productAutoAuditXxlJob() {
+
+        try {
+            productAutoAuditXxlJob.execute();
+        } catch (Exception e) {
+            log.error("同步商品失败", e);
+            return Result.ERROR(500, "同步商品失败");
+        }
+        return Result.OK("OK");
+    }
+
     @RequestMapping(value = "toolbox/test")
     public Result<?> test(Long robotMsgId) {
 
@@ -223,12 +240,15 @@ public class CgToolboxController {
         for (MaocheRobotCrawlerMessageDO message : messages) {
             OceanContext context = new OceanContext(message);
 
-            if (message.getAffType().equals("tb")) {
+            // afftype干预订正
+            String affType = message.getAffType();
+            String msg = message.getMsg();
+            affType = AbstraOceanStage.fixAffType(msg, affType);
+            message.setAffType(affType);
+            if (affType.equals("tb")) {
 
                 tbOceanStage.process(context);
-
-
-            } else if (message.getAffType().equals("jd")) {
+            } else if (affType.equals("jd")) {
 
                 jdOceanStage.process(context);
             }

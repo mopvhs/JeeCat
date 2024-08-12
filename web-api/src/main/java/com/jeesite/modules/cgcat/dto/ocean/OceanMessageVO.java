@@ -9,12 +9,15 @@ import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageProductDO;
 import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageSyncDO;
 import com.jeesite.modules.cat.model.ProductPriceTO;
 import com.jeesite.modules.cat.model.UnionProductTO;
+import com.jeesite.modules.cat.service.cg.third.dto.ShortUrlDetail;
 import com.jeesite.modules.cat.service.es.dto.MaocheMessageProductIndex;
 import com.jeesite.modules.cat.service.es.dto.MaocheMessageSyncIndex;
 import com.jeesite.modules.cat.service.toolbox.CommandService;
+import com.jeesite.modules.cat.service.toolbox.dto.CommandContext;
 import lombok.Data;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
+import org.apache.commons.lang3.BooleanUtils;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -121,6 +124,10 @@ public class OceanMessageVO implements Serializable {
         ProductPriceTO displayPrice = new ProductPriceTO();
         displayPrice.setPrice(price);
         product.setDisplayPrice(displayPrice);
+        // 优惠后的价格
+        product.setPromotionPrice(price);
+        // 原价
+        product.setReservePrice(price);
         product.setShopDsr(NumberUtils.toLong(index.getShopDsr()));
         product.setTitle(index.getTitle());
         product.setCreateDate(new Date(createTime));
@@ -174,6 +181,18 @@ public class OceanMessageVO implements Serializable {
                 successUrls = new ArrayList<>(successJdUrlMap.values());
             }
 
+            CommandContext commandContext = getShortUrlContext(remarksMap);
+            Map<String, ShortUrlDetail> shortDetailMap = new HashMap<>();
+            if (commandContext != null && CollectionUtils.isNotEmpty(commandContext.listShortDetails())) {
+                for (ShortUrlDetail detail : commandContext.listShortDetails()) {
+                    if (StringUtils.isNotBlank(detail.getReplaceUrl())) {
+                        shortDetailMap.put(detail.getReplaceUrl(), detail);
+                    } else {
+                        shortDetailMap.put(detail.getContentUrl(), detail);
+                    }
+                }
+            }
+
             String content = product.getMsg();
             String[] split = StringUtils.split(content, "\n");
             for (String item : split) {
@@ -185,6 +204,11 @@ public class OceanMessageVO implements Serializable {
                         url = String.format(colorUrlFormat, group, "red", group);
                     } else if (successUrls.contains(group)) {
                         url = String.format(colorUrlFormat, group, "#90EE90", group);
+                    } else if (shortDetailMap.get(group) != null) {
+                        ShortUrlDetail detail = shortDetailMap.get(group);
+                        if (BooleanUtils.isTrue(detail.getApiRes())) {
+                            url = String.format(colorUrlFormat, group, "#90EE90", group);
+                        }
                     } else {
                         url = String.format(urlFormat, group, group);
                     }
@@ -227,6 +251,19 @@ public class OceanMessageVO implements Serializable {
         }
 
         return new HashMap<>();
+    }
+
+    public static CommandContext getShortUrlContext(Map<String, Object> remarksMap) {
+        if (MapUtils.isEmpty(remarksMap)) {
+            return null;
+        }
+        Object obj = remarksMap.get("commandContext");
+        if (obj == null) {
+            return null;
+        }
+        String jsonString = JsonUtils.toJSONString(remarksMap.get("commandContext"));
+
+        return JSONObject.parseObject(jsonString, CommandContext.class);
     }
 
 //    public <T> T getRemarks(Map<String, Object> remarksMap, String key) {

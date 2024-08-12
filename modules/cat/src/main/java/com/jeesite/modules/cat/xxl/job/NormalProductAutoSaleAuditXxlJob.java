@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 
 /**
- * 有好价商品库自动入库
+ *
  */
 @Slf4j
 @Component

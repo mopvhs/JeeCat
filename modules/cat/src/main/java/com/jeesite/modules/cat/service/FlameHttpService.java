@@ -13,6 +13,7 @@ import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.RequestBuilder;
+import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
@@ -48,6 +49,34 @@ public class FlameHttpService {
         RequestConfig configBuilder = RequestConfig.custom().setCookieSpec(CookieSpecs.STANDARD).build();
         builder.setConfig(configBuilder);
         builder.setUri(url);
+
+        HttpEntity httpEntity = new StringEntity(stringEntity, ContentType.create("application/json", Charset.forName("UTF-8")));
+        builder.setEntity(httpEntity);
+
+        String resp = null;
+        try {
+            CloseableHttpResponse response = HTTP_CLIENT.execute(builder.build());
+            HttpEntity entity = response.getEntity();
+            resp = EntityUtils.toString(entity, "UTF-8");
+        } catch (Exception e) {
+            log.error("doPost 请求失败 url {}, stringEntity {} ", url, stringEntity, e);
+        }
+
+        return resp;
+    }
+
+    public static String doPostWithHeaders(String url, String stringEntity, Map<String, String> headers) {
+
+        String method = "POST";
+        RequestBuilder builder = RequestBuilder.create(method);
+        RequestConfig configBuilder = RequestConfig.custom().setCookieSpec(CookieSpecs.STANDARD).build();
+        builder.setConfig(configBuilder);
+        builder.setUri(url);
+        if (MapUtils.isNotEmpty(headers)) {
+            for (Map.Entry<String, String> entry : headers.entrySet()) {
+                builder.addHeader(entry.getKey(), entry.getValue());
+            }
+        }
 
         HttpEntity httpEntity = new StringEntity(stringEntity, ContentType.create("application/json", Charset.forName("UTF-8")));
         builder.setEntity(httpEntity);
@@ -123,11 +152,32 @@ public class FlameHttpService {
         builder.setConfig(configBuilder);
         builder.setUri(url);
 
+
         String resp = null;
         try {
             CloseableHttpResponse response = HTTP_CLIENT.execute(builder.build());
             HttpEntity entity = response.getEntity();
             resp = EntityUtils.toString(entity, "UTF-8");
+        } catch (Exception e) {
+            log.error("doGet 请求失败 url {}", url, e);
+        }
+
+        return resp;
+    }
+
+    public static CloseableHttpResponse doGetResponse(String url, HttpClientContext context) {
+
+        String method = "GET";
+        RequestBuilder builder = RequestBuilder.create(method);
+        RequestConfig configBuilder = RequestConfig.custom().setCookieSpec(CookieSpecs.STANDARD).build();
+        builder.setConfig(configBuilder);
+        builder.setUri(url);
+
+
+        CloseableHttpResponse resp = null;
+        try {
+            resp = HTTP_CLIENT.execute(builder.build(), context);
+
         } catch (Exception e) {
             log.error("doGet 请求失败 url {}", url, e);
         }
