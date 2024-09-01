@@ -26,6 +26,7 @@ import com.jeesite.modules.cat.service.cg.task.PushTaskBizService;
 import com.jeesite.modules.cat.service.cg.task.PushTaskCreateService;
 import com.jeesite.modules.cat.service.cg.task.TaskSearchBizService;
 import com.jeesite.modules.cat.service.stage.cg.ocean.JdOceanStage;
+import com.jeesite.modules.cat.service.toolbox.CommandService;
 import com.jeesite.modules.cgcat.dto.PushTaskDetail;
 import com.jeesite.modules.cgcat.dto.PushTaskEditRequest;
 import com.jeesite.modules.cgcat.dto.PushTaskResponse;
@@ -48,6 +49,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -407,8 +409,8 @@ public class CgMaocheTaskController {
                 if (pushTaskContent == null) {
                     continue;
                 }
-                boolean specialUri = jdOceanStage.hadSpecialUri(pushTaskContent.getDetail());
-                if (specialUri) {
+//                boolean specialUri = jdOceanStage.hadSpecialUri(pushTaskContent.getDetail());
+                if (!isWhiteUrl(pushTaskContent.getDetail())) {
                     return Result.ERROR(500, "存在黑名单网址");
                 }
             } catch (Exception e) {
@@ -490,6 +492,44 @@ public class CgMaocheTaskController {
         maocheTaskService.openTask(task.getId());
         return Result.OK("更新成功");
     }
+
+    public static boolean isWhiteUrl(String content) {
+        if (StringUtils.isBlank(content)) {
+            return true;
+        }
+        String[] split = StringUtils.split(content, "\n");
+
+        List<String> url = new ArrayList<>();
+        url.add("dwz.cn");
+        url.add("3.cn");
+        url.add("jd.com");
+
+        for (String item : split) {
+            Matcher matcher = CommandService.jd.matcher(item);
+            if (matcher.find()) {
+                String group = matcher.group();
+                boolean match = false;
+                for (String i : url) {
+                    // 非白名单
+                    if (group.contains(i)) {
+                        match = true;
+                        break;
+                    }
+                }
+                if (!match) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+//    public static void main(String[] args) {
+//        String content = "https://u.jd.com/hsLlvyo";
+//        boolean whiteUrl = isWhiteUrl(content);
+//        System.out.println(whiteUrl);
+//    }
 
 
     @Resource

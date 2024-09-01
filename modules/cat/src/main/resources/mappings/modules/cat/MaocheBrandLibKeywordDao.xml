@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jeesite.modules.cat.dao.MaocheBrandLibKeywordDao">
+	
+	<!-- 查询数据
+	<select id="findList" resultType="MaocheBrandLibKeywordDO">
+		SELECT ${sqlMap.column.toSql()}
+		FROM ${sqlMap.table.toSql()}
+		<where>
+			${sqlMap.where.toSql()}
+		</where>
+		ORDER BY ${sqlMap.order.toSql()}
+	</select> -->
+
+	<insert id="add" useGeneratedKeys="true" keyProperty="id"
+			parameterType="com.jeesite.modules.cat.entity.MaocheBrandLibKeywordDO">
+		INSERT INTO maoche_brand_lib_keyword (brand_lib_id, keyword, category_name, level_one_category_name, alias_names,
+		tags, special_tags, status,
+		create_by, update_by, create_date, update_date, remarks)
+		VALUES
+		(#{brandLibId}, #{keyword}, #{categoryName}, #{levelOneCategoryName}, #{aliasNames},
+		#{tags}, #{specialTags}, #{status},
+		#{createBy}, #{updateBy}, #{createDate}, #{updateDate}, #{remarks});
+	</insert>
+	
+</mapper>

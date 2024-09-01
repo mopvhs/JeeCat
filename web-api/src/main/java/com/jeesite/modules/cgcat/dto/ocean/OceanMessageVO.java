@@ -208,6 +208,8 @@ public class OceanMessageVO implements Serializable {
                         ShortUrlDetail detail = shortDetailMap.get(group);
                         if (BooleanUtils.isTrue(detail.getApiRes())) {
                             url = String.format(colorUrlFormat, group, "#90EE90", group);
+                        } else {
+                            url = String.format(colorUrlFormat, group, "red", group);
                         }
                     } else {
                         url = String.format(urlFormat, group, group);

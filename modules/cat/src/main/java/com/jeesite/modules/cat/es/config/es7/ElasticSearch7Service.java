@@ -348,7 +348,7 @@ public class ElasticSearch7Service {
                         try {
                             UpdateResponse response = restHighLevelClient.update(updateRequest, RequestOptions.DEFAULT);
                             DocWriteResponse.Result result = response.getResult();
-                            log.info("indexEs resourceId {}, indexEnum {}, result {}", id, indexEnum.getIndex(), JSON.toJSONString(result));
+//                            log.info("indexEs resourceId {}, indexEnum {}, result {}", id, indexEnum.getIndex(), JSON.toJSONString(result));
                         } catch (Exception e) {
                             log.error("update es error data {}, resourceId {}", JSON.toJSONString(data), id, e);
 

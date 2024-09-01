@@ -1,0 +1,18 @@
+package com.jeesite.modules.cat.dao;
+
+import com.jeesite.common.dao.CrudDao;
+import com.jeesite.common.mybatis.annotation.MyBatisDao;
+import com.jeesite.modules.cat.entity.MaocheBrandLibDO;
+import com.jeesite.modules.cat.entity.MaocheBrandLibKeywordDO;
+
+/**
+ * 品牌库关键词DAO接口
+ * @author YHQ
+ * @version 2024-08-18
+ */
+@MyBatisDao
+public interface MaocheBrandLibKeywordDao extends CrudDao<MaocheBrandLibKeywordDO> {
+
+    int add(MaocheBrandLibKeywordDO libDO);
+
+}

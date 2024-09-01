@@ -1,6 +1,7 @@
 package com.jeesite.modules.cat.service.stage.cg.ocean;
 
 import com.jeesite.common.codec.Md5Utils;
+import com.jeesite.common.lang.NumberUtils;
 import com.jeesite.common.lang.StringUtils;
 import com.jeesite.common.utils.JsonUtils;
 import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageDO;
@@ -14,19 +15,27 @@ import com.jeesite.modules.cat.model.ocean.OceanMessageCondition;
 import com.jeesite.modules.cat.model.ocean.OceanMessageProductCondition;
 import com.jeesite.modules.cat.service.MaocheRobotCrawlerMessageSyncService;
 import com.jeesite.modules.cat.service.cg.ocean.OceanSearchService;
+import com.jeesite.modules.cat.service.cg.third.dto.JdUnionIdPromotion;
+import com.jeesite.modules.cat.service.cg.third.dto.ShortUrlDetail;
+import com.jeesite.modules.cat.service.cg.third.tb.dto.CommandResponseV2;
 import com.jeesite.modules.cat.service.es.OceanEsService;
 import com.jeesite.modules.cat.service.es.dto.MaocheMessageProductIndex;
 import com.jeesite.modules.cat.service.es.dto.MaocheMessageSyncIndex;
+import com.jeesite.modules.cat.service.message.DingDingService;
 import com.jeesite.modules.cat.service.stage.cg.ocean.exception.QueryThirdApiException;
 import com.jeesite.modules.cat.service.toolbox.CommandService;
+import com.jeesite.modules.cat.service.toolbox.dto.CommandContext;
 import com.mchange.lang.ByteUtils;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import com.google.common.collect.Lists;
+import org.apache.commons.collections.MapUtils;
+import org.apache.commons.lang3.BooleanUtils;
 
 import javax.annotation.Resource;
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -48,6 +57,7 @@ public abstract class AbstraOceanStage implements OceanStage {
 
     public static List<String> deletions = new ArrayList<>();
     public static List<TextBO> deletionTexts = new ArrayList<>();
+
     static {
         deletions.add("豪车");
         deletions.add("❗");
@@ -114,6 +124,7 @@ public abstract class AbstraOceanStage implements OceanStage {
     }
 
     public static List<String> deletionUrls = new ArrayList<>();
+
     static {
         deletionUrls.add("车:s.q5url.cn/yA7U");
         deletionUrls.add("\uD83D\uDC31车:s.q5url.cn/yA7U");
@@ -123,12 +134,14 @@ public abstract class AbstraOceanStage implements OceanStage {
      * 命中关键词，直接不进公海
      */
     public static List<String> failTexts = new ArrayList<>();
+
     static {
         failTexts.add("冠军标");
         failTexts.add("元佑双标");
     }
 
     public static Map<String, String> replacements = new LinkedHashMap<>();
+
     static {
         replacements.put("卷", "券");
         replacements.put("锩", "券");
@@ -151,6 +164,43 @@ public abstract class AbstraOceanStage implements OceanStage {
         replacements.put("原本", "日常");
         replacements.put("不吃包tui", "不吃包退");
         replacements.put("好反", "好返");
+        replacements.put("荭包", "红包");
+        replacements.put("帼", "国");
+        replacements.put("忦值", "价值");
+        replacements.put("忦", "价");
+
+        replacements.put("拍1:", "加购一件\n");
+        replacements.put("拍2:", "加购两件\n");
+        replacements.put("拍3:", "加购三件\n");
+        replacements.put("拍4:", "加购四件\n");
+        replacements.put("拍5:", "加购五件\n");
+        replacements.put("拍6:", "加购六件\n");
+        replacements.put("拍7:", "加购七件\n");
+        replacements.put("拍8:", "加购八件\n");
+        replacements.put("拍9:", "加购九件\n");
+        replacements.put("拍10:", "加购十件\n");
+
+        replacements.put("凑1:", "凑单一件\n");
+        replacements.put("凑2:", "凑单两件\n");
+        replacements.put("凑3:", "凑单三件\n");
+        replacements.put("凑4:", "凑单四件\n");
+        replacements.put("凑5:", "凑单五件\n");
+        replacements.put("凑6:", "凑单六件\n");
+        replacements.put("凑7:", "凑单七件\n");
+        replacements.put("凑8:", "凑单八件\n");
+        replacements.put("凑9:", "凑单九件\n");
+        replacements.put("凑10:", "凑单十件\n");
+
+        replacements.put("加1:", "加购一件\n");
+        replacements.put("加2:", "加购两件\n");
+        replacements.put("加3:", "加购三件\n");
+        replacements.put("加4:", "加购四件\n");
+        replacements.put("加5:", "加购五件\n");
+        replacements.put("加6:", "加购六件\n");
+        replacements.put("加7:", "加购七件\n");
+        replacements.put("加8:", "加购八件\n");
+        replacements.put("加9:", "加购九件\n");
+        replacements.put("加10:", "加购十件\n");
     }
 
     @Resource
@@ -175,8 +225,14 @@ public abstract class AbstraOceanStage implements OceanStage {
             // 2. 查询第三方接口获取商品数据
             queryProductFromThirdApi(context);
 
+            // 计算相似内容code
+            calSimilar(context);
+
             // 3. 保存商品数据到消息中
             buildBaseMessageProducts(context);
+
+            // 判断是否为相似商品
+            checkSimilar(context);
 
             // 4. 保存商品数据
             saveMessageAndProduct(context);
@@ -200,6 +256,7 @@ public abstract class AbstraOceanStage implements OceanStage {
             log.error("查询第三方接口获取商品数据失败 message :{}", JsonUtils.toJSONString(context.getCrawlerMessage()), e);
         } catch (Exception e) {
             log.error("公海流程处理异常 message :{}", JsonUtils.toJSONString(context.getCrawlerMessage()), e);
+            DingDingService.sendParseDingDingMsg("公海流程处理异常 message :{}, e:{}", JsonUtils.toJSONString(context.getCrawlerMessage()), e.getMessage());
         }
     }
 
@@ -208,6 +265,7 @@ public abstract class AbstraOceanStage implements OceanStage {
 
         MaocheRobotCrawlerMessageDO message = context.getCrawlerMessage();
         String msg = message.getMsg();
+        // 消息内容干预
         String s = interposeMsg(msg);
         message.setMsg(s);
 
@@ -323,6 +381,10 @@ public abstract class AbstraOceanStage implements OceanStage {
         // 获取文案的md5
         MaocheRobotCrawlerMessageSyncDO messageSync = context.getMessageSync();
         String uniqueHash = messageSync.getUniqueHash();
+        if (context.getSimilar() != null) {
+            // 新逻辑
+            return;
+        }
 
         // 判断3天前内是否存在
         OceanMessageCondition condition = new OceanMessageCondition();
@@ -349,7 +411,6 @@ public abstract class AbstraOceanStage implements OceanStage {
         List<MaocheMessageSyncIndex> similarMessages = new ArrayList<>();
         // 需要二次对比的数据
         List<MaocheMessageSyncIndex> secondChecks = new ArrayList<>();
-
 
         // 先对比资源id是否一样，数量，以及集合的差集是否为0
         for (MaocheMessageSyncIndex doc : documents) {
@@ -466,6 +527,7 @@ public abstract class AbstraOceanStage implements OceanStage {
             msg = msg.replaceAll(entry.getKey(), entry.getValue());
         }
 
+        msg = msg.replaceAll("\u2028", "\n");
         // 构建排序，长的文本需要先匹配做删除
         String[] split = msg.split("\n");
         StringBuilder builder = new StringBuilder();
@@ -489,17 +551,25 @@ public abstract class AbstraOceanStage implements OceanStage {
                     break;
                 }
             }
+            if (StringUtils.isBlank(replace)) {
+                continue;
+            }
             String replaceAscii = ByteUtils.toHexAscii(replace.getBytes(StandardCharsets.UTF_8));
 
-            if (StringUtils.isBlank(replace) || replace.equals("\n") || replace.equals("\uFE0F\uFE0F") || hexAscii.equals(replace) || hexAscii.equals(replaceAscii)) {
+            if (replace.equals("\n") || replace.equals("\uFE0F\uFE0F") || hexAscii.equals(replace) || hexAscii.equals(replaceAscii)) {
                 continue;
             }
 
             for (TextBO textBO : deletionTexts) {
                 replace = replace.replaceAll(textBO.getText(), "");
             }
+
+            if (StringUtils.isBlank(replace)) {
+                continue;
+            }
+
             replaceAscii = ByteUtils.toHexAscii(replace.getBytes(StandardCharsets.UTF_8));
-            if (StringUtils.isBlank(replace) || replace.equals("\n") || replace.equals("\uFE0F\uFE0F") || hexAscii.equals(replaceAscii)) {
+            if (replace.equals("\n") || replace.equals("\uFE0F\uFE0F") || hexAscii.equals(replaceAscii)) {
                 continue;
             }
 
@@ -513,7 +583,7 @@ public abstract class AbstraOceanStage implements OceanStage {
         if (StringUtils.isBlank(msg)) {
             return affType;
         }
-        boolean contains = msg.contains("y.q5url.cn");
+        boolean contains = msg.contains("y.q5url.cn") || msg.contains("y-03.cn");
 
         return contains ? "tb" : affType;
     }
@@ -525,5 +595,289 @@ public abstract class AbstraOceanStage implements OceanStage {
         private String text;
 
         private Integer size;
+    }
+
+    @Override
+    public void buildBaseMessageProducts(OceanContext context) {
+
+        List<MaocheRobotCrawlerMessageProductDO> messageProducts = new ArrayList<>();
+        // 获取淘宝的
+        List<MaocheRobotCrawlerMessageProductDO> tbProducts = buildTbProducts(context);
+        // 获取京东的
+        List<MaocheRobotCrawlerMessageProductDO> jdProducts = buildJdProducts(context);
+
+        if (CollectionUtils.isNotEmpty(tbProducts)) {
+            messageProducts.addAll(tbProducts);
+        }
+
+        if (CollectionUtils.isNotEmpty(jdProducts)) {
+            messageProducts.addAll(jdProducts);
+        }
+
+        context.setMessageProducts(messageProducts);
+    }
+
+    public List<MaocheRobotCrawlerMessageProductDO> buildTbProducts(OceanContext context) {
+
+        Map<String, CommandResponseV2> productMap = context.getTbProductMap();
+        if (MapUtils.isEmpty(productMap)) {
+            return null;
+        }
+
+        List<MaocheRobotCrawlerMessageProductDO> messageProducts = new ArrayList<>();
+        for (Map.Entry<String, CommandResponseV2> entry : productMap.entrySet()) {
+            CommandResponseV2 tbProduct = entry.getValue();
+            CommandResponseV2.ItemBasicInfo itemBasicInfo = tbProduct.getItemBasicInfo();
+            CommandResponseV2.PricePromotionInfo pricePromotionInfo = tbProduct.getPricePromotionInfo();
+
+            // XgBGorXFGtXxwmvX5BT0oYcAUg-yz3oeZi6a2bapxdcyb
+            String[] idArr = StringUtils.split(tbProduct.getNumIid(), "-");
+            String itemIdSuffix = idArr[1];
+
+            MaocheRobotCrawlerMessageProductDO productDO = new MaocheRobotCrawlerMessageProductDO();
+            productDO.setResourceId(itemIdSuffix);
+            productDO.setInnerId("0");
+            productDO.setItemId(tbProduct.getNumIid());
+            productDO.setApiContent(JsonUtils.toJSONString(tbProduct));
+            productDO.setCategory(itemBasicInfo.getCategoryName());
+            productDO.setTitle(itemBasicInfo.getTitle());
+            productDO.setShortTitle(itemBasicInfo.getShortTitle());
+            // detail = 2之后，字段被移除了
+            productDO.setShopDsr("0");
+            productDO.setShopName(itemBasicInfo.getShopTitle());
+            productDO.setSellerId(itemBasicInfo.getSellerId());
+            productDO.setPictUrl(itemBasicInfo.getPictUrl());
+            productDO.setCommissionRate(new BigDecimal(tbProduct.getCommissionRate()).multiply(new BigDecimal(100)).longValue());
+            productDO.setPrice(new BigDecimal(pricePromotionInfo.getZkFinalPrice()).multiply(new BigDecimal(100)).longValue());
+            productDO.setVolume(NumberUtils.toLong(itemBasicInfo.getVolume()));
+            productDO.setStatus("NORMAL");
+            productDO.setCreateBy("admin");
+            productDO.setUpdateBy("admin");
+            productDO.setRemarks("{}");
+
+            messageProducts.add(productDO);
+        }
+
+        return messageProducts;
+    }
+
+    public List<MaocheRobotCrawlerMessageProductDO> buildJdProducts(OceanContext context) {
+        List<JdUnionIdPromotion> promotions = context.getJdProducts();
+        if (context.isOnlySpecialUri()) {
+            return buildSpecialUriProducts(context);
+        }
+
+        if (CollectionUtils.isEmpty(promotions)) {
+            return null;
+        }
+
+        List<MaocheRobotCrawlerMessageProductDO> productDOs = new ArrayList<>();
+        for (JdUnionIdPromotion promotion : promotions) {
+            Long skuId = promotion.getSkuId();
+            if (skuId == null || skuId <= 0) {
+                continue;
+            }
+
+            MaocheRobotCrawlerMessageProductDO productDO = new MaocheRobotCrawlerMessageProductDO();
+
+            long reservePrice = 0L;
+            long originalPrice = 0L;
+            if (promotion.getPriceInfo() != null) {
+                originalPrice = BigDecimal.valueOf(promotion.getPriceInfo().getPrice()).multiply(new BigDecimal(100)).longValue();
+                reservePrice = BigDecimal.valueOf(promotion.getPriceInfo().getLowestPrice()).multiply(new BigDecimal(100)).longValue();
+            }
+
+            long commissionRate = 0L;
+            long commission = 0L;
+            if (promotion.getCommissionInfo() != null) {
+                commissionRate = BigDecimal.valueOf(promotion.getCommissionInfo().getCommissionShare()).multiply(new BigDecimal(100)).longValue();
+                commission = BigDecimal.valueOf(promotion.getCommissionInfo().getCommission()).multiply(new BigDecimal(100)).longValue();
+            }
+
+            String imgUrl = "";
+            if (promotion.getImageInfo() != null && CollectionUtils.isNotEmpty(promotion.getImageInfo().getImageList())) {
+                imgUrl = promotion.getImageInfo().getImageList().get(0).getUrl();
+            }
+            // 获取不到的话 取视频的封面图
+            if (StringUtils.isBlank(imgUrl) && promotion.getVideoInfo() != null && promotion.getVideoInfo().get(0) != null) {
+                JdUnionIdPromotion.VideoInfo videoInfo = promotion.getVideoInfo().get(0);
+                List<JdUnionIdPromotion.Video> videoList = videoInfo.getVideoList();
+                if (CollectionUtils.isNotEmpty(videoList)) {
+                    JdUnionIdPromotion.Video video = videoList.get(0);
+                    imgUrl = video.getImageUrl();
+                }
+            }
+
+            String sellerId = "";
+            String shopTitle = "";
+            if (promotion.getShopInfo() != null) {
+                shopTitle = promotion.getShopInfo().getShopName();
+                sellerId = String.valueOf(promotion.getShopInfo().getShopId());
+            }
+
+            // 商品标题
+            productDO.setItemUrl(promotion.getShortURL());
+//            productDO.setRobotMsgId(message.getRobotMsgId());
+//            productDO.setMsgId(message.getUiid());
+            productDO.setAffType(getAffType());
+            productDO.setResourceId(String.valueOf(promotion.getSkuId()));
+            productDO.setInnerId("0");
+
+            promotion.setImageInfo(null);
+            productDO.setApiContent(JsonUtils.toJSONString(promotion));
+
+            productDO.setCategory("京东");
+            productDO.setTitle(promotion.getSkuName());
+
+            productDO.setShortTitle("");
+            productDO.setShopDsr("0");
+            productDO.setCommissionRate(commissionRate);
+            productDO.setShopName(shopTitle);
+            productDO.setSellerId(sellerId);
+            productDO.setPrice(reservePrice);
+            productDO.setPictUrl(imgUrl);
+            productDO.setVolume(0L);
+            productDO.setStatus("NORMAL");
+            productDO.setCreateBy("admin");
+            productDO.setUpdateBy("admin");
+//            productDO.setCreateDate(message.getCreateDate());
+//            productDO.setUpdateDate(message.getUpdateDate());
+            productDO.setRemarks("{}");
+
+            productDOs.add(productDO);
+        }
+
+        if (CollectionUtils.isEmpty(productDOs)) {
+            return null;
+        }
+
+        return productDOs;
+    }
+
+    public List<MaocheRobotCrawlerMessageProductDO> buildSpecialUriProducts(OceanContext context) {
+        List<MaocheRobotCrawlerMessageProductDO> productDOs = new ArrayList<>();
+        MaocheRobotCrawlerMessageSyncDO messageSync = context.getMessageSync();
+        String resourceId = messageSync.getUniqueHash();
+
+        MaocheRobotCrawlerMessageProductDO productDO = new MaocheRobotCrawlerMessageProductDO();
+
+        long reservePrice = 0L;
+        long commissionRate = 0L;
+        String imgUrl = "https://cat.zhizher.com/assets/userfiles/fileupload/202404/1784101138316550144.png";
+        // 获取不到的话 取视频的封面图
+        String sellerId = "";
+        String shopTitle = "";
+
+        // 商品标题
+        productDO.setAffType(getAffType());
+        productDO.setResourceId(resourceId);
+        productDO.setInnerId("0");
+
+        productDO.setCategory("京东");
+        productDO.setTitle("外部链接");
+
+        productDO.setShortTitle("");
+        productDO.setShopDsr("0");
+        productDO.setCommissionRate(commissionRate);
+        productDO.setShopName(shopTitle);
+        productDO.setSellerId(sellerId);
+        productDO.setApiContent("");
+        productDO.setPrice(reservePrice);
+        productDO.setPictUrl(imgUrl);
+        productDO.setVolume(0L);
+        productDO.setStatus("NORMAL");
+        productDO.setCreateBy("admin");
+        productDO.setUpdateBy("admin");
+        productDO.setRemarks("{}");
+
+        productDOs.add(productDO);
+
+
+        return productDOs;
+    }
+
+    @Override
+    public void calSimilar(OceanContext context) {
+        // 获取转链详情
+        CommandContext command = context.getCommandContext();
+        Map<String, CommandResponseV2> tbProductMap = context.getTbProductMap();
+        SimilarContext similar = new SimilarContext();
+        List<SimilarDetail> products = new ArrayList<>();
+        // 淘宝为空
+        List<String> failUrls = new ArrayList<>();
+
+        if (command != null && CollectionUtils.isNotEmpty(command.listShortDetails())) {
+            List<ShortUrlDetail> shortUrlDetails = command.listShortDetails();
+            for (ShortUrlDetail url : shortUrlDetails) {
+                String checkUrl = Optional.ofNullable(url.getReplaceUrl()).orElse(url.getContentUrl());
+                if (BooleanUtils.isNotTrue(url.getApiRes())) {
+                    failUrls.add(checkUrl);
+                    continue;
+                }
+                // 京东商品
+                JdUnionIdPromotion promotion = url.getPromotion();
+                if (promotion != null) {
+                    SimilarDetail detail = SimilarDetail.convertProduct(promotion);
+                    if (detail == null) {
+                        continue;
+                    }
+                    products.add(detail);
+                }
+            }
+
+            similar.setNum(shortUrlDetails.size());
+            similar.setProducts(products);
+            similar.setFailUrls(failUrls);
+
+            context.setSimilar(similar);
+        } else if (MapUtils.isNotEmpty(tbProductMap)) {
+
+            for (Map.Entry<String, CommandResponseV2> entry : tbProductMap.entrySet()) {
+                SimilarDetail detail = SimilarDetail.convertProduct(entry.getValue());
+                if (detail == null) {
+                    continue;
+                }
+                products.add(detail);
+            }
+
+            similar.setNum(tbProductMap.size());
+            context.setSimilar(similar);
+        }
+    }
+
+    public void checkSimilar(OceanContext context) {
+        // 获取转链详情
+        SimilarContext similar = context.getSimilar();
+        if (similar == null) {
+            return;
+        }
+
+        String calCode = similar.calCode();
+
+        // 判断3天前内是否存在
+        OceanMessageCondition condition = new OceanMessageCondition();
+        condition.setUniqueHash(calCode);
+        condition.setAffType(getAffType());
+        // 查询存在一样的uniqueHash的数据，通过es查询
+        ElasticSearchData<MaocheMessageSyncIndex, CatProductBucketTO> searchData = oceanSearchService.searchMsg(condition, null, null, null, 0, 1000);
+        // 异常的时候，再查询一次
+        if (searchData == null) {
+            searchData = oceanSearchService.searchMsg(condition, null, null, null, 0, 1000);
+        }
+        if (searchData == null || CollectionUtils.isEmpty(searchData.getDocuments())) {
+            // 为空的时候 做一次db的查询，es刷磁盘需要时间，短时间内可能会查询不出来
+//            MaocheRobotCrawlerMessageSyncDO query = new MaocheRobotCrawlerMessageSyncDO();
+//            query.setUniqueHash(uniqueHash);
+//            query.setStatus("NORMAL");
+//            List<MaocheRobotCrawlerMessageSyncDO> similarMsgs = maocheRobotCrawlerMessageSyncService.findList(query);
+            return;
+        }
+
+        // 修改状态为相似内容
+        MaocheRobotCrawlerMessageSyncDO messageSync = context.getMessageSync();
+        if (messageSync != null) {
+            messageSync.setStatus("SIMILAR");
+            messageSync.setUniqueHash(calCode);
+        }
     }
 }

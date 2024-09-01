@@ -54,6 +54,12 @@ public interface OceanStage {
      */
     void similarMsgCheck(OceanContext context);
 
+    /**
+     * 计算相似内容code
+     * @param context
+     */
+    void calSimilar(OceanContext context);
+
 
 
 }

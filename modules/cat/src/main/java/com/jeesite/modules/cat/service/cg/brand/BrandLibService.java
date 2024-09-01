@@ -326,13 +326,17 @@ public class BrandLibService {
     }
 
     // 品牌信息
-    public ElasticSearchData<MaocheBrandIndex, Object> suggestBrands(String keyword, int from, int size) {
+    public ElasticSearchData<MaocheBrandIndex, Object> suggestBrands(String keyword, String firstSpell, int from, int size) {
 
         if (size <= 0) {
             size = 20;
         }
         BoolQueryBuilder queryBuilder = new BoolQueryBuilder();
         queryBuilder.must(QueryBuilders.matchPhrasePrefixQuery("brand.kw", keyword));
+
+        if (StringUtils.isNotBlank(firstSpell)) {
+            queryBuilder.must(QueryBuilders.matchPhraseQuery("firstSpell", StringUtils.lowerCase(firstSpell)));
+        }
 
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
         searchSourceBuilder.from(from)

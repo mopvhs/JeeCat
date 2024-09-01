@@ -17,6 +17,9 @@ public enum ElasticSearchIndexEnum {
     MAOCHE_BRAND_LIBRARY_INDEX("maoche_brand_library_index", "_doc", "推送任务索引"),
 
     MAOCHE_BRAND_INDEX("maoche_brand", "_doc", "线上品牌索引"),
+
+    MAOCHE_BRAND_LIB_INDEX("maoche_brand_lib_index", "_doc", "品牌库索引"),
+    MAOCHE_BRAND_LIB_KEYWORD_INDEX("maoche_brand_lib_keyword_index", "_doc", "品牌库关键词索引"),
     ;
 
     private String index;

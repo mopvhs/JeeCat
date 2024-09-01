@@ -51,7 +51,7 @@ public class OceanSyncService {
             }
         }
 
-        step = 50;
+        step = 10;
 
         List<String> affTypes = new ArrayList<>();
         affTypes.add("tb");
@@ -64,24 +64,29 @@ public class OceanSyncService {
 
         String offset = String.valueOf(messages.get(messages.size() - 1).getId());
         // 一个一个的解析
-        for (MaocheRobotCrawlerMessageDO message : messages) {
-            offset = String.valueOf(message.getId());
-            // afftype干预订正
-            String affType = message.getAffType();
-            String msg = message.getMsg();
-            affType = AbstraOceanStage.fixAffType(msg, affType);
-            message.setAffType(affType);
-            try {
-                OceanContext context = new OceanContext(message);
-                if (affType.equals("tb")) {
-                    tbOceanStage.process(context);
-                } else if (affType.equals("jd")) {
-                    jdOceanStage.process(context);
-                }
-            } catch (Exception e) {
-                break;
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                for (MaocheRobotCrawlerMessageDO message : messages) {
+//            offset = String.valueOf(message.getId());
+                    // afftype干预订正
+                    String affType = message.getAffType();
+                    String msg = message.getMsg();
+                    affType = AbstraOceanStage.fixAffType(msg, affType);
+                    message.setAffType(affType);
+                    try {
+                        OceanContext context = new OceanContext(message);
+                        if (affType.equals("tb")) {
+                            tbOceanStage.process(context);
+                        } else if (affType.equals("jd")) {
+                            jdOceanStage.process(context);
+                        }
+                    } catch (Exception e) {
+                        break;
+                    }
+                };
             }
-        }
+        }).start();
 
         // 更新位点
         maocheSyncDataInfoService.addOrUpdateOffset(syncDataId, "maoche_robot_crawler_message", offset);

@@ -20,6 +20,8 @@ public class OceanMsgSearchRequest implements Serializable {
     // 品牌库id
     private Long brandLibId;
 
+    private String status;
+
     private String sort;
 
     private int from;

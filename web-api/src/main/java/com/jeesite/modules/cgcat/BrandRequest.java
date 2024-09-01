@@ -13,6 +13,8 @@ public class BrandRequest implements Serializable {
 
     private String keyword;
 
+    private String firstSpell;
+
     private int page;
 
     private int size;

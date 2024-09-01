@@ -196,12 +196,20 @@ public class OceanController {
 
         // 根据商品id查询关联的商品
         OceanMessageCondition messageCondition = new OceanMessageCondition();
-//        messageCondition.setCustomMsgSearch(query.getKeyword())
-        if (StringUtils.isNotBlank(query.getKeyword())) {
+        long syncMsgId = NumberUtils.toLong(query.getKeyword());
+        if (syncMsgId > 0) {
+            messageCondition.setId(syncMsgId);
+        } else if (StringUtils.isNotBlank(query.getKeyword())) {
             keywords.add(query.getKeyword());
         }
+
+        String status = "NORMAL";
+        if (StringUtils.isNotBlank(query.getStatus())) {
+            status = query.getStatus();
+        }
+
         messageCondition.setKeywords(keywords);
-        messageCondition.setStatus("NORMAL");
+        messageCondition.setStatus(status);
 
         if (StringUtils.isNotBlank(query.getCategoryName())) {
             messageCondition.setCategoryNames(Collections.singletonList(query.getCategoryName()));

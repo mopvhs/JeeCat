@@ -70,5 +70,5 @@ public class OceanContext implements Serializable {
     // 是否索引成功
     private boolean indexResult = false;
 
-
+    private SimilarContext similar;
 }
