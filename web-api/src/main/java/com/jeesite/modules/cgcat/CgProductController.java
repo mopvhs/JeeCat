@@ -15,11 +15,13 @@ import com.jeesite.modules.cat.entity.MaocheCategoryProductRelDO;
 import com.jeesite.modules.cat.entity.meta.TaskStatusCount;
 import com.jeesite.modules.cat.enums.AuditStatusEnum;
 import com.jeesite.modules.cat.enums.CatActivityEnum;
+import com.jeesite.modules.cat.enums.ElasticSearchIndexEnum;
 import com.jeesite.modules.cat.enums.SaleStatusEnum;
 import com.jeesite.modules.cat.enums.task.TaskStatusEnum;
 import com.jeesite.modules.cat.es.config.es7.ElasticSearch7Service;
 import com.jeesite.modules.cat.es.config.model.ElasticSearchData;
 import com.jeesite.modules.cat.helper.CatAggHelper;
+import com.jeesite.modules.cat.helper.CatRobotHelper;
 import com.jeesite.modules.cat.helper.CategoryHelper;
 import com.jeesite.modules.cat.helper.UnionProductHelper;
 import com.jeesite.modules.cat.model.CarAlimamaUnionProductIndex;
@@ -41,9 +43,13 @@ import com.jeesite.modules.cat.service.MaochePushTaskService;
 import com.jeesite.modules.cat.service.cg.CgUnionProductService;
 import com.jeesite.modules.cat.service.cg.brand.BrandLibService;
 import com.jeesite.modules.cgcat.dto.ProductCategoryVO;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
+import org.checkerframework.checker.units.qual.A;
+import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -617,6 +623,70 @@ public class CgProductController {
         ProductCategoryModel productCategory = CategoryHelper.getRelProductCategory(maocheCategoryProductRelDOS, categoryTrees);
 
         return Result.OK(JsonUtils.toJSONString(productCategory));
+    }
+
+    // 商品库猫宝分店铺排序（从大到小）
+    @RequestMapping(value = "/product/catdsr/rank")
+    @ResponseBody
+    public String getCatDsrRank() {
+        CatUnionProductCondition condition = new CatUnionProductCondition();
+
+
+
+        // 获取全量的商品库
+//        ElasticSearchData<CarAlimamaUnionProductIndex, CatProductBucketTO> searchData = cgUnionProductService.searchProduct(condition, null, 0, 1);
+
+        // 获取到total
+        BoolQueryBuilder boolBuilder = CatRobotHelper.buildQuery(condition, CatUnionProductCondition.class);
+
+
+        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+        searchSourceBuilder.query(boolBuilder);
+
+        ElasticSearchData<CarAlimamaUnionProductIndex, Object> scroll = elasticSearch7Service.scroll(searchSourceBuilder, ElasticSearchIndexEnum.CAT_PRODUCT_INDEX, CatRobotHelper::convertUnionProduct);
+
+
+        Map<String, ShopCatDsr> catDsrRank = new HashMap<>();
+        for (CarAlimamaUnionProductIndex index : scroll.getDocuments()) {
+            String shopTitle = index.getShopTitle();
+            ShopCatDsr catDsr = catDsrRank.get(shopTitle);
+            if (catDsr == null) {
+                catDsr = new ShopCatDsr(shopTitle, 0L);
+            }
+            catDsr.add(index.getCatDsr());
+            catDsrRank.put(shopTitle, catDsr);
+        }
+
+        List<ShopCatDsr> rank = new ArrayList<>(catDsrRank.values());
+
+        // 按照dsr排序,从大到小
+        rank.sort((o1, o2) -> {
+            return Long.compare(o2.getCatDsr(), o1.getCatDsr());
+        });
+
+        StringBuilder builder = new StringBuilder();
+
+        for (ShopCatDsr r : rank) {
+            builder.append(r.getShopTitle()).append(",").append(r.getCatDsr()).append("\n");
+        }
+
+        return builder.toString();
+    }
+
+    @Data
+    @AllArgsConstructor
+    private static class ShopCatDsr {
+
+        String shopTitle;
+
+        Long catDsr;
+
+        public void add(Long dsr) {
+            if (dsr == null) {
+                return;
+            }
+            catDsr += dsr;
+        }
     }
 
 }

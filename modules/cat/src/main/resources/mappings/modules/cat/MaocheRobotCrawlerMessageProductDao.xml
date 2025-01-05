@@ -28,5 +28,16 @@
 		#{createBy},#{updateBy},#{createDate},#{updateDate},#{remarks}, #{pictUrl}, #{commissionRate},
 		#{itemId}, #{itemUrl});
 	</insert>
+
+	<select id="listByMsgIds" resultType="MaocheRobotCrawlerMessageProductDO">
+		SELECT *
+		FROM maoche_robot_crawler_message_product
+		<where>
+			msg_id in
+			<foreach collection="msgIds" open="(" close=")" separator="," item="id">
+				#{id}
+			</foreach>
+		</where>
+	</select>
 	
 </mapper>

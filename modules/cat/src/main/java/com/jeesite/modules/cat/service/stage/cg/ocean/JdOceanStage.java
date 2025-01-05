@@ -208,7 +208,8 @@ public class JdOceanStage extends AbstraOceanStage {
             // 添加头尾
             if (allSuccess) {
                 resContent = "✨有好价✨\n" + resContent;
-                resContent = resContent + "---------------------\n" + "自助查车@猫车选品官 +产品名";
+//                resContent = resContent + "---------------------\n" + "自助查车@猫车选品官 +产品名";
+                resContent = resContent + "---------------------\n" + "自助查车 dwz.cn/qveM26UV";
             }
 
             messageSync.setMsg(resContent);

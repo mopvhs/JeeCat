@@ -8,7 +8,9 @@ import com.jeesite.modules.cat.model.CarAlimamaUnionProductIndex;
 import com.jeesite.modules.cat.model.CatProductBucketTO;
 import com.jeesite.modules.cat.model.CarRobotCrawlerMessageIndex;
 import com.jeesite.modules.cat.model.MaocheProductIndex;
+import com.jeesite.modules.cat.model.brandlib.BrandLibIndex;
 import com.jeesite.modules.cat.service.es.dto.PushTaskIndex;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
@@ -27,6 +29,7 @@ import org.elasticsearch.search.aggregations.bucket.terms.ParsedTerms;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.metrics.ParsedMax;
 import org.elasticsearch.search.aggregations.metrics.ParsedMin;
+import org.elasticsearch.search.aggregations.metrics.ParsedValueCount;
 
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
@@ -55,6 +58,11 @@ public class CatRobotHelper {
     public static MaocheBrandIndex convertMaocheBrand(String index) {
 
         return JSON.parseObject(index, MaocheBrandIndex.class);
+    }
+
+    public static BrandLibIndex convertMaocheBrandLib(String index) {
+
+        return JSON.parseObject(index, BrandLibIndex.class);
     }
 
     public static MaocheProductIndex convertMaocheProduct(String index) {
@@ -124,6 +132,11 @@ public class CatRobotHelper {
                 CatProductBucketTO data = new CatProductBucketTO();
                 data.setName(filter.getName());
                 data.setCount(filter.getDocCount());
+                dataList.add(data);
+            } else if (next instanceof ParsedValueCount valueCount) {
+                CatProductBucketTO data = new CatProductBucketTO();
+                data.setName(valueCount.getName());
+                data.setCount(valueCount.getValue());
                 dataList.add(data);
             }
             String name = next.getName();

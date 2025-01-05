@@ -9,18 +9,25 @@ import com.jeesite.common.utils.PinYinUtils;
 import com.jeesite.modules.cat.aop.MaocheBrandIndex;
 import com.jeesite.modules.cat.entity.MaochePushTaskRuleDO;
 import com.jeesite.modules.cat.enums.AuditStatusEnum;
+import com.jeesite.modules.cat.enums.ElasticSearchIndexEnum;
 import com.jeesite.modules.cat.enums.QualityStatusEnum;
 import com.jeesite.modules.cat.enums.SaleStatusEnum;
 import com.jeesite.modules.cat.es.config.es7.ElasticSearch7Service;
 import com.jeesite.modules.cat.es.config.model.ElasticSearchData;
 import com.jeesite.modules.cat.helper.CatRobotHelper;
+import com.jeesite.modules.cat.model.CatProductBucketTO;
 import com.jeesite.modules.cat.model.MaocheBrandLibraryIndex;
+import com.jeesite.modules.cat.model.brandlib.BrandLibIndex;
+import com.jeesite.modules.cat.model.condition.CatUnionProductCondition;
 import com.jeesite.modules.cat.service.MaochePushTaskRuleService;
 import com.jeesite.modules.cat.service.cg.brand.BrandLibService;
+import com.jeesite.modules.cat.service.cg.brandlib.dto.BrandLibCondition;
+import com.jeesite.modules.cat.service.es.common.SearchService;
 import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.RangeQueryBuilder;
+import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.stereotype.Component;
 
@@ -31,6 +38,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 
 import static com.jeesite.modules.cat.enums.ElasticSearchIndexEnum.MAOCHE_BRAND_LIBRARY_INDEX;
 
@@ -46,6 +55,9 @@ public class BrandLibEsService {
 
     @Resource
     private BrandLibService brandLibService;
+
+    @Resource
+    private SearchService searchService;
 
     public void indexEs(Long id) {
 
@@ -145,5 +157,22 @@ public class BrandLibEsService {
 
         return JsonUtils.toReferenceType(JsonUtils.toJSONString(index), new TypeReference<Map<String, Object>>() {
         });
+    }
+
+    public ElasticSearchData<BrandLibIndex, CatProductBucketTO> searchBrandLib(BrandLibCondition condition,
+                                                                               Function<BrandLibCondition, List<AggregationBuilder>> aggregation,
+                                                                               BiConsumer<BrandLibCondition, BoolQueryBuilder> customBoolQueryBuilder,
+                                                                               int from,
+                                                                               int size) {
+
+        SearchSourceBuilder source = searchService.searchSource(condition,
+                aggregation,
+                null,
+                customBoolQueryBuilder,
+                BrandLibCondition.class,
+                from,
+                size);
+
+        return elasticSearch7Service.search(source, ElasticSearchIndexEnum.MAOCHE_BRAND_LIB_INDEX, null, CatRobotHelper::convertMaocheBrandLib, null);
     }
 }

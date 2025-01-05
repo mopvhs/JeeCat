@@ -7,6 +7,7 @@ import lombok.Data;
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -23,7 +24,16 @@ public class CommandContext implements Serializable {
 
     private String resContent;
 
+    private List<String> errors;
+
     public Map<String, ShortUrlDetail> shortUrlDetailMap;
+
+    public CommandContext(String content) {
+        this.content = content;
+    }
+
+    public CommandContext() {
+    }
 
     public List<ShortUrlDetail> listShortDetails() {
         if (MapUtils.isEmpty(shortUrlDetailMap)) {
@@ -39,5 +49,20 @@ public class CommandContext implements Serializable {
         }
 
         return items;
+    }
+
+    public void addErrors(String error) {
+        if (errors == null) {
+            errors = new ArrayList<>();
+        }
+
+        errors.add(error);
+    }
+
+    public Map<String, ShortUrlDetail> getShortUrlDetailMap() {
+        if (shortUrlDetailMap == null) {
+            shortUrlDetailMap = new HashMap<>();
+        }
+        return shortUrlDetailMap;
     }
 }

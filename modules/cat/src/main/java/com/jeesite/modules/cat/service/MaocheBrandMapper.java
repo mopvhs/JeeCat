@@ -1,6 +1,9 @@
 package com.jeesite.modules.cat.service;
 
+import java.util.ArrayList;
 import java.util.List;
+
+import org.apache.commons.collections.CollectionUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -77,5 +80,30 @@ public class MaocheBrandMapper extends CrudService<MaocheBrandDao, MaocheBrandDO
 	public void delete(MaocheBrandDO maocheBrandDO) {
 		super.delete(maocheBrandDO);
 	}
-	
+
+
+	public List<MaocheBrandDO> listByIds(List<Long> ids) {
+		if (CollectionUtils.isEmpty(ids)) {
+			return new ArrayList<>();
+		}
+
+		return dao.listByIds(ids);
+	}
+
+
+	public MaocheBrandDO getById(Long id) {
+		if (id == null || id <= 0) {
+			return null;
+		}
+
+		return dao.getById(id);
+	}
+
+	public boolean updateById(MaocheBrandDO brand) {
+		if (brand == null || brand.getIid() == null || brand.getIid() <= 0) {
+			return false;
+		}
+
+		return dao.updateById(brand) > 0;
+	}
 }

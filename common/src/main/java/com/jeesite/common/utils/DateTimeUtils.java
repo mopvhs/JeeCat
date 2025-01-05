@@ -247,7 +247,7 @@ public class DateTimeUtils {
 	 * @return
 	 */
 	public static String getStringDateShort(Date date) {
-		SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
+		SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMdd");
 		return formatter.format(date);
 	}
 

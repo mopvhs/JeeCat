@@ -1,6 +1,7 @@
 package com.jeesite.modules.cat.service.stage.cg.ocean;
 
 import com.jeesite.common.codec.Md5Utils;
+import com.jeesite.common.lang.StringUtils;
 import com.jeesite.modules.cat.helper.PriceHelper;
 import com.jeesite.modules.cat.service.cg.third.dto.JdUnionIdPromotion;
 import com.jeesite.modules.cat.service.cg.third.tb.dto.CommandResponseV2;
@@ -49,7 +50,7 @@ public class SimilarDetail implements Serializable {
         if (promotion == null) {
             return null;
         }
-        if (promotion.getSkuId() == null || promotion.getSkuId() <= 0) {
+        if (StringUtils.isBlank(promotion.getSkuId())) {
             return null;
         }
 
@@ -107,13 +108,14 @@ public class SimilarDetail implements Serializable {
         String riRule = "%s_%s_%s";
         String categoryId = "0";
         CommandResponseV2.ItemBasicInfo itemBasicInfo = promotion.getItemBasicInfo();
-        if (itemBasicInfo != null) {
-            shopId = itemBasicInfo.getSellerId();
-            shopName = itemBasicInfo.getShopTitle();
-            categoryId = itemBasicInfo.getCategoryId();
-
-            title = itemBasicInfo.getTitle();
+        if (itemBasicInfo == null) {
+            return null;
         }
+
+        shopId = itemBasicInfo.getSellerId();
+        shopName = itemBasicInfo.getShopTitle();
+        categoryId = itemBasicInfo.getCategoryId();
+        title = itemBasicInfo.getTitle();
 
         CommandResponseV2.PricePromotionInfo pricePromotionInfo = promotion.getPricePromotionInfo();
         if (pricePromotionInfo != null) {

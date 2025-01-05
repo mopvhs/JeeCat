@@ -5,7 +5,9 @@ import com.jeesite.common.lang.StringUtils;
 import com.jeesite.modules.cat.enums.ElasticSearchIndexEnum;
 import com.jeesite.modules.cat.es.config.es7.ElasticSearch7Service;
 import com.jeesite.modules.cat.es.config.model.ElasticSearchData;
+import com.jeesite.modules.cat.model.BrandLibKeywordIndex;
 import com.jeesite.modules.cat.model.CatProductBucketTO;
+import com.jeesite.modules.cat.model.MaocheBrandLibraryIndex;
 import com.jeesite.modules.cat.model.ocean.OceanMessageCondition;
 import com.jeesite.modules.cat.model.ocean.OceanMessageProductCondition;
 import com.jeesite.modules.cat.service.es.common.SearchService;
@@ -65,6 +67,16 @@ public class OceanSearchService {
     public static MaocheMessageProductIndex convertMessageProduct(String index) {
 
         return JSON.parseObject(index, MaocheMessageProductIndex.class);
+    }
+
+    public static MaocheBrandLibraryIndex convertMaocheBrandLibraryIndex(String index) {
+
+        return JSON.parseObject(index, MaocheBrandLibraryIndex.class);
+    }
+
+    public static BrandLibKeywordIndex convertBrandLibKeywordIndex(String index) {
+
+        return JSON.parseObject(index, BrandLibKeywordIndex.class);
     }
 
 

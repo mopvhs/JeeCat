@@ -4,6 +4,7 @@ import com.jeesite.common.lang.StringUtils;
 import com.jeesite.common.utils.DateTimeUtils;
 import com.jeesite.modules.cat.BrandLibCondition;
 import com.jeesite.modules.cat.aop.MaocheBrandIndex;
+import com.jeesite.modules.cat.entity.MaocheBrandDO;
 import com.jeesite.modules.cat.enums.ElasticSearchIndexEnum;
 import com.jeesite.modules.cat.enums.task.TaskStatusEnum;
 import com.jeesite.modules.cat.es.config.es7.ElasticSearch7Service;
@@ -15,8 +16,10 @@ import com.jeesite.modules.cat.model.MaocheBrandLibraryIndex;
 import com.jeesite.modules.cat.model.condition.CatUnionProductCondition;
 import com.jeesite.modules.cat.model.condition.PushTaskIndexCondition;
 import com.jeesite.modules.cat.model.ocean.OceanMessageCondition;
+import com.jeesite.modules.cat.service.MaocheBrandMapper;
 import com.jeesite.modules.cat.service.MaochePushTaskRuleService;
 import com.jeesite.modules.cat.service.cg.CgUnionProductService;
+import com.jeesite.modules.cat.service.cg.brandlib.dto.BrandUpdateDTO;
 import com.jeesite.modules.cat.service.cg.ocean.OceanSearchService;
 import com.jeesite.modules.cat.service.cg.search.BrandLibSearchService;
 import com.jeesite.modules.cat.service.es.dto.MaocheMessageProductIndex;
@@ -58,6 +61,9 @@ public class BrandLibService {
 
     @Resource
     private BrandLibSearchService brandLibSearchService;
+
+    @Resource
+    private MaocheBrandMapper maocheBrandMapper;
 
 
     // 获取品牌库的关键词数量
@@ -344,6 +350,25 @@ public class BrandLibService {
                 .query(queryBuilder);
 
         return elasticSearch7Service.search(searchSourceBuilder, MAOCHE_BRAND_INDEX, CatRobotHelper::convertMaocheBrand, null);
+    }
+
+    public boolean updateBrand(BrandUpdateDTO updateDTO) {
+        if (updateDTO == null || updateDTO.getId() == null || updateDTO.getId() <= 0) {
+            return false;
+        }
+        Long id = updateDTO.getId();
+
+        // 查询品牌是否存在
+        MaocheBrandDO brand = maocheBrandMapper.getById(id);
+        if (brand == null) {
+            return false;
+        }
+
+        MaocheBrandDO update = new MaocheBrandDO();
+        update.setIid(id);
+        update.setIcon(updateDTO.getIcon());
+
+        return maocheBrandMapper.updateById(update);
     }
 
 }

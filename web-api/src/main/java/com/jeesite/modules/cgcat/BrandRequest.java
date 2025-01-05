@@ -11,6 +11,8 @@ public class BrandRequest implements Serializable {
     @Serial
     private static final long serialVersionUID = -4027569664315718448L;
 
+    private Long id;
+
     private String keyword;
 
     private String firstSpell;

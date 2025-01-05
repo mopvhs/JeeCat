@@ -49,9 +49,8 @@ public class CarAlimamaUnionProductIndex implements Serializable {
 //    private Float realPostFee;
     // 商品一口价格
     private Long reservePrice;
-//    private Long sellerId;
+    private String sellerId;
     private Long shopDsr = 46666L;
-
     // 猫车分
     private Long catDsr;
     private String catDsrTips;

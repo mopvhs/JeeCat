@@ -238,7 +238,12 @@ public class MaocheAlimamaUnionProductService extends CrudService<MaocheAlimamaU
 		MaocheAlimamaUnionProductDO query = new MaocheAlimamaUnionProductDO();
 		query.setItemIdSuffix(itemIdSuffix);
 		query.setStatus(status);
-		MaocheAlimamaUnionProductDO item = dao.getByEntity(query);
-		return item;
+		query.setOrderBy("sync_time desc");
+		List<MaocheAlimamaUnionProductDO> items = dao.findList(query);
+		if (CollectionUtils.isNotEmpty(items)) {
+			return items.get(0);
+		}
+
+		return null;
 	}
 }

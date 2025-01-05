@@ -8,6 +8,7 @@ import com.jeesite.common.utils.JsonUtils;
 import com.jeesite.modules.cat.dao.MaocheRobotCrawlerMessageSyncDao;
 import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageSyncDO;
 import com.jeesite.modules.cat.enums.ElasticSearchIndexEnum;
+import com.jeesite.modules.cat.enums.OceanStatusEnum;
 import com.jeesite.modules.cat.es.config.es7.ElasticSearch7Service;
 import com.jeesite.modules.cat.service.MaocheRobotCrawlerMessageSyncService;
 import com.jeesite.modules.cat.service.message.DingDingService;
@@ -53,7 +54,7 @@ public class SyncOceanSimilarXxlJob extends IJobHandler {
         for (MaocheRobotCrawlerMessageSyncDO item : messageSyncDOS) {
             Map<String, Object> messageSyncIndex = new HashMap<>();
             messageSyncIndex.put("id", item.getUiid());
-            messageSyncIndex.put("status", "SIMILAR");
+            messageSyncIndex.put("status", OceanStatusEnum.SIMILAR.name());
             data.add(messageSyncIndex);
         }
 

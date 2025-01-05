@@ -22,5 +22,49 @@
 		#{tags}, #{specialTags}, #{status},
 		#{createBy}, #{updateBy}, #{createDate}, #{updateDate}, #{remarks});
 	</insert>
+
+	<select id="listByLibIds" resultType="MaocheBrandLibKeywordDO">
+		select * from maoche_brand_lib_keyword
+		<where>
+			brand_lib_id in
+			<foreach collection="libIds" item="libId" close=")" open="(" separator=",">
+				#{libId}
+			</foreach>
+		</where>
+	</select>
+
+	<select id="listByIds" resultType="MaocheBrandLibKeywordDO">
+		select * from maoche_brand_lib_keyword
+		<where>
+			id in
+			<foreach collection="ids" item="id" close=")" open="(" separator=",">
+				#{id}
+			</foreach>
+		</where>
+	</select>
+
+	<select id="getById" resultType="MaocheBrandLibKeywordDO">
+		select * from maoche_brand_lib_keyword
+		<where>
+			id = #{id}
+		</where>
+	</select>
+	
+	<update id="incrSubscribeCount">
+		update maoche_brand_lib_keyword
+		set subscribe_count = subscribe_count + #{count}
+		<where>
+			id = #{id}
+		</where>
+	</update>
+
+	<update id="decrSubscribeCount">
+		update maoche_brand_lib_keyword
+		set subscribe_count = subscribe_count - #{count}
+		<where>
+			id = #{id}
+			and subscribe_count > 0
+		</where>
+	</update>
 	
 </mapper>

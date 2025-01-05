@@ -25,6 +25,10 @@ public class BrandLibKeywordIndex implements Serializable {
 
     private Long brandLibId;
 
+    private Long brandId;
+
+    private String brandName;
+
     private String keyword;
 
     private String categoryName;
@@ -41,8 +45,10 @@ public class BrandLibKeywordIndex implements Serializable {
 
     private Long updateTime;
 
-    public static BrandLibKeywordIndex toIndex(MaocheBrandLibKeywordDO keywordDO) {
-        if (keywordDO == null) {
+    private Long subscribeCount;
+
+    public static BrandLibKeywordIndex toIndex(MaocheBrandLibDO lib, MaocheBrandLibKeywordDO keywordDO) {
+        if (keywordDO == null || lib == null) {
             return null;
         }
 
@@ -50,6 +56,9 @@ public class BrandLibKeywordIndex implements Serializable {
 
         index.setId(keywordDO.getIid());
         index.setBrandLibId(keywordDO.getBrandLibId());
+        index.setBrandId(lib.getBrandId());
+        index.setBrandName(lib.getProductName());
+        index.setKeyword(keywordDO.getKeyword());
         index.setCategoryName(keywordDO.getCategoryName());
         index.setLevelOneCategoryName(keywordDO.getLevelOneCategoryName());
         index.setTags(JsonUtils.toReferenceType(keywordDO.getTags(), new TypeReference<List<Long>>() {
@@ -60,6 +69,7 @@ public class BrandLibKeywordIndex implements Serializable {
         }));
         index.setStatus(keywordDO.getStatus());
         index.setUpdateTime(keywordDO.getUpdateDate().getTime());
+        index.setSubscribeCount(keywordDO.getSubscribeCount());
 
         return index;
     }
@@ -78,8 +88,8 @@ public class BrandLibKeywordIndex implements Serializable {
 //        return null;
 //    }
 
-    public static Map<String, Object> toIndexMap(MaocheBrandLibKeywordDO libDO) {
-        BrandLibKeywordIndex index = toIndex(libDO);
+    public static Map<String, Object> toIndexMap(MaocheBrandLibDO lib, MaocheBrandLibKeywordDO keyword) {
+        BrandLibKeywordIndex index = toIndex(lib, keyword);
         if (index == null) {
             return null;
         }

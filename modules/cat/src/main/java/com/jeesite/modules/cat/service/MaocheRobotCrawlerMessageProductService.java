@@ -1,6 +1,9 @@
 package com.jeesite.modules.cat.service;
 
+import java.util.ArrayList;
 import java.util.List;
+
+import org.apache.commons.collections.CollectionUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,7 +19,7 @@ import com.jeesite.modules.cat.dao.MaocheRobotCrawlerMessageProductDao;
  */
 @Service
 public class MaocheRobotCrawlerMessageProductService extends CrudService<MaocheRobotCrawlerMessageProductDao, MaocheRobotCrawlerMessageProductDO> {
-	
+
 	/**
 	 * 获取单条数据
 	 * @param maocheRobotCrawlerMessageProductDO
@@ -26,7 +29,7 @@ public class MaocheRobotCrawlerMessageProductService extends CrudService<MaocheR
 	public MaocheRobotCrawlerMessageProductDO get(MaocheRobotCrawlerMessageProductDO maocheRobotCrawlerMessageProductDO) {
 		return dao.getByEntity(maocheRobotCrawlerMessageProductDO);
 	}
-	
+
 	/**
 	 * 查询分页数据
 	 * @param maocheRobotCrawlerMessageProductDO 查询条件
@@ -37,7 +40,7 @@ public class MaocheRobotCrawlerMessageProductService extends CrudService<MaocheR
 	public Page<MaocheRobotCrawlerMessageProductDO> findPage(MaocheRobotCrawlerMessageProductDO maocheRobotCrawlerMessageProductDO) {
 		return super.findPage(maocheRobotCrawlerMessageProductDO);
 	}
-	
+
 	/**
 	 * 查询列表数据
 	 * @param maocheRobotCrawlerMessageProductDO
@@ -47,7 +50,7 @@ public class MaocheRobotCrawlerMessageProductService extends CrudService<MaocheR
 	public List<MaocheRobotCrawlerMessageProductDO> findList(MaocheRobotCrawlerMessageProductDO maocheRobotCrawlerMessageProductDO) {
 		return super.findList(maocheRobotCrawlerMessageProductDO);
 	}
-	
+
 	/**
 	 * 保存数据（插入或更新）
 	 * @param maocheRobotCrawlerMessageProductDO
@@ -57,7 +60,7 @@ public class MaocheRobotCrawlerMessageProductService extends CrudService<MaocheR
 	public void save(MaocheRobotCrawlerMessageProductDO maocheRobotCrawlerMessageProductDO) {
 		dao.add(maocheRobotCrawlerMessageProductDO);
 	}
-	
+
 	/**
 	 * 更新状态
 	 * @param maocheRobotCrawlerMessageProductDO
@@ -67,7 +70,7 @@ public class MaocheRobotCrawlerMessageProductService extends CrudService<MaocheR
 	public void updateStatus(MaocheRobotCrawlerMessageProductDO maocheRobotCrawlerMessageProductDO) {
 		super.updateStatus(maocheRobotCrawlerMessageProductDO);
 	}
-	
+
 	/**
 	 * 删除数据
 	 * @param maocheRobotCrawlerMessageProductDO
@@ -77,5 +80,13 @@ public class MaocheRobotCrawlerMessageProductService extends CrudService<MaocheR
 	public void delete(MaocheRobotCrawlerMessageProductDO maocheRobotCrawlerMessageProductDO) {
 		super.delete(maocheRobotCrawlerMessageProductDO);
 	}
-	
+
+	public List<MaocheRobotCrawlerMessageProductDO> listByMsgIds(List<Long> msgIds) {
+		if (CollectionUtils.isEmpty(msgIds)) {
+			return new ArrayList<>();
+		}
+
+		return dao.listByMsgIds(msgIds);
+	}
+
 }

@@ -22,6 +22,10 @@ public class ShortUrlDetail implements Serializable {
     // 公海消息的原地址
     private String contentUrl;
 
+    // 转链时间
+    private long ts;
+    private long dwzTs;
+
     // jd商品信息
     private JdUnionIdPromotion promotion;
     // tb商品信息
@@ -35,8 +39,19 @@ public class ShortUrlDetail implements Serializable {
     // 支持短网址的url
     private String supportDwzUrl;
 
+    private String errorMsg;
+
     // 转链历史
     private List<String> exchangeLog;
+
+    public ShortUrlDetail() {
+    }
+
+    public ShortUrlDetail(String initUrl) {
+        this.replaceUrl = initUrl;
+        this.searchUrl = initUrl;
+        this.contentUrl = initUrl;
+    }
 
     public void addExchangeLog(String url) {
         if (StringUtils.isBlank(url)) {

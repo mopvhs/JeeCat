@@ -22,6 +22,8 @@ import org.apache.commons.lang3.math.NumberUtils;
 @Table(name="maoche_brand", alias="a", label="maoche_brand信息", columns={
 		@Column(name="id", attrName="id", label="id", isPK=true),
 		@Column(name="name", attrName="name", label="name", queryType=QueryType.LIKE),
+		@Column(name="first_spell", attrName="firstSpell", label="name", queryType=QueryType.LIKE),
+		@Column(name="icon", attrName="icon", label="icon"),
 		@Column(name="create_time", attrName="createTime", label="create_time", isUpdateForce=true),
 		@Column(name="update_time", attrName="updateTime", label="update_time", isUpdateForce=true),
 		@Column(includeEntity=DataEntity.class),
@@ -33,6 +35,8 @@ public class MaocheBrandDO extends DataEntity<MaocheBrandDO> {
 
 	private Long iid;
 	private String name;		// name
+	private String icon;		// icon
+	private String firstSpell;		// first_spell
 	private Date createTime;		// create_time
 	private Date updateTime;		// update_time
 
@@ -95,5 +99,20 @@ public class MaocheBrandDO extends DataEntity<MaocheBrandDO> {
 	public void setUpdateTime(Date updateTime) {
 		this.updateTime = updateTime;
 	}
-	
+
+	public String getIcon() {
+		return icon;
+	}
+
+	public void setIcon(String icon) {
+		this.icon = icon;
+	}
+
+	public String getFirstSpell() {
+		return firstSpell;
+	}
+
+	public void setFirstSpell(String firstSpell) {
+		this.firstSpell = firstSpell;
+	}
 }

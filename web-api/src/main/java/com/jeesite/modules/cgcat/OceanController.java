@@ -215,7 +215,7 @@ public class OceanController {
             messageCondition.setCategoryNames(Collections.singletonList(query.getCategoryName()));
         }
 
-        String sort = "createDate desc";
+        String sort = "wxTime desc";
         if (StringUtils.isNotBlank(query.getSort())) {
             if ("newProduct".equals(query.getSort())) {
                 // 今天开始时间

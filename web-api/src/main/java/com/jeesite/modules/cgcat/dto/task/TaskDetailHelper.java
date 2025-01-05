@@ -129,7 +129,7 @@ public class TaskDetailHelper {
                     continue;
                 }
                 // 判断是链接还是商品
-                if (promotion.getSkuId() == null || promotion.getSkuId() <= 0) {
+                if (StringUtils.isBlank(promotion.getSkuId())) {
                     NameDetail actLink = new NameDetail();
                     actLink.setName("活动券");
                     actLink.setContent(promotion.getShortURL());

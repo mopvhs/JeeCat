@@ -1,13 +1,18 @@
 package com.jeesite.modules.cgcat;
 
 import com.jeesite.common.lang.NumberUtils;
-import com.jeesite.common.lang.StringUtils;
+import com.jeesite.common.utils.JsonUtils;
+import com.jeesite.common.web.http.HttpClientUtils;
 import com.jeesite.modules.cat.enums.ElasticSearchIndexEnum;
 import com.jeesite.modules.cat.es.config.es7.ElasticSearch7Service;
+import com.jeesite.modules.cat.service.FlameHttpService;
+import com.jeesite.modules.cat.service.OkHttpService;
 import com.jeesite.modules.cat.xxl.job.CgProductSyncXxlJob;
 import com.jeesite.modules.cat.xxl.job.task.SyncOceanSimilarXxlJob;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ibatis.annotations.Param;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 
@@ -64,5 +69,22 @@ public class TestController {
 
         cgProductSyncXxlJob.execute();
         return "success";
+    }
+
+    @RequestMapping(value = "/test/jsoup")
+    public String jsoup(String url) throws Exception {
+        Document document = Jsoup.connect(url).get();
+        // 使用Jsoup连接到网页
+        Document doc = Jsoup.connect(url).get();
+        // 获取HTML内容
+        String html = doc.html();
+
+        String s1 = OkHttpService.doGetHtmlWithProxy(url);
+
+        Map<String, String> data = new HashMap<>();
+        data.put("url", html);
+        String s = FlameHttpService.doPost("https://wx.mtxtool.com/cat_url_decrypt", JsonUtils.toJSONString(data));
+
+        return s;
     }
 }

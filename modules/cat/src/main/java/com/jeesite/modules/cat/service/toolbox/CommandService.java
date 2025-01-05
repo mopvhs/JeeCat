@@ -37,6 +37,7 @@ import com.jeesite.modules.cat.service.toolbox.dto.CommandDTO;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.HttpUrl;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.BooleanUtils;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -45,6 +46,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -92,19 +94,21 @@ public class CommandService {
     // 京东
     public static Pattern jd = Pattern.compile("(http|https):\\/\\/[a-zA-Z0-9-\\.]+\\.[a-z]{2,}(\\/\\S*)");
 
+    public static Pattern url = Pattern.compile("https?:\\/\\/[^\\s]+|[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}[\\/?]*[^\\s]*");
+
     public Result<CommandDTO> exchangeCommand(String content, String type) {
         if (StringUtils.isBlank(content) || StringUtils.isBlank(type)) {
             return Result.ERROR(500, "参数不能为空");
         }
 
+        CommandContext context = new CommandContext();
+        context.setContent(content);
         // 淘宝
         if ("tb".equals(type)) {
-            return doExchangeTb(content);
+            return doExchangeTb(context);
         }
 
         if ("jd".equals(type) || "dwz".equals(type)) {
-            CommandContext context = new CommandContext();
-            context.setContent(content);
             return doDwz(context);
         }
 
@@ -118,6 +122,7 @@ public class CommandService {
             return exchangeJd;
         }
         CommandDTO data = exchangeJd.getResult();
+        data.setShortUrlDetailMap(context.getShortUrlDetailMap());
 
         String jdResultContent = data.getContent();
         if (StringUtils.isBlank(jdResultContent)) {
@@ -132,6 +137,7 @@ public class CommandService {
                 continue;
             }
 
+            long startTime = System.currentTimeMillis();
             String oriUrl = detail.getSupportDwzUrl();
             // 获取短地址md5
             String shortUrl = getDwzByUrl(oriUrl);
@@ -139,6 +145,8 @@ public class CommandService {
                 continue;
             }
 
+            // 短网址时间
+            detail.setDwzTs(System.currentTimeMillis() - startTime);
             detail.addExchangeLog(shortUrl);
             detail.setReplaceUrl(shortUrl);
             detail.setApiRes(true);
@@ -218,8 +226,8 @@ public class CommandService {
         }
     }
 
-    private Result<CommandDTO> doExchangeTb(String content) {
-        if (StringUtils.isBlank(content)) {
+    private Result<CommandDTO> doExchangeTb(CommandContext context) {
+        if (StringUtils.isBlank(context.getContent())) {
             return Result.ERROR(500, "参数不能为空");
         }
 
@@ -227,7 +235,7 @@ public class CommandService {
         Map<String, Object> objectMap = new HashMap<>();
         objectMap.put("detail", 2);
         objectMap.put("deepcoupon", 2);
-
+        String content = context.getContent();
         String redisKey = Md5Utils.md5(content) + "_v2";
         String redisValue = cacheService.get(redisKey);
         if (StringUtils.isNotBlank(redisValue)) {
@@ -342,7 +350,6 @@ public class CommandService {
             Matcher matcher = jd.matcher(item);
             if (matcher.find()) {
                 ShortUrlDetail detail = new ShortUrlDetail();
-//                String group = matchUrl(matcher.group());
                 String group = matcher.group();
                 detail.setContentUrl(group);
                 // 原始地址
@@ -351,6 +358,7 @@ public class CommandService {
             }
         }
         if (MapUtils.isEmpty(shortUrlDetailMap)) {
+            context.addErrors("未匹配到需要转链的地址");
             return Result.ERROR(500, "分析需要替换的链接失败");
         }
 
@@ -359,16 +367,51 @@ public class CommandService {
         Map<String, String> commandMap = new HashMap<>();
         List<CommandDTO.Product> products = new ArrayList<>();
         for (Map.Entry<String, ShortUrlDetail> entry : shortUrlDetailMap.entrySet()) {
+            String apiError = null;
+
             String url = entry.getKey();
             ShortUrlDetail detail = entry.getValue();
 
+            long startTime = System.currentTimeMillis();
             // 获取原地址
-            String redirectUrl = getRedirectUrl(url);
+            Result<String> redirectRes = getRedirectUrl(url, null);
+            String redirectUrl = null;
+            if (redirectRes != null) {
+                redirectUrl = redirectRes.getResult();
+                detail.addExchangeLog(redirectRes.getMessage());
+            }
+
+            Result<JdUnionIdPromotion> result = new Result<>();
             String searchUrl = Optional.ofNullable(redirectUrl).orElse(url);
             detail.setSearchUrl(searchUrl);
+            if (searchUrl.contains("t.q5url.cn/tkl.html")) {
+                result = Result.ERROR(304, "淘客链接");
+            } else {
+                result = dingDanXiaApiService.jdByUnionidPromotionWithCoupon("8On9yn1NtuJhyTMHzkz5p83YtGyXGnB6", searchUrl, 1002248572L, 3100684498L);
+                List<String> retryDomains = new ArrayList<>();
+                retryDomains.add("3.cn");
+                retryDomains.add("m.cute-cat.cn");
+                // 失败重试1次
+                if (!Result.isOK(result)) {
+                    redirectRes = getRedirectUrl(searchUrl, retryDomains);
+                    if (redirectRes != null) {
+                        redirectUrl = redirectRes.getResult();
+                        searchUrl = Optional.ofNullable(redirectUrl).orElse(searchUrl);
+                        detail.addExchangeLog("转链时候后重试获取结果:" + redirectRes.getMessage());
+                    }
 
-            Result<JdUnionIdPromotion> result = dingDanXiaApiService.jdByUnionidPromotionWithCoupon("FHPOsYO7zki7tcrxp0amyGMP7wxVkbU3", searchUrl, 1002248572L, 3100684498L);
-            commandMap.put(url, JsonUtils.toJSONString(result));
+                    result = dingDanXiaApiService.jdByUnionidPromotionWithCoupon("8On9yn1NtuJhyTMHzkz5p83YtGyXGnB6", searchUrl, 1002248572L, 3100684498L);
+                }
+            }
+            if (Result.isOK(result) && StringUtils.isNotBlank(redirectUrl) && redirectUrl.contains(".kuaizhan.com")) {
+                // 单纯只有链接，非商品，而且是快站的
+                JdUnionIdPromotion promotion = result.getResult();
+                if (StringUtils.isBlank(promotion.getSkuId())) {
+                    result.setSuccess(false);
+                }
+            }
+
+//            commandMap.put(url, JsonUtils.toJSONString(result));
             if (Result.isOK(result)) {
                 JdUnionIdPromotion promotion = result.getResult();
 
@@ -387,12 +430,21 @@ public class CommandService {
                 }
                 products.add(product);
             } else {
+
+                try {
+                    csOpLogService.addLog(searchUrl, "fail_exchange_jd", "jd_command", "maoche", "订单侠jd转链失败",
+                            content, JsonUtils.toJSONString(result));
+                } catch (Exception e) {
+                    log.error("京东转链失败写日志异常，searchUrl:{}", searchUrl, e);
+                }
+
+                apiError = searchUrl + "订单侠搜索失败：" + result.getMessage();
                 if (StringUtils.isNotBlank(redirectUrl)) {
                     boolean isReplace = true;
                     detail.setReplaceUrl(redirectUrl);
-                    detail.addExchangeLog(redirectUrl);
+                    detail.addExchangeLog("存在重定向链接, 判断是否执行重定向转链：" + redirectUrl);
                     // 判断域名是否是快站的
-                    if (redirectUrl.contains("sup331.kuaizhan.com")) {
+                    if (redirectUrl.contains(".kuaizhan.com")) {
                         Map<String, String> parameterMap = UrlUtils.getParametersWithSpilt(redirectUrl);
                         String value = parameterMap.get("k");
                         if (StringUtils.isNotBlank(value)) {
@@ -450,29 +502,78 @@ public class CommandService {
 
                                         }
                                     }
+                                } else {
+                                    detail.addExchangeLog("重定向链接【" + redirectUrl + "】, 转链失败" + s);
                                 }
                             } else {
                                 isReplace = false;
                             }
 
                         } else {
+                            detail.addExchangeLog("重定向链接【" + redirectUrl + "】, 解析获取不到k的参数，不执行转链");
                             DingDingService.sendParseDingDingMsg("快站{},解析获取不到k的参数", redirectUrl);
                         }
+                    } else if (redirectUrl.contains("t.q5url.cn")) {
+                        // 获取原地址:
+                            try {
+                                // http://zzj.cute-cat.cn/dn2.html?taowords=nGEn3dC8n5C&image=https://img.alicdn.com/bao/uploaded/i1/2213875018643/O1CN013PW8262DiY9ILGevq_!!0-item_pic.jpg&url=https://s.tb.cn/h.gkh1uEe
+                                URL urlObj = new URL(EncodeUtils.decodeUrl(redirectUrl));
+                                Map<String, String> parameters = extractParameters(urlObj);
+                                if (org.apache.commons.collections.MapUtils.isNotEmpty(parameters)) {
+                                    String key = Optional.ofNullable(parameters.get("taowords")).orElse(parameters.get("word"));
+                                    if (StringUtils.isNotBlank(key)) {
+                                        // 7(nGEn3dC8n5C)/ CA1500
+                                        String tbCommand = "7(" + key + ")/ CA1500";
+
+                                        // 整个内容直接请求维易接口，做替换
+                                        // https://www.veapi.cn/apidoc/taobaolianmeng/283
+                                        Map<String, Object> objectMap = new HashMap<>();
+                                        objectMap.put("detail", 2);
+                                        objectMap.put("deepcoupon", 1);
+                                        objectMap.put("couponId", 1);
+                                        // https://www.veapi.cn/apidoc/taobaolianmeng/283
+                                        Result<CommandResponseV2> response = tbApiService.getCommonCommand(tbCommand, objectMap);
+
+                                        String tbkPwd = null;
+                                        if (Result.isOK(response)) {
+                                            CommandResponseV2 tbProduct = response.getResult();
+                                            tbkPwd = tbProduct.getTbkPwd();
+                                            detail.setApiRes(true);
+                                            if (tbkPwd != null) {
+                                                detail.setReplaceUrl(tbkPwd);
+                                                detail.addExchangeLog(tbkPwd);
+                                            }
+                                            detail.setTbProduct(tbProduct);
+                                            content = content.replace(url, tbProduct.getTbkPwd());
+                                            match = true;
+                                        }
+
+                                    }
+                                }
+                            } catch (Exception e) {
+                                log.error("middlePageContent 解析链接url失败 {}", redirectUrl, e);
+                            }
+                    }else {
+                        detail.addExchangeLog("重定向链接【" + redirectUrl + "】, 非sup331.kuaizhan.com，不执行重定向转链");
                     }
 
                     if (isReplace) {
                         content = content.replace(url, redirectUrl);
                     }
-
                 }
                 errorMsg.append(url).append("\n");
             }
+
+            if (BooleanUtils.isNotTrue(detail.getApiRes()) && StringUtils.isNotBlank(apiError)) {
+                detail.setErrorMsg(apiError);
+            }
+            detail.setTs(System.currentTimeMillis() - startTime);
         }
 
         String resourceId = Optional.ofNullable(context.getRelationId()).orElse("jd");
         // 日志记录
-        csOpLogService.addLog(resourceId, "doExchangeJd", "jd_command", "maoche", "jd转链",
-                content, JsonUtils.toJSONString(commandMap));
+//        csOpLogService.addLog(resourceId, "doExchangeJd", "jd_command", "maoche", "jd转链",
+//                content, JsonUtils.toJSONString(commandMap));
 
         // 最终转换后的结果
         context.setResContent(content);
@@ -496,6 +597,23 @@ public class CommandService {
             result.setMessage(errorMsg.toString());
         }
         return result;
+    }
+
+    public static Map<String, String> extractParameters(URL url) {
+        Map<String, String> parameters = new LinkedHashMap<>();
+        String query = url.getQuery();
+
+        if (query != null) {
+            String[] pairs = query.split("&");
+            for (String pair : pairs) {
+                int idx = pair.indexOf("=");
+                String key = idx > 0 ? pair.substring(0, idx) : pair;
+                String value = idx > 0 && pair.length() > idx + 1 ? pair.substring(idx + 1) : null;
+                parameters.put(key, value);
+            }
+        }
+
+        return parameters;
     }
 
     /**
@@ -528,14 +646,50 @@ public class CommandService {
      * @param url
      * @return
      */
-    private String getRedirectUrl(String url) {
+    private Result<String> getRedirectUrl(String url, List<String> retryDomains) {
 
-        log.info("jd 获取重定向地址 {}", url);
+//        log.info("jd 获取重定向地址 {}", url);
         if (StringUtils.isBlank(url)) {
             return null;
         }
+        List<String> logInfos = new ArrayList<>();
+        // 重试的url命中了，才继续执行
+        if (CollectionUtils.isNotEmpty(retryDomains)) {
+            boolean match = false;
+            for (String retryDomain : retryDomains) {
+                if (url.contains(retryDomain)) {
+                    match = true;
+                    break;
+                }
+            }
+            if (!match) {
+                return null;
+            }
+        }
+
         String redirectUrl = null;
-        if (needRedirect(url)) {
+        if (needRedirect(url, retryDomains)) {
+            logInfos.add("命中重定向规则：" + url);
+            // 判断是否需要解密
+            if (needDecodeUrl(url)) {
+                logInfos.add("命中url解密规则：" + url);
+                String html = OkHttpService.doGetHtmlWithProxy(url);
+//                String html = OkHttpService.doGetHtml(url);
+                Map<String, String> data = new HashMap<>();
+                data.put("url", html);
+
+                // 解密的结果默认就是重定向的结果
+                String res = FlameHttpService.doPost("https://cat.zhizher.com/cat_url_decrypt", JsonUtils.toJSONString(data));
+                // 判断是否是Url，如果不是，不处理
+                Matcher matcher = jd.matcher(res);
+                if (matcher.find()) {
+                    url = res;
+                    redirectUrl = res;
+                }
+
+                logInfos.add("解密结果为：" + res);
+            }
+
             HttpUrl httpUrl = OkHttpService.doGetHttpUrlWithProxy(url);
             if (httpUrl != null) {
                 String realUrl = httpUrl.toString();
@@ -544,11 +698,14 @@ public class CommandService {
                 }
             }
         }
-
-        return redirectUrl;
+        Result<String> result = Result.OK(redirectUrl);
+        if (CollectionUtils.isNotEmpty(logInfos)) {
+            result.setMessage(JsonUtils.toJSONString(logInfos));
+        }
+        return result;
     }
 
-    private boolean needRedirect(String uri) {
+    private boolean needRedirect(String uri, List<String> retryUrls) {
         if (StringUtils.isBlank(uri)) {
             return false;
         }
@@ -565,8 +722,39 @@ public class CommandService {
         try {
             URL url = new URL(uri);
             host = url.getHost();
+            // 重试后的白名单
+            if (CollectionUtils.isNotEmpty(retryUrls) && retryUrls.contains(host)) {
+                return true;
+            }
 
             return !list.contains(host);
+        } catch (Exception e) {
+            log.error("needRedirect 异常， uri:{}", uri, e);
+        }
+
+        return false;
+    }
+
+    private boolean needDecodeUrl(String uri) {
+        if (StringUtils.isBlank(uri)) {
+            return false;
+        }
+        // 不需要重定向的域名
+        List<String> list = new ArrayList<>();
+        list.add("t.q5url.cn");
+        list.add("y.q5url.cn");
+//        list.add("jd.q5url.cn");
+        list.add("cyg888.cn");
+        list.add("i.kun7.cn");
+        list.add("kurl04.cn");
+        list.add("m.cute-cat.cn");
+
+        String host = null;
+        try {
+            URL url = new URL(uri);
+            host = url.getHost();
+
+            return list.contains(host);
         } catch (Exception e) {
             log.error("needRedirect 异常， uri:{}", uri, e);
         }

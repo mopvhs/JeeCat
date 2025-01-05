@@ -141,7 +141,7 @@ public class PushTaskContentDetail implements Serializable {
         // 标准底部
         appendWithLine(st, "---------------------");
 //        appendWithLine(st, "自助查车@猫车选品官 +产品名");
-        st.append("自助查车@猫车选品官 +产品名");
+        st.append("自助查车 dwz.cn/qveM26UV");
 
         content.setDetail(st.toString());
         content.setImg(img);

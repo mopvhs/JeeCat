@@ -37,7 +37,7 @@ public class JdUnionIdPromotion implements Serializable {
     private ShopInfo shopInfo;
 
     private String skuName;
-    private Long skuId;
+    private String skuId;
     private String owner;
     private Long inOrderCount30Days;
 

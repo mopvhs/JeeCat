@@ -1,7 +1,9 @@
 package com.jeesite.modules.cat.service;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -10,6 +12,8 @@ import com.jeesite.common.lang.StringUtils;
 import com.jeesite.common.lang.TimeUtils;
 import com.jeesite.common.utils.JsonUtils;
 import com.jeesite.modules.cat.cache.CacheService;
+import com.jeesite.modules.cat.helper.CategoryHelper;
+import com.jeesite.modules.cat.model.CategoryTree;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.stereotype.Service;
@@ -165,10 +169,10 @@ public class MaocheCategoryMappingService extends CrudService<MaocheCategoryMapp
 
 	public List<Long> getRootCids() {
 		List<Long> rootCids = new ArrayList<>();
-		rootCids.add(50L);
-		rootCids.add(23L);
-		rootCids.add(25L);
-		rootCids.add(1L);
+		rootCids.add(CategoryHelper.CatRootCategoryEnum.CAT_FOOD.getCid());
+		rootCids.add(CategoryHelper.CatRootCategoryEnum.CAT_LITTER.getCid());
+		rootCids.add(CategoryHelper.CatRootCategoryEnum.CAT_SUPPLIES.getCid());
+		rootCids.add(CategoryHelper.CatRootCategoryEnum.CAT_HEALTH_CARE.getCid());
 
 		return rootCids;
 	}
@@ -189,5 +193,26 @@ public class MaocheCategoryMappingService extends CrudService<MaocheCategoryMapp
 		}
 
 		return dao.getById(parentId);
+	}
+
+	public Map<String, List<CategoryTree>> getCategoryMap() {
+		List<MaocheCategoryMappingDO> categoryFromCache = getCategoryFromCache(0L);
+
+		if (CollectionUtils.isEmpty(categoryFromCache)) {
+			return new HashMap<>();
+		}
+		Map<String, List<CategoryTree>> map = new HashMap<>();
+		for (MaocheCategoryMappingDO item : categoryFromCache) {
+			List<CategoryTree> list = map.get(item.getName());
+			if (CollectionUtils.isEmpty(list)) {
+				list = new ArrayList<>();
+			}
+
+			list.add(CategoryTree.convert(item));
+			map.put(item.getName(), list);
+		}
+
+
+		return map;
 	}
 }

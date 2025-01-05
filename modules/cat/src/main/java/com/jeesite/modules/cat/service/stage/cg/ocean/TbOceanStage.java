@@ -408,7 +408,7 @@ public class TbOceanStage extends AbstraOceanStage {
                 }
                 String realUrl = httpUrl.toString();
 
-                if (realUrl.contains("sup331.kuaizhan.com")) {
+                if (realUrl.contains(".kuaizhan.com")) {
                     Map<String, String> parameterMap = UrlUtils.getParametersWithSpilt(realUrl);
                     String value = parameterMap.get("k");
                     if (StringUtils.isNotBlank(value)) {

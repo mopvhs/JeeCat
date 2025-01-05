@@ -151,6 +151,7 @@ public class ProductV2Helper {
         index.setTitle(itemBasicInfo.getTitle());
         index.setItemIdSuffix(itemIdSuffix);
         index.setShopTitle(itemBasicInfo.getShopTitle());
+        index.setSellerId(itemBasicInfo.getSellerId());
         index.setProductImage(picUrl);
         index.setItemDescription(itemBasicInfo.getSubTitle());
         index.setCategoryName(itemBasicInfo.getCategoryName());

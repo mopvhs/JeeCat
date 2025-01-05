@@ -26,6 +26,12 @@ import com.jeesite.modules.cat.dao.MaocheCategoryDao;
 import javax.annotation.Resource;
 
 /**
+ * 废弃
+ * 废弃
+ * 废弃
+ * 废弃
+ * 废弃
+ * 使用 -》 maoche_category_mapping
  * maoche_categoryService
  * @author YHQ
  * @version 2023-05-24

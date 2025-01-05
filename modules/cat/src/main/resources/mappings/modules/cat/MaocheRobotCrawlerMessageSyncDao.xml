@@ -45,16 +45,16 @@
 
 		INSERT INTO maoche_robot_crawler_message_sync
 		(robot_msg_id, msg, wx_time, processed, aff_type,
-		resource_ids, unique_hash, status, create_by, update_by,
+		resource_ids, unique_hash, ori_unique_hash, status, create_by, update_by,
 		create_date, update_date, remarks)
 		VALUES
 		(#{robotMsgId}, #{msg}, #{wxTime}, #{processed}, #{affType},
-		#{resourceIds}, #{uniqueHash}, #{status}, #{createBy}, #{updateBy},
+		#{resourceIds}, #{uniqueHash}, #{oriUniqueHash}, #{status}, #{createBy}, #{updateBy},
 		#{createDate},#{updateDate},#{remarks})
 
 	</insert>
 
-	<update id="updateById">
+	<update id="updateById" parameterType="com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageSyncDO">
 
 		update maoche_robot_crawler_message_sync
 		<set>
@@ -64,8 +64,19 @@
 			<if test="uniqueHash != null">
 				unique_hash = #{uniqueHash},
 			</if>
+			<if test="resourceIds != null">
+				resource_ids = #{resourceIds},
+			</if>
+			<if test="status != null">
+				status = #{status},
+			</if>
+			<if test="msg != null">
+				msg = #{msg},
+			</if>
+			<if test="remarks != null">
+				remarks = #{remarks},
+			</if>
 		</set>
-
 		<where>
 			id = #{uiid}
 		</where>
@@ -110,11 +121,41 @@
 		</where>
 	</select>
 
+	<select id="listByOriUniqueHash" resultType="MaocheRobotCrawlerMessageSyncDO">
+		SELECT *
+		FROM maoche_robot_crawler_message_sync
+		<where>
+			ori_unique_hash = #{oriUniqueHash}
+			<if test="statusList != null" >
+				and status in
+				<foreach collection="statusList" open="(" close=")" separator="," item="s">
+					#{s}
+				</foreach>
+			</if>
+		</where>
+	</select>
+
 	<select id="listSimilar" resultType="MaocheRobotCrawlerMessageSyncDO">
 		SELECT *
 		FROM maoche_robot_crawler_message_sync
 		<where>
 			status = "SIMILAR" and create_date >= #{date} order by create_date desc limit #{limit}
+		</where>
+	</select>
+
+	<select id="getByRobotMsgId" resultType="MaocheRobotCrawlerMessageSyncDO">
+		SELECT *
+		FROM maoche_robot_crawler_message_sync
+		<where>
+			robot_msg_id = #{robotMsgId}
+		</where>
+	</select>
+
+	<select id="listStatusAffType" resultType="MaocheRobotCrawlerMessageSyncDO">
+		SELECT *
+		FROM maoche_robot_crawler_message_sync
+		<where>
+			status = #{status} and aff_type = #{affType} order by create_date desc limit #{limit}
 		</where>
 	</select>
 

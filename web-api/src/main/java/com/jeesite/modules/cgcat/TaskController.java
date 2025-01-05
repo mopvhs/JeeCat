@@ -6,7 +6,10 @@ import com.jeesite.common.lang.NumberUtils;
 import com.jeesite.common.lang.StringUtils;
 import com.jeesite.common.utils.JsonUtils;
 import com.jeesite.common.web.Result;
+import com.jeesite.modules.cat.dao.MaocheBrandLibDao;
 import com.jeesite.modules.cat.dao.MaocheRobotCrawlerMessageSyncDao;
+import com.jeesite.modules.cat.entity.MaocheBrandLibDO;
+import com.jeesite.modules.cat.entity.MaocheBrandLibKeywordDO;
 import com.jeesite.modules.cat.entity.MaochePushTaskDO;
 import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageSyncDO;
 import com.jeesite.modules.cat.entity.MaocheTaskDO;
@@ -21,6 +24,8 @@ import com.jeesite.modules.cat.service.MaocheRobotCrawlerMessageProductService;
 import com.jeesite.modules.cat.service.MaocheRobotCrawlerMessageSyncService;
 import com.jeesite.modules.cat.service.MaocheTaskService;
 import com.jeesite.modules.cat.service.cg.CgUnionProductService;
+import com.jeesite.modules.cat.service.cg.brand.BrandLibTaskService;
+import com.jeesite.modules.cat.service.cg.task.dto.BelongLibDTO;
 import com.jeesite.modules.cat.service.cg.task.dto.NameDetail;
 import com.jeesite.modules.cat.service.cg.task.dto.ProductDetail;
 import com.jeesite.modules.cat.service.cg.task.dto.TaskDetail;
@@ -28,6 +33,7 @@ import com.jeesite.modules.cat.service.cg.task.dto.TaskInfo;
 import com.jeesite.modules.cat.service.cg.third.tb.TbApiService;
 import com.jeesite.modules.cat.service.es.TaskEsService;
 import com.jeesite.modules.cat.xxl.job.task.PushTaskIndexXxlJob;
+import com.jeesite.modules.cgcat.dto.task.BelongLibReq;
 import com.jeesite.modules.cgcat.dto.task.SourceTaskCreateReq;
 import com.jeesite.modules.cgcat.dto.task.TaskDetailGetReq;
 import com.jeesite.modules.cgcat.dto.task.TaskDetailHelper;
@@ -79,6 +85,12 @@ public class TaskController {
 
     @Resource
     private TaskEsService taskEsService;
+
+    @Resource
+    private BrandLibTaskService brandLibTaskService;
+
+    @Resource
+    private MaocheBrandLibDao maocheBrandLibDao;
 
     // 获取任务详情
     @RequestMapping(value = "/source/task/info/get")
@@ -321,6 +333,30 @@ public class TaskController {
         taskEsService.indexEs(Collections.singletonList(pushTaskDO.getId()), 10);
 
         return Result.OK("处理完成");
+    }
+
+    @RequestMapping(value = "/source/push/task/lib/match")
+    public Result<List<BelongLibDTO>> matchLibs(@RequestBody BelongLibReq req) {
+        try {
+            if (req == null || StringUtils.isBlank(req.getContent())) {
+                return Result.ERROR(400, "参数异常");
+            }
+            // 关键词匹配
+            String content = req.getContent();
+            MaocheBrandLibKeywordDO keywordDO = brandLibTaskService.matchBrandLib(content);
+            if (keywordDO == null) {
+                return Result.OK(new ArrayList<>());
+            }
+            Long iid = keywordDO.getIid();
+            Long libId = keywordDO.getBrandLibId();
+            // 查询
+            MaocheBrandLibDO brandLibDO = maocheBrandLibDao.getById(libId);
+            BelongLibDTO dto = BelongLibDTO.toDTO(keywordDO, brandLibDO);
+
+            return Result.OK(Collections.singletonList(dto));
+        } catch (Exception e) {
+            return Result.ERROR(500, "处理失败");
+        }
     }
 
 

@@ -23,6 +23,10 @@ public interface MaocheRobotCrawlerMessageSyncDao extends CrudDao<MaocheRobotCra
 
     List<MaocheRobotCrawlerMessageSyncDO> listByIds(@Param("ids") List<Long> ids);
 
+    List<MaocheRobotCrawlerMessageSyncDO> listByOriUniqueHash(@Param("oriUniqueHash") String oriUniqueHash, @Param("statusList") List<String> status);
+
+    int updateById(MaocheRobotCrawlerMessageSyncDO update);
+
     /**
      * 获取最新的n条相似消息
      * @param date
@@ -30,5 +34,15 @@ public interface MaocheRobotCrawlerMessageSyncDao extends CrudDao<MaocheRobotCra
      * @return
      */
     List<MaocheRobotCrawlerMessageSyncDO> listSimilar(@Param("date") String date, @Param("limit") int limit);
+
+    List<MaocheRobotCrawlerMessageSyncDO> getByRobotMsgId(@Param("robotMsgId") Long robotMsgId);
+
+    /**
+     *
+     * @param status
+     * @param limit
+     * @return
+     */
+    List<MaocheRobotCrawlerMessageSyncDO> listStatusAffType(@Param("status") String status, @Param("affType") String affType, @Param("limit") int limit);
 
 }

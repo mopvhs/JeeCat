@@ -15,10 +15,54 @@
 	<insert id="add" useGeneratedKeys="true" keyProperty="id"
 			parameterType="com.jeesite.modules.cat.entity.MaocheBrandLibDO">
 		INSERT INTO maoche_brand_lib (brand_id, product_name, alias_names, status,
-		create_by, update_by, create_date, update_date, remarks)
+		create_by, update_by, create_date, update_date, remarks, blacklist)
 		VALUES
 		(#{brandId}, #{productName}, #{aliasNames}, #{status},
-		#{createBy}, #{updateBy}, #{createDate}, #{updateDate}, #{remarks});
+		#{createBy}, #{updateBy}, #{createDate}, #{updateDate}, #{remarks}, #{blacklist});
 	</insert>
-	
+
+	<update id="updateById">
+		update maoche_brand_lib
+		<set>
+			<if test="aliasNames != null">
+				alias_names = #{aliasNames},
+			</if>
+			<if test="blacklist != null">
+				blacklist = #{blacklist}
+			</if>
+		</set>
+		<where>
+			id = #{id}
+		</where>
+	</update>
+
+	<select id="listByIds" resultType="MaocheBrandLibDO">
+		SELECT *
+		FROM maoche_brand_lib
+		<where>
+			id in
+			<foreach collection="ids" item="id" close=")" open="(" separator=",">
+				#{id}
+			</foreach>
+		</where>
+	</select>
+
+	<select id="getById" resultType="MaocheBrandLibDO">
+		SELECT *
+		FROM maoche_brand_lib
+		<where>
+			id = #{id}
+		</where>
+	</select>
+
+	<select id="listByBrandIds" resultType="MaocheBrandLibDO">
+		SELECT *
+		FROM maoche_brand_lib
+		<where>
+			brand_id in
+			<foreach collection="brandIds" item="brandId" close=")" open="(" separator=",">
+				#{brandId}
+			</foreach>
+		</where>
+	</select>
 </mapper>

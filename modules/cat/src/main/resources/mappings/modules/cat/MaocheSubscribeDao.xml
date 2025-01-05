@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jeesite.modules.cat.dao.MaocheSubscribeDao">
+	
+	<!-- 查询数据
+	<select id="findList" resultType="MaocheSubscribeDO">
+		SELECT ${sqlMap.column.toSql()}
+		FROM ${sqlMap.table.toSql()}
+		<where>
+			${sqlMap.where.toSql()}
+		</where>
+		ORDER BY ${sqlMap.order.toSql()}
+	</select> -->
+
+	<select id="getUserSubscribe" resultType="MaocheSubscribeDO">
+		select * from maoche_subscribe
+        <where>
+			user_id = #{userId}
+			and
+			subscribe_id = #{subscribeId}
+			and
+			subscribe_type = #{subscribeType}
+		</where>
+	</select>
+
+	<select id="listUserSubscribe" resultType="MaocheSubscribeDO">
+		select * from maoche_subscribe
+        <where>
+			user_id = #{userId}
+			and
+			subscribe_id in
+				<foreach collection="subscribeIds" item="subscribeId" open="(" close=")" separator=",">
+					#{subscribeId}
+				</foreach>
+			and
+			subscribe_type = #{subscribeType}
+		</where>
+	</select>
+
+	<update id="updateById">
+		update maoche_subscribe
+		<set>
+			<if test="status != null">
+				status = #{status},
+			</if>
+			<if test="openSwitch != null">
+				open_switch = #{openSwitch}
+			</if>
+		</set>
+		<where>
+			id = #{id}
+		</where>
+	</update>
+
+	<select id="listUserSubscribes" resultType="MaocheSubscribeDO">
+		select * from maoche_subscribe
+		<where>
+			user_id = #{userId}
+			and
+			subscribe_type = #{subscribeType}
+			and
+			status = 'SUBSCRIBE'
+		</where>
+		order by update_date desc;
+	</select>
+	
+</mapper>

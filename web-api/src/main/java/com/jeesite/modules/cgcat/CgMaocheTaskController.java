@@ -9,6 +9,7 @@ import com.jeesite.common.utils.JsonUtils;
 import com.jeesite.common.web.Result;
 import com.jeesite.modules.cat.dao.MaocheAlimamaUnionProductDao;
 import com.jeesite.modules.cat.dao.MaocheTaskDao;
+import com.jeesite.modules.cat.entity.MaocheBrandLibKeywordDO;
 import com.jeesite.modules.cat.entity.MaochePushTaskDO;
 import com.jeesite.modules.cat.entity.MaocheTaskDO;
 import com.jeesite.modules.cat.enums.task.TaskStatusEnum;
@@ -22,6 +23,7 @@ import com.jeesite.modules.cat.service.MaocheAlimamaUnionProductService;
 import com.jeesite.modules.cat.service.MaochePushTaskService;
 import com.jeesite.modules.cat.service.MaocheTaskService;
 import com.jeesite.modules.cat.service.cg.CgUnionProductService;
+import com.jeesite.modules.cat.service.cg.brand.BrandLibTaskService;
 import com.jeesite.modules.cat.service.cg.task.PushTaskBizService;
 import com.jeesite.modules.cat.service.cg.task.PushTaskCreateService;
 import com.jeesite.modules.cat.service.cg.task.TaskSearchBizService;
@@ -84,7 +86,7 @@ public class CgMaocheTaskController {
     private MaocheTaskDao maocheTaskDao;
 
     @Resource
-    private JdOceanStage jdOceanStage;
+    private BrandLibTaskService brandLibTaskService;
 
     @RequestMapping(value = "/push/task/list")
     @ResponseBody
@@ -409,6 +411,9 @@ public class CgMaocheTaskController {
                 if (pushTaskContent == null) {
                     continue;
                 }
+                if (pushTaskContent.getDetail().contains("mp://BGW77rwneED50ap")) {
+                    return Result.ERROR(500, "存在小程序地址：mp://BGW77rwneED50ap");
+                }
 //                boolean specialUri = jdOceanStage.hadSpecialUri(pushTaskContent.getDetail());
                 if (!isWhiteUrl(pushTaskContent.getDetail())) {
                     return Result.ERROR(500, "存在黑名单网址");
@@ -416,6 +421,16 @@ public class CgMaocheTaskController {
             } catch (Exception e) {
                 log.error("判断是否包含黑名单网址 异常，push task {}", JsonUtils.toJSONString(item), e);
             }
+        }
+
+        // 任务开启的时候，判断一次
+        String title = task.getTitle();
+        try {
+            // todo
+//            MaocheBrandLibKeywordDO keywordDO = brandLibTaskService.matchBrandLib(title);
+//            log.info("match brand lib keyword title: {}, keyword {}", title, JsonUtils.toJSONString(keywordDO));
+        } catch (Exception e) {
+//            log.error("match brand lib keyword exception title: {}, ", title, e);
         }
 
         String content = task.getContent();
@@ -493,6 +508,11 @@ public class CgMaocheTaskController {
         return Result.OK("更新成功");
     }
 
+    /**
+     *
+     * @param content
+     * @return
+     */
     public static boolean isWhiteUrl(String content) {
         if (StringUtils.isBlank(content)) {
             return true;
@@ -517,6 +537,12 @@ public class CgMaocheTaskController {
                     }
                 }
                 if (!match) {
+                    return false;
+                }
+            } else {
+                // 黑名单
+                boolean contains = item.contains("q5url.cn");
+                if (contains) {
                     return false;
                 }
             }

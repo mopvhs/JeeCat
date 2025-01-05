@@ -17,9 +17,11 @@ import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
+import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchResponseSections;
+import org.elasticsearch.action.search.SearchScrollRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -28,6 +30,8 @@ import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.client.core.CountResponse;
 import org.elasticsearch.client.indices.GetMappingsRequest;
 import org.elasticsearch.client.indices.GetMappingsResponse;
+import org.elasticsearch.core.TimeValue;
+import org.elasticsearch.search.Scroll;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
@@ -87,7 +91,7 @@ public class ElasticSearch7Service {
 
         SearchRequest searchRequest = new SearchRequest();
         searchRequest.indices(indexEnum.getIndex());
-        searchRequest.types(indexEnum.getType());
+//        searchRequest.types(indexEnum.getType());
         searchRequest.source(searchSourceBuilder);
         if (aggregation != null) {
             searchSourceBuilder.aggregation(aggregation);
@@ -130,7 +134,7 @@ public class ElasticSearch7Service {
                     CountRequest countRequest = new CountRequest();
                     countRequest.query(searchSourceBuilder.query());
                     countRequest.indices(indexEnum.getIndex());
-                    countRequest.types(indexEnum.getType());
+//                    countRequest.types(indexEnum.getType());
                     CountResponse count = restHighLevelClient.count(countRequest, RequestOptions.DEFAULT);
                     if (count != null) {
                         total = count.getCount();
@@ -165,7 +169,7 @@ public class ElasticSearch7Service {
 
         SearchRequest searchRequest = new SearchRequest();
         searchRequest.indices(indexEnum.getIndex());
-        searchRequest.types(indexEnum.getType());
+//        searchRequest.types(indexEnum.getType());
         searchRequest.source(searchSourceBuilder);
 
         try {
@@ -209,7 +213,7 @@ public class ElasticSearch7Service {
                     CountRequest countRequest = new CountRequest();
                     countRequest.query(searchSourceBuilder.query());
                     countRequest.indices(indexEnum.getIndex());
-                    countRequest.types(indexEnum.getType());
+//                    countRequest.types(indexEnum.getType());
                     CountResponse count = restHighLevelClient.count(countRequest, RequestOptions.DEFAULT);
                     if (count != null) {
                         total = count.getCount();
@@ -437,7 +441,7 @@ public class ElasticSearch7Service {
         CountRequest countRequest = new CountRequest();
         countRequest.query(searchSourceBuilder.query());
         countRequest.indices(indexEnum.getIndex());
-        countRequest.types(indexEnum.getType());
+//        countRequest.types(indexEnum.getType());
         try {
             CountResponse count = restHighLevelClient.count(countRequest, RequestOptions.DEFAULT);
             if (count == null) {
@@ -453,33 +457,106 @@ public class ElasticSearch7Service {
     }
 
 
-//    public static void main(String[] args) {
-//
-//
-//        String fileName = "/Users/yhq/Downloads/mtx/brand";
-//
-//        String index = "{\"index\":{\"_index\":\"maoche_brand\",\"_type\":\"_doc\"}}";
-//        try {
-//            try (BufferedReader br = new BufferedReader(new FileReader(fileName))) {
-//                String line;
-//                while ((line = br.readLine()) != null) {
-//                    Map<String, Object> data = new HashMap<>();
-//                    // 处理读取到的每一行
-//                    String[] split = StringUtils.split(line, ",");
-//                    data.put("id", NumberUtils.toLong(split[0]));
-//                    data.put("brand", split[1]);
-//
-//                    System.out.println(index);
-//                    System.out.println(JsonUtils.toJSONString(data));
-//                }
-//            } catch (IOException e) {
-//                e.printStackTrace();
-//            }
-//
-//        }catch (Exception e) {
-//
-//        }
-//    }
+    /**
+     * 查询
+     * @param searchSourceBuilder
+     * @param indexEnum
+     * @param converter
+     * @return
+     * @param <R>
+     */
+    public <R, A> ElasticSearchData<R, A> scroll(SearchSourceBuilder searchSourceBuilder,
+                                                 ElasticSearchIndexEnum indexEnum,
+                                                 Function<String, R> converter) {
 
+        searchSourceBuilder.sort("_score", SortOrder.DESC);
+
+        SearchRequest searchRequest = new SearchRequest();
+        searchRequest.indices(indexEnum.getIndex());
+
+        // 设置滚动上下文的有效期
+        Scroll scroll = new Scroll(TimeValue.timeValueMinutes(1));
+        searchRequest.scroll(scroll);
+
+        searchSourceBuilder.size(100);
+
+        searchRequest.source(searchSourceBuilder);
+
+
+        try {
+            SearchResponse searchResponse = restHighLevelClient.search(searchRequest, RequestOptions.DEFAULT);
+            if (searchResponse == null) {
+                return null;
+            }
+
+            String scrollId = searchResponse.getScrollId();
+            SearchResponseSections internalResponse = searchResponse.getInternalResponse();
+            if (internalResponse == null) {
+                return null;
+            }
+
+
+            SearchHits searchHits = internalResponse.hits();
+            ElasticSearchData<R, A> response = new ElasticSearchData<>();
+            List<R> hits = new ArrayList<>();
+
+            for (SearchHit hit : searchHits.getHits()) {
+                R apply = converter.apply(hit.getSourceAsString());
+                if (apply != null) {
+                    hits.add(apply);
+                }
+            }
+
+            // 继续滚动查询，直到没有更多结果
+            while (searchHits != null && searchHits.getHits().length > 0) {
+                SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId);
+                scrollRequest.scroll(scroll);
+
+                searchResponse = restHighLevelClient.scroll(scrollRequest, RequestOptions.DEFAULT);
+                scrollId = searchResponse.getScrollId();
+                searchHits = searchResponse.getHits();
+
+                // 处理滚动查询结果
+                if (searchHits != null) {
+                    for (SearchHit hit : searchHits.getHits()) {
+                        R apply = converter.apply(hit.getSourceAsString());
+                        if (apply != null) {
+                            hits.add(apply);
+                        }
+                    }
+                }
+            }
+
+            long total = 0;
+            TotalHits totalHits = searchHits.getTotalHits();
+            if (totalHits != null) {
+                total = totalHits.value;
+                if (total >= 10000) {
+                    CountRequest countRequest = new CountRequest();
+                    countRequest.query(searchSourceBuilder.query());
+                    countRequest.indices(indexEnum.getIndex());
+                    CountResponse count = restHighLevelClient.count(countRequest, RequestOptions.DEFAULT);
+                    if (count != null) {
+                        total = count.getCount();
+                    }
+                }
+            }
+
+            if (scrollId != null) {
+                ClearScrollRequest clearScrollRequest = new ClearScrollRequest();
+                clearScrollRequest.addScrollId(scrollId);
+                restHighLevelClient.clearScroll(clearScrollRequest, RequestOptions.DEFAULT);
+            }
+
+            response.setTotal(total);
+            response.setDocuments(hits);
+
+            return response;
+        } catch (Exception e) {
+            log.error("查询ElasticSearch7Service查询异常，searchRequest:{}, indexEnum：{}", JSON.toJSONString(searchRequest), JSON.toJSONString(indexEnum), e);
+        }
+
+        return null;
+    }
 
 }

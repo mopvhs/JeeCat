@@ -21,6 +21,8 @@ public class CommandDTO implements Serializable {
 
     private List<Product> products;
 
+    public Map<String, ShortUrlDetail> shortUrlDetailMap;
+
     @Data
     public static class Product implements Serializable {
         @Serial

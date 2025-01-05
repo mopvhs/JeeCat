@@ -19,6 +19,7 @@ import com.jeesite.common.mybatis.annotation.Column;
 import com.jeesite.common.mybatis.annotation.Table;
 import com.jeesite.common.mybatis.mapper.query.QueryType;
 import com.jeesite.common.utils.JsonUtils;
+import com.jeesite.modules.cat.service.toolbox.dto.CommandContext;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -39,6 +40,7 @@ import org.apache.commons.lang3.math.NumberUtils;
 		@Column(name="aff_type", attrName="affType", label="jd / tb"),
 		@Column(name="resource_ids", attrName="resourceIds", label="资源id"),
 		@Column(name="unique_hash", attrName="uniqueHash", label="hash"),
+		@Column(name="ori_unique_hash", attrName="oriUniqueHash", label="hash"),
 		@Column(includeEntity=DataEntity.class),
 }, orderBy="a.update_date DESC"
 )
@@ -54,6 +56,7 @@ public class MaocheRobotCrawlerMessageSyncDO extends DataEntity<MaocheRobotCrawl
 	private String affType;        // jd / tb
 	private String resourceIds;        // 资源id
 	private String uniqueHash;        // hash-md5
+	private String oriUniqueHash;        // hash-md5
 
 	public MaocheRobotCrawlerMessageSyncDO() {
 		this(null);
@@ -150,6 +153,26 @@ public class MaocheRobotCrawlerMessageSyncDO extends DataEntity<MaocheRobotCrawl
 
 	public void setUniqueHash(String uniqueHash) {
 		this.uniqueHash = uniqueHash;
+	}
+
+	public String getOriUniqueHash() {
+		return oriUniqueHash;
+	}
+
+	public void setOriUniqueHash(String oriUniqueHash) {
+		this.oriUniqueHash = oriUniqueHash;
+	}
+
+	public void addCommandContext(CommandContext commandContext) {
+		addRemarks("commandContext", commandContext);
+	}
+
+	public void addNewProduct(int newProduct) {
+		addRemarks("newProduct", newProduct);
+	}
+
+	public void addApiError(Map<String, Object> apiErrorMap) {
+		addRemarks("apiErrorMap", apiErrorMap);
 	}
 
 	public void addRemarks(String key, Object data) {

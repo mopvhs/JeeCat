@@ -21,6 +21,7 @@ import org.apache.commons.lang3.math.NumberUtils;
 		@Column(name="brand_id", attrName="brandId", label="品牌id"),
 		@Column(name="product_name", attrName="productName", label="品名", queryType=QueryType.LIKE),
 		@Column(name="alias_names", attrName="aliasNames", label="别名", queryType=QueryType.LIKE),
+		@Column(name="blacklist", attrName="blacklist", label="黑名单"),
 		@Column(includeEntity=DataEntity.class),
 	}, orderBy="a.update_date DESC"
 )
@@ -32,6 +33,7 @@ public class MaocheBrandLibDO extends DataEntity<MaocheBrandLibDO> {
 	private Long brandId;		// 品牌id
 	private String productName;		// 品名
 	private String aliasNames;		// 别名
+	private String blacklist;		// 黑名单
 
 	public MaocheBrandLibDO() {
 		this(null);
@@ -91,5 +93,12 @@ public class MaocheBrandLibDO extends DataEntity<MaocheBrandLibDO> {
 	public void setAliasNames(String aliasNames) {
 		this.aliasNames = aliasNames;
 	}
-	
+
+	public String getBlacklist() {
+		return blacklist;
+	}
+
+	public void setBlacklist(String blacklist) {
+		this.blacklist = blacklist;
+	}
 }

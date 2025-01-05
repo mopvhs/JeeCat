@@ -25,6 +25,7 @@ import org.apache.commons.lang3.math.NumberUtils;
 		@Column(name="alias_names", attrName="aliasNames", label="别名", queryType=QueryType.LIKE),
 		@Column(name="tags", attrName="tags", label="标签id"),
 		@Column(name="special_tags", attrName="specialTags", label="标签id"),
+		@Column(name="subscribe_count", attrName="subscribeCount", label="标签id"),
 		@Column(includeEntity=DataEntity.class),
 	}, orderBy="a.update_date DESC"
 )
@@ -40,6 +41,7 @@ public class MaocheBrandLibKeywordDO extends DataEntity<MaocheBrandLibKeywordDO>
 	private String aliasNames;		// 别名
 	private String tags;		// 标签id
 	private String specialTags;		// 标签id
+	private Long subscribeCount;		// 标签id
 
 	public MaocheBrandLibKeywordDO() {
 		this(null);
@@ -135,5 +137,12 @@ public class MaocheBrandLibKeywordDO extends DataEntity<MaocheBrandLibKeywordDO>
 	public void setSpecialTags(String specialTags) {
 		this.specialTags = specialTags;
 	}
-	
+
+	public Long getSubscribeCount() {
+		return subscribeCount;
+	}
+
+	public void setSubscribeCount(Long subscribeCount) {
+		this.subscribeCount = subscribeCount;
+	}
 }

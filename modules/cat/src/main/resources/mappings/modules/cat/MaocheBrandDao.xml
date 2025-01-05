@@ -11,5 +11,55 @@
 		</where>
 		ORDER BY ${sqlMap.order.toSql()}
 	</select> -->
-	
+
+	<insert id="add" useGeneratedKeys="true" keyProperty="id"
+			parameterType="com.jeesite.modules.cat.entity.MaocheBrandDO">
+		INSERT INTO maoche_brand (name, create_time, update_time, status, update_by,
+		create_date, update_date, remarks,
+		create_by, icon, first_spell)
+		VALUES
+		(#{name}, #{createTime}, #{updateTime}, #{status}, #{updateBy},
+		#{createDate}, #{updateDate}, #{remarks},
+		#{createBy}, #{icon}, #{firstSpell});
+	</insert>
+
+	<select id="listByIds" resultType="MaocheBrandDO">
+		select * from maoche_brand
+		<where>
+			id in
+			<foreach collection="ids"  separator="," open="(" close=")" item="id">
+				#{id}
+			</foreach>
+		</where>
+
+	</select>
+
+	<select id="getById" resultType="MaocheBrandDO">
+		select * from maoche_brand
+		<where>
+			id = #{id}
+		</where>
+
+	</select>
+
+	<select id="getByName" resultType="MaocheBrandDO">
+		select * from maoche_brand
+		<where>
+			name = #{name}
+		</where>
+
+	</select>
+
+	<update id="updateById" parameterType="com.jeesite.modules.cat.entity.MaocheBrandDO">
+		UPDATE maoche_brand
+		<set>
+			<if test=" icon != null">
+				icon = #{icon},
+			</if>
+		</set>
+		<where>
+			id = #{id}
+		</where>
+	</update>
+
 </mapper>

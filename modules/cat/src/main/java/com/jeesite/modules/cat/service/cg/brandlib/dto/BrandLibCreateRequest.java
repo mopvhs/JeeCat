@@ -18,6 +18,9 @@ public class BrandLibCreateRequest implements Serializable {
     // 别名
     private List<String> aliasNames;
 
-    private String img;
+    // 是否黑名单
+    private Boolean blacklist;
+
+    private List<String> keywords;
 
 }

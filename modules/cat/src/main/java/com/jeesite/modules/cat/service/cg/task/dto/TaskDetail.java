@@ -1,5 +1,6 @@
 package com.jeesite.modules.cat.service.cg.task.dto;
 
+import com.jeesite.modules.cat.service.cg.brandlib.dto.BrandLibDTO;
 import lombok.Data;
 
 import java.io.Serial;
@@ -33,5 +34,21 @@ public class TaskDetail implements Serializable {
     // 作业图 -》 列表
     private List<String> jobImgs;
 
+    // 曝光（小程序1，双端全发2）
+    private Integer exposureRange;
 
+    /**
+     * 所属类别
+     */
+    private List<NameDetail> catTypes;
+
+    /**
+     * 项目前缀
+     */
+    private List<NameDetail> projectTags;
+
+    /**
+     * 关联关键词
+     */
+    private List<BelongLibDTO> libs;
 }

@@ -75,9 +75,10 @@ jdbc:
   maoche_product:
     type: mysql
     driver: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://139.224.115.183:6606/maoche?useSSL=false&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=CONVERT_TO_NULL&serverTimezone=Asia/Shanghai
-    username: maoche
-    password: ojpg@j0nSd
+#    url: jdbc:mysql://139.224.115.183:6606/maoche?useSSL=false&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=CONVERT_TO_NULL&serverTimezone=Asia/Shanghai
+    url: jdbc:mysql://sh-cdb-7ulfxtus.sql.tencentcdb.com:27983/maoche_v2?useSSL=false&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=CONVERT_TO_NULL&serverTimezone=Asia/Shanghai
+    username: root
+    password: 4vqCz_bTo.b2Xh*.
     testSql: SELECT 1
     # 其它数据源支持密码加密
     encrypt:
@@ -117,9 +118,9 @@ jdbc:
     product:
       type: mysql
       driver: com.mysql.cj.jdbc.Driver
-      url: jdbc:mysql://139.224.115.183:6606/maoche?useSSL=false&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=CONVERT_TO_NULL&serverTimezone=Asia/Shanghai
-      username: maoche
-      password: ojpg@j0nSd
+      url: jdbc:mysql://sh-cdb-7ulfxtus.sql.tencentcdb.com:27983/maoche?useSSL=false&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=CONVERT_TO_NULL&serverTimezone=Asia/Shanghai
+      username: root
+      password: 4vqCz_bTo.b2Xh*.
       #    password: vXRXf#}4}Y}a8M)mfC66
       testSql: SELECT 1
       # 其它数据源支持密码加密

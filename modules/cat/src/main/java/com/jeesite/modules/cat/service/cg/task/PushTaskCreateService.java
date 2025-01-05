@@ -316,7 +316,7 @@ public class PushTaskCreateService {
         }
         content.append(result.getTbkPwd()).append("\n");
         content.append("---------------------\n");
-        content.append("自助查车@猫车选品官 +产品名");
+        content.append("自助查车 dwz.cn/qveM26UV");
 
         PushTaskContentDetail detail = new PushTaskContentDetail();
         // 发送文本

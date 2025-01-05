@@ -1,15 +1,12 @@
 package com.jeesite.modules.cat.service.cg;
 
 import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.jeesite.common.lang.StringUtils;
 import com.jeesite.common.utils.JsonUtils;
-import com.jeesite.common.web.Result;
 import com.jeesite.modules.cat.common.MtxHttpClientUtils;
 import com.jeesite.modules.cat.dao.MaocheAlimamaUnionProductDao;
 import com.jeesite.modules.cat.dao.MaocheAlimamaUnionTitleKeywordDao;
-import com.jeesite.modules.cat.entity.MaocheAlimamaUnionGoodPriceDO;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductDO;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductDetailDO;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionTitleKeywordDO;
@@ -25,8 +22,8 @@ import com.jeesite.modules.cat.helper.CatRobotHelper;
 import com.jeesite.modules.cat.helper.UnionProductHelper;
 import com.jeesite.modules.cat.model.CarAlimamaUnionProductIndex;
 import com.jeesite.modules.cat.model.CatProductBucketTO;
-import com.jeesite.modules.cat.model.condition.CatUnionProductCondition;
 import com.jeesite.modules.cat.model.UnionProductTO;
+import com.jeesite.modules.cat.model.condition.CatUnionProductCondition;
 import com.jeesite.modules.cat.service.MaocheAlimamaUnionGoodPriceService;
 import com.jeesite.modules.cat.service.MaocheAlimamaUnionProductBihaohuoService;
 import com.jeesite.modules.cat.service.MaocheAlimamaUnionProductDetailService;
@@ -37,17 +34,12 @@ import com.jeesite.modules.cat.service.MaocheCategoryService;
 import com.jeesite.modules.cat.service.MaocheDataokeProductService;
 import com.jeesite.modules.cat.service.MaocheProductV2Service;
 import com.jeesite.modules.cat.service.es.common.SearchService;
-import com.jeesite.modules.cat.service.message.DingDingService;
-import com.jeesite.modules.cat.service.stage.cg.ProductEsFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.http.HttpEntity;
 import org.apache.http.client.config.CookieSpecs;
 import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.RequestBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.util.EntityUtils;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.script.Script;
@@ -100,9 +92,6 @@ public class CgUnionProductService {
 
     @Resource
     private MaocheAlimamaUnionProductDetailService maocheAlimamaUnionProductDetailService;
-
-    @Resource
-    private ProductEsFactory productEsFactory;
 
     @Resource
     private MaocheDataokeProductService maocheDataokeProductService;

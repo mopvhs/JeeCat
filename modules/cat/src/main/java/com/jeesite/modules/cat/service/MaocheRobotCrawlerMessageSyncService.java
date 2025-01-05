@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.jeesite.common.lang.StringUtils;
+import com.jeesite.modules.cat.enums.OceanStatusEnum;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -88,18 +89,29 @@ public class MaocheRobotCrawlerMessageSyncService extends CrudService<MaocheRobo
 		if (robotMsgId == null || robotMsgId <= 0) {
 			return false;
 		}
+		// 判断ori_unique_hash是否一样
+		String oriUniqueHash = maocheRobotCrawlerMessageSyncDO.getOriUniqueHash();
+		List<MaocheRobotCrawlerMessageSyncDO> syncDOs = dao.listByOriUniqueHash(oriUniqueHash, null);
 
-		MaocheRobotCrawlerMessageSyncDO query = new MaocheRobotCrawlerMessageSyncDO();
-		query.setRobotMsgId(robotMsgId);
-		MaocheRobotCrawlerMessageSyncDO syncDO = get(query);
-
+//		List<MaocheRobotCrawlerMessageSyncDO> syncDOs = dao.getByRobotMsgId(robotMsgId);
 		// 新增
-		if (syncDO == null) {
+		if (CollectionUtils.isEmpty(syncDOs)) {
 			dao.add(maocheRobotCrawlerMessageSyncDO);
 			return StringUtils.isNotBlank(maocheRobotCrawlerMessageSyncDO.getId());
 		}
 
 		return false;
+	}
+
+	public boolean updateById(MaocheRobotCrawlerMessageSyncDO maocheRobotCrawlerMessageSyncDO) {
+		Long id = maocheRobotCrawlerMessageSyncDO.getUiid();
+		if (id == null || id <= 0) {
+			return false;
+		}
+
+		int i = dao.updateById(maocheRobotCrawlerMessageSyncDO);
+
+		return i > 0;
 	}
 
 	// 批量更新
@@ -119,4 +131,25 @@ public class MaocheRobotCrawlerMessageSyncService extends CrudService<MaocheRobo
 
 		return dao.listByIds(ids);
 	}
+
+	// 查询列表
+	public List<MaocheRobotCrawlerMessageSyncDO> getByRobotMsgId(Long robotMsgId) {
+		if (robotMsgId == null || robotMsgId <= 0) {
+			return new ArrayList<>();
+		}
+
+		return dao.getByRobotMsgId(robotMsgId);
+	}
+
+
+	// 查询列表
+	public List<MaocheRobotCrawlerMessageSyncDO> listStatusAffType(OceanStatusEnum statusEnum, String affType, int limit) {
+		if (statusEnum == null || StringUtils.isBlank(affType)) {
+			return new ArrayList<>();
+		}
+
+		return dao.listStatusAffType(statusEnum.name(), affType, limit);
+	}
+
+
 }

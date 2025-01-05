@@ -38,20 +38,20 @@ public class OceanEsService {
         }
         msgIds = msgIds.stream().distinct().collect(Collectors.toList());
 
-        MaocheRobotCrawlerMessageSyncDO query = new MaocheRobotCrawlerMessageSyncDO();
-        query.setUiid_in(msgIds);
-        query.setStatus("NORMAL");
+//        MaocheRobotCrawlerMessageSyncDO query = new MaocheRobotCrawlerMessageSyncDO();
+//        query.setUiid_in(msgIds);
+//        query.setStatus("NORMAL");
         // 查询消息
-        List<MaocheRobotCrawlerMessageSyncDO> crawlerMessages = maocheRobotCrawlerMessageSyncService.findList(query);
+        List<MaocheRobotCrawlerMessageSyncDO> crawlerMessages = maocheRobotCrawlerMessageSyncService.listByIds(msgIds);
         if (CollectionUtils.isEmpty(crawlerMessages)) {
             return false;
         }
 
-        MaocheRobotCrawlerMessageProductDO productQuery = new MaocheRobotCrawlerMessageProductDO();
-        productQuery.setMsgId_in(msgIds);
-        productQuery.setStatus("NORMAL");
+//        MaocheRobotCrawlerMessageProductDO productQuery = new MaocheRobotCrawlerMessageProductDO();
+//        productQuery.setMsgId_in(msgIds);
+//        productQuery.setStatus("NORMAL");
         // 查询消息
-        List<MaocheRobotCrawlerMessageProductDO> productList = maocheRobotCrawlerMessageProductService.findList(productQuery);
+        List<MaocheRobotCrawlerMessageProductDO> productList = maocheRobotCrawlerMessageProductService.listByMsgIds(msgIds);
 
         List<Map<String, Object>> messageSyncIndex = getMessageSyncIndex(crawlerMessages, productList);
         List<Map<String, Object>> productIndex = getMessageProductIndex(productList);

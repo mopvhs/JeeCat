@@ -1,10 +1,14 @@
 package com.jeesite.modules.cat.service.cg.third;
 
+import cn.hutool.core.map.MapUtil;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.jeesite.common.lang.StringUtils;
 import com.jeesite.common.utils.JsonUtils;
+import com.jeesite.common.utils.UrlUtils;
 import com.jeesite.common.web.Result;
+import com.jeesite.modules.cat.cache.CacheService;
+import com.jeesite.modules.cat.service.CsOpLogService;
 import com.jeesite.modules.cat.service.FlameHttpService;
 import com.jeesite.modules.cat.service.cg.third.dto.JdUnionIdPromotion;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +39,9 @@ public class DingDanXiaApiService {
         failRetrySceneIdMap.put(2, 1);
     }
 
+    @Resource
+    private CsOpLogService csOpLogService;
+
     /**
      * 通过unionId获取京东商品链接/活动链接/店铺链接【转链】【升级版】
      * https://www.dingdanxia.com/doc/97/94
@@ -42,15 +49,23 @@ public class DingDanXiaApiService {
      */
     public Result<JdUnionIdPromotion> jdByUnionidPromotionWithCoupon(String apiKey, String materialId, long unionId, long positionId) {
 
+        materialId = urlProcessing(materialId);
+
+        String couponUlr = null;
         Result<String> bestCouponUrl = getBestCouponUrl(apiKey, materialId, positionId);
-
-//        Result<String> urlPrivilege = getUrlPrivilege(apiKey, materialId, unionId, positionId);
-
         if (Result.isOK(bestCouponUrl)) {
-            return doGetJdByUnionidPromotion(apiKey, materialId, unionId, positionId, bestCouponUrl.getResult(), null, true);
+            couponUlr = bestCouponUrl.getResult();
         }
 
-        return doGetJdByUnionidPromotion(apiKey, materialId, unionId, positionId, null, null, true);
+        Result<JdUnionIdPromotion> jdUnionIdPromotionResult = doGetJdByUnionidPromotion(apiKey, materialId, unionId, positionId, couponUlr, null, true);
+        try {
+            // 接口日志
+            csOpLogService.addLog("jd", "dingdanxia", "api_search", "api_search", "通过unionId获取京东商品链接/活动链接/店铺链接【转链】【升级版】", materialId, JsonUtils.toJSONString(jdUnionIdPromotionResult));
+        } catch (Exception e) {
+            log.error("jdByUnionidPromotionWithCoupon exception {}", unionId, e);
+        }
+
+        return jdUnionIdPromotionResult;
     }
 
     /**
@@ -341,5 +356,34 @@ public class DingDanXiaApiService {
         }
 
         return Result.ERROR(500, "转换失败");
+    }
+
+    public static String urlProcessing(String url) {
+        if (StringUtils.isBlank(url)) {
+            return url;
+        }
+        // 如果是item.jd.com，后面带有参数，统一吃掉
+        if (url.contains("https://item.jd.com/")) {
+            // 找到html后面的参数
+            int indexOf = url.indexOf("html?");
+            if (indexOf > 0) {
+                url = url.substring(0, indexOf + 4);
+            }
+        } else if (url.contains("shop.m.jd.com/shop/home")) {
+            // 获取后面的参数
+            Map<String, String> map = UrlUtils.getParametersWithSpilt(url);
+            if (MapUtil.isNotEmpty(map) && map.get("shopId") != null) {
+                int i = StringUtils.indexOf(url, "?");
+                String substring = StringUtils.substring(url, 0, i);
+                url = substring + "?shopId=" + map.get("shopId");
+            }
+        }
+
+        return url;
+    }
+
+    public static void main(String[] args) {
+        String url = "https://shop.m.jd.com/shop/home?shopId=1000093453&utm_user=plusmember&ad_od=share&gx=RnAonzYfPWqNntoRqMgmGec&gxd=RnAoxjRYb2WNzs4XrNd1XoyMymDdlZ5RSD-ZIq1vhGIvBabW3ZloGs2FFeMQP6I&cu=true&utm_source=lianmeng__10__www.linkstars.com&utm_medium=tuiguang&utm_campaign=t_1000089893_156_0_184__1c5668b3abf7520c&utm_term=d2d73dc7a12a4f029e69e31e94a618a6\n";
+        System.out.println(urlProcessing(url));
     }
 }

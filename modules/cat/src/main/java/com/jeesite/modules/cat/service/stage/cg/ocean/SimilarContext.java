@@ -9,6 +9,7 @@ import java.io.Serial;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -31,7 +32,14 @@ public class SimilarContext implements Serializable {
         List<String> fUrls = new ArrayList<>();
         if (CollectionUtils.isNotEmpty(products)) {
             // 先排序
-            details = products.stream().sorted().collect(Collectors.toList());
+            details.addAll(products);
+            details.sort(new Comparator<SimilarDetail>() {
+                @Override
+                public int compare(SimilarDetail o1, SimilarDetail o2) {
+                    return o1.getResourceId().compareTo(o2.getResourceId());
+                }
+            });
+
         }
         if (CollectionUtils.isNotEmpty(failUrls)) {
             // 先排序

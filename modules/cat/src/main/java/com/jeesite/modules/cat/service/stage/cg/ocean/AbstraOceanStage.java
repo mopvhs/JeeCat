@@ -8,6 +8,7 @@ import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageDO;
 import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageProductDO;
 import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageSyncDO;
 import com.jeesite.modules.cat.enums.ElasticSearchIndexEnum;
+import com.jeesite.modules.cat.enums.OceanStatusEnum;
 import com.jeesite.modules.cat.es.config.es7.ElasticSearch7Service;
 import com.jeesite.modules.cat.es.config.model.ElasticSearchData;
 import com.jeesite.modules.cat.model.CatProductBucketTO;
@@ -353,7 +354,7 @@ public abstract class AbstraOceanStage implements OceanStage {
             log.error("保存失败的查询商品数据失败, messageSync is null");
             return;
         }
-        messageSync.setStatus("FAIL");
+        messageSync.setStatus(OceanStatusEnum.FAIL.name());
         messageSync.setRemarks(context.getFailRemarks());
         maocheRobotCrawlerMessageSyncService.save(messageSync);
     }
@@ -673,8 +674,8 @@ public abstract class AbstraOceanStage implements OceanStage {
 
         List<MaocheRobotCrawlerMessageProductDO> productDOs = new ArrayList<>();
         for (JdUnionIdPromotion promotion : promotions) {
-            Long skuId = promotion.getSkuId();
-            if (skuId == null || skuId <= 0) {
+            String skuId = promotion.getSkuId();
+            if (StringUtils.isBlank(skuId)) {
                 continue;
             }
 
@@ -876,7 +877,7 @@ public abstract class AbstraOceanStage implements OceanStage {
         // 修改状态为相似内容
         MaocheRobotCrawlerMessageSyncDO messageSync = context.getMessageSync();
         if (messageSync != null) {
-            messageSync.setStatus("SIMILAR");
+            messageSync.setStatus(OceanStatusEnum.SIMILAR.name());
             messageSync.setUniqueHash(calCode);
         }
     }

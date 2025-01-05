@@ -14,4 +14,8 @@ public class MaocheBrandIndex implements Serializable {
     private Long id;
 
     private String brand;
+
+    private String firstSpell;
+
+    private String icon;
 }
