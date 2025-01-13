@@ -110,6 +110,8 @@ public class OceanContentHelper {
 
     static {
         deletionUrls.add("s.q5url.cn");
+        deletionUrls.add("http://t.q5url.cn/1kVxzo");
+        deletionUrls.add("http://t.q5url.cn");
     }
 
     public static Map<String, List<Pattern>> groupWhiteUrlMap = new HashMap<>();

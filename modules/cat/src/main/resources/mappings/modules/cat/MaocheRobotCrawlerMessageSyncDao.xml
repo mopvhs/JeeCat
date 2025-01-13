@@ -133,6 +133,7 @@
 				</foreach>
 			</if>
 		</where>
+		order by create_date desc
 	</select>
 
 	<select id="listSimilar" resultType="MaocheRobotCrawlerMessageSyncDO">

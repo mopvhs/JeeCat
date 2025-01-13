@@ -1,9 +1,11 @@
 package com.jeesite.modules.cat.service;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import com.jeesite.common.lang.StringUtils;
+import com.jeesite.common.web.Result;
 import com.jeesite.modules.cat.enums.OceanStatusEnum;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.stereotype.Service;
@@ -81,6 +83,48 @@ public class MaocheRobotCrawlerMessageSyncService extends CrudService<MaocheRobo
 	@Transactional
 	public void delete(MaocheRobotCrawlerMessageSyncDO maocheRobotCrawlerMessageSyncDO) {
 		super.delete(maocheRobotCrawlerMessageSyncDO);
+	}
+
+
+	public Result<List<MaocheRobotCrawlerMessageSyncDO>> addIfAbsentV2(MaocheRobotCrawlerMessageSyncDO maocheRobotCrawlerMessageSyncDO, int nDayAgo) {
+		Long robotMsgId = maocheRobotCrawlerMessageSyncDO.getRobotMsgId();
+		if (robotMsgId == null || robotMsgId <= 0) {
+			return Result.ERROR(400, "参数错误");
+		}
+		// 判断ori_unique_hash是否一样
+		String oriUniqueHash = maocheRobotCrawlerMessageSyncDO.getOriUniqueHash();
+		List<MaocheRobotCrawlerMessageSyncDO> syncDOs = dao.listByOriUniqueHash(oriUniqueHash, null);
+
+		boolean isNew = true;
+		if (CollectionUtils.isNotEmpty(syncDOs)) {
+			MaocheRobotCrawlerMessageSyncDO latest = syncDOs.get(0);
+			Date createDate = latest.getCreateDate();
+			if (createDate != null) {
+				long time = createDate.getTime();
+				// n天内的，就认为是相似的
+				long nDayAgoTime = System.currentTimeMillis() - (nDayAgo * 86400000L);
+				//  history-----nDayAgo-----currentTime
+				// nDayAgoTime
+				if (time > nDayAgoTime) {
+					isNew = false;
+				}
+			}
+		}
+		// 设置为相似
+		if (!isNew && maocheRobotCrawlerMessageSyncDO.getStatus().equalsIgnoreCase(OceanStatusEnum.INIT.name())) {
+			maocheRobotCrawlerMessageSyncDO.setStatus(OceanStatusEnum.SIMILAR.name());
+		}
+//		List<MaocheRobotCrawlerMessageSyncDO> syncDOs = dao.getByRobotMsgId(robotMsgId);
+		// 新增
+
+		dao.add(maocheRobotCrawlerMessageSyncDO);
+		boolean res = StringUtils.isNotBlank(maocheRobotCrawlerMessageSyncDO.getId());
+		if (res) {
+			return Result.OK(syncDOs);
+		} else {
+			return Result.ERROR(500, "新增失败");
+		}
+
 	}
 
 

@@ -3,6 +3,7 @@ package com.jeesite.modules.cat.service.cg.third;
 import com.alibaba.fastjson.JSONObject;
 import com.jeesite.common.lang.StringUtils;
 import com.jeesite.modules.cat.service.FlameHttpService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.servlet.http.HttpServletRequest;
@@ -11,6 +12,9 @@ import java.util.Map;
 
 @Component
 public class RpaUserAdapter {
+
+    @Value(value = "${rpa.domain}")
+    private String domain;
 
     public String getToken(HttpServletRequest request) {
         if (request == null) {
@@ -26,7 +30,8 @@ public class RpaUserAdapter {
             return null;
         }
 
-        String postUrl = "http://127.0.0.1:48080/app-api/api/member/auth/user/get";
+//        String postUrl = "http://127.0.0.1:48080/app-api/api/member/auth/user/get";
+        String postUrl = domain + "/app-api/api/member/auth/user/get";
 
         Map<String, String> headers = new HashMap<>();
         headers.put("Authorization", token);

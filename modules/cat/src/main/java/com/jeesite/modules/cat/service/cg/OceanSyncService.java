@@ -120,13 +120,17 @@ public class OceanSyncService {
 
             String robotMsgNumKey = OceanMonitorHelper.getRobotMsgNumKey(affType);
             cacheService.incr(robotMsgNumKey);
-            boolean res = maocheRobotCrawlerMessageSyncService.addIfAbsent(sync);
-            if (res) {
+            Result<List<MaocheRobotCrawlerMessageSyncDO>> res = maocheRobotCrawlerMessageSyncService.addIfAbsentV2(sync, 3);
+
+            if (Result.isOK(res)) {
                 crawlerMessages.add(sync);
+                if (CollectionUtils.isNotEmpty(res.getResult())) {
+                    String robotMsgSameNumKey = OceanMonitorHelper.getRobotMsgSameNumKey(affType);
+                    cacheService.incr(robotMsgSameNumKey);
+                    log.info("robotMsg messageSync is exist uniqueHash:{}", sync.getUniqueHash());
+                }
             } else {
-                String robotMsgSameNumKey = OceanMonitorHelper.getRobotMsgSameNumKey(affType);
-                cacheService.incr(robotMsgSameNumKey);
-                log.error("robotMsg messageSync is exist uniqueHash:{}", sync.getUniqueHash());
+                log.info("robotMsg messageSync is fail {}", sync.getUniqueHash());
             }
         }
 

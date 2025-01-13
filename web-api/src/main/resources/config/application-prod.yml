@@ -155,3 +155,6 @@ xxl:
     port: 28980
     logPath: logs/jeecat/job/jobhandler/
     logRetentionDays: 30
+
+rpa:
+  domain: https://cat.zhizher.com/js/a

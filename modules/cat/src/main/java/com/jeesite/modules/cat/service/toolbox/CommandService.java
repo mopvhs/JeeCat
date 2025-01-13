@@ -379,6 +379,12 @@ public class CommandService {
             if (redirectRes != null) {
                 redirectUrl = redirectRes.getResult();
                 detail.addExchangeLog(redirectRes.getMessage());
+
+                // 微信客户端内打开-直接整个单子认为失败
+                if (redirectRes.getCode() == 10010) {
+                    match = false;
+                    break;
+                }
             }
 
             Result<JdUnionIdPromotion> result = new Result<>();
@@ -677,6 +683,11 @@ public class CommandService {
 //                String html = OkHttpService.doGetHtml(url);
                 Map<String, String> data = new HashMap<>();
                 data.put("url", html);
+                if (StringUtils.isNotBlank(html) && html.contains("请在微信客户端打开链接")) {
+                    logInfos.add("url " + "请在微信客户端打开链接");
+                    // 直接失败
+                    return Result.ERROR(10010, "请在微信客户端打开链接");
+                }
 
                 // 解密的结果默认就是重定向的结果
                 String res = FlameHttpService.doPost("https://cat.zhizher.com/cat_url_decrypt", JsonUtils.toJSONString(data));
