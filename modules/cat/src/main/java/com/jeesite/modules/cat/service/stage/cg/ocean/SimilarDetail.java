@@ -5,6 +5,7 @@ import com.jeesite.common.lang.StringUtils;
 import com.jeesite.modules.cat.helper.PriceHelper;
 import com.jeesite.modules.cat.service.cg.third.dto.JdUnionIdPromotion;
 import com.jeesite.modules.cat.service.cg.third.tb.dto.CommandResponseV2;
+import com.jeesite.modules.cat.service.cg.third.tb.dto.GeneralConvertResp;
 import lombok.Data;
 
 import java.io.Serial;
@@ -118,6 +119,55 @@ public class SimilarDetail implements Serializable {
         title = itemBasicInfo.getTitle();
 
         CommandResponseV2.PricePromotionInfo pricePromotionInfo = promotion.getPricePromotionInfo();
+        if (pricePromotionInfo != null) {
+            price = PriceHelper.formatPrice(pricePromotionInfo.getFinalPromotionPrice());
+
+        }
+
+        commission = new BigDecimal(promotion.getCommissionRate()).multiply(new BigDecimal(100)).longValue();
+
+        String id = Md5Utils.md5(String.format(riRule, title, categoryId, shopId));
+
+
+        SimilarDetail detail = new SimilarDetail();
+        detail.setResourceId(id);
+        detail.setPrice(price);
+        detail.setShopId(shopId);
+        detail.setShopName(shopName);
+        detail.setCommission(commission);
+        detail.setCommissionInfoStartTime(commissionInfoStartTime);
+        detail.setCommissionInfoEndTime(commissionInfoEndTime);
+
+        return detail;
+    }
+
+    public static SimilarDetail convertProduct(GeneralConvertResp promotion) {
+        if (promotion == null) {
+            return null;
+        }
+
+        long price = 0;
+        String shopId = "0";
+        String shopName = "";
+        long commissionInfoStartTime = 0;
+        long commissionInfoEndTime = 0;
+        long commission = 0;
+
+        String title = "";
+        // title _ categoryId _ sellerId
+        String riRule = "%s_%s_%s";
+        String categoryId = "0";
+        GeneralConvertResp.ItemBasicInfo itemBasicInfo = promotion.getItemBasicInfo();
+        if (itemBasicInfo == null) {
+            return null;
+        }
+
+        shopId = itemBasicInfo.getSellerId();
+        shopName = itemBasicInfo.getShopTitle();
+        categoryId = itemBasicInfo.getCategoryId();
+        title = itemBasicInfo.getTitle();
+
+        GeneralConvertResp.PricePromotionInfo pricePromotionInfo = promotion.getPricePromotionInfo();
         if (pricePromotionInfo != null) {
             price = PriceHelper.formatPrice(pricePromotionInfo.getFinalPromotionPrice());
 

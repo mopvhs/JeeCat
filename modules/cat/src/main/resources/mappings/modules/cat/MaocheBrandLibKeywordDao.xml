@@ -43,6 +43,17 @@
 		</where>
 	</select>
 
+	<select id="listByKeywords" resultType="MaocheBrandLibKeywordDO">
+		select * from maoche_brand_lib_keyword
+		<where>
+			brand_lib_id = #{libId} and
+			keyword in
+			<foreach collection="keywords" item="keyword" close=")" open="(" separator=",">
+				#{keyword}
+			</foreach>
+		</where>
+	</select>
+
 	<select id="getById" resultType="MaocheBrandLibKeywordDO">
 		select * from maoche_brand_lib_keyword
 		<where>

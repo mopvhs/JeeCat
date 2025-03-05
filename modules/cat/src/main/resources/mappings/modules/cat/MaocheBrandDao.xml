@@ -34,6 +34,17 @@
 
 	</select>
 
+	<select id="listByNames" resultType="MaocheBrandDO">
+		select * from maoche_brand
+		<where>
+			LOWER(name) in
+			<foreach collection="names"  separator="," open="(" close=")" item="name">
+				#{name}
+			</foreach>
+		</where>
+
+	</select>
+
 	<select id="getById" resultType="MaocheBrandDO">
 		select * from maoche_brand
 		<where>

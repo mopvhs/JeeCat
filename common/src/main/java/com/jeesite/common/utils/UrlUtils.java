@@ -4,7 +4,9 @@ import com.alibaba.fastjson.JSONObject;
 import com.jeesite.common.lang.StringUtils;
 
 import java.net.URL;
+import java.net.URLDecoder;
 import java.net.URLEncoder;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -22,6 +24,28 @@ public class UrlUtils {
                     query_pairs.put(pair.substring(0, idx), pair.substring(idx + 1));
                 }
             }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return query_pairs;
+    }
+
+    public static Map<String, String> getWeixinParameters(String urlString) {
+        Map<String, String> query_pairs = new LinkedHashMap<>();
+        try {
+            String url = URLDecoder.decode(urlString, "UTF-8");
+            int indexOf = url.indexOf("?");
+            if (indexOf <= 0) {
+                return query_pairs;
+            }
+            String params = url.substring(indexOf + 1);
+            String[] pairs = params.split("&");
+            for (String pair : pairs) {
+                int idx = pair.indexOf("=");
+                query_pairs.put(pair.substring(0, idx), pair.substring(idx + 1));
+            }
+
         } catch (Exception e) {
             e.printStackTrace();
         }

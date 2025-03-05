@@ -88,7 +88,32 @@ public class OceanContentHelper {
         deletions.add("☞复制去淘宝弹出:");
         deletions.add("猫车http://t.q5url.cn/o111p0");
         deletions.add("http://t.q5url.cn/dh.html");
-
+        deletions.add("猫车 http://t.q5url.cn/1kVxzo");
+        deletions.add("直接戳👉：");
+        deletions.add("对标绿十字");
+        deletions.add("对标许翠花");
+        deletions.add("史低随时无");
+        deletions.add("平台自营史低️随时结束");
+        deletions.add("随时🈚");
+        deletions.add("速冲");
+        deletions.add("近期史低随时无");
+        deletions.add("近期史低");
+        deletions.add("近期最低");
+        deletions.add("近期最低价");
+        deletions.add("手漫无");
+        deletions.add("史低");
+        deletions.add("近期史低");
+        deletions.add("自营史低");
+        deletions.add("试吃～");
+        deletions.add("稀少活动");
+        deletions.add("旗舰店随时无");
+        deletions.add("高品质好粮");
+        deletions.add("史低，");
+        deletions.add("❶");
+        deletions.add("❷");
+        deletions.add("❸");
+        deletions.add("近期史.抵.");
+        deletions.add("史.抵.");
 
         for (String item : deletions) {
             AbstraUpOceanStage.TextBO textBO = new AbstraUpOceanStage.TextBO(item, item.length());
@@ -227,6 +252,13 @@ public class OceanContentHelper {
         replacements.put("天緢", "天猫");
         replacements.put("变忦", "变价");
 
+        replacements.put("构物莗", "购物车");
+        replacements.put("凑箪", "凑单");
+        replacements.put("构物董", "购物车");
+        replacements.put("劵", "券");
+        replacements.put("超级卜贴", "超级补贴");
+        replacements.put("下箪", "下单");
+        replacements.put("國伋", "国际");
 
     }
 

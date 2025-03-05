@@ -23,5 +23,7 @@ public interface MaocheBrandDao extends CrudDao<MaocheBrandDO> {
 
     MaocheBrandDO getByName(@Param("name") String name);
 
+    List<MaocheBrandDO> listByNames(@Param("names") List<String> names);
+
     int updateById(MaocheBrandDO brandDO);
 }

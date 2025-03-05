@@ -31,6 +31,7 @@ import com.jeesite.modules.cat.service.cg.third.dto.JdUnionIdPromotion;
 import com.jeesite.modules.cat.service.cg.third.dto.ShortUrlDetail;
 import com.jeesite.modules.cat.service.cg.third.tb.TbApiService;
 import com.jeesite.modules.cat.service.cg.third.tb.dto.CommandResponseV2;
+import com.jeesite.modules.cat.service.cg.third.tb.dto.GeneralConvertResp;
 import com.jeesite.modules.cat.service.message.DingDingService;
 import com.jeesite.modules.cat.service.toolbox.dto.CommandContext;
 import com.jeesite.modules.cat.service.toolbox.dto.CommandDTO;
@@ -233,8 +234,8 @@ public class CommandService {
 
         // https://www.veapi.cn/apidoc/taobaolianmeng/283
         Map<String, Object> objectMap = new HashMap<>();
-        objectMap.put("detail", 2);
-        objectMap.put("deepcoupon", 2);
+//        objectMap.put("detail", 2);
+//        objectMap.put("deepcoupon", 2);
         String content = context.getContent();
         String redisKey = Md5Utils.md5(content) + "_v2";
         String redisValue = cacheService.get(redisKey);
@@ -243,16 +244,23 @@ public class CommandService {
             });
         }
 
-        Result<CommandResponseV2> response = tbApiService.getCommonCommand(content, objectMap);
+        Result<GeneralConvertResp> response = tbApiService.generalConvert(content, objectMap);
         // 日志记录
 //        csOpLogService.addLog("tb", "doExchangeTb", "tb_command", "maoche", "tb转链",
 //                content, JsonUtils.toJSONString(response));
         CommandDTO commandDTO = new CommandDTO();
         if (Result.isOK(response)) {
-            CommandResponseV2 data = response.getResult();
-            CommandResponseV2.ItemBasicInfo itemBasicInfo = data.getItemBasicInfo();
-            CommandResponseV2.PricePromotionInfo pricePromotionInfo = data.getPricePromotionInfo();
-            String replaceAll = tb.matcher(content).replaceAll(data.getTbkPwd());
+            GeneralConvertResp data = response.getResult();
+            GeneralConvertResp.ItemBasicInfo itemBasicInfo = data.getItemBasicInfo();
+            GeneralConvertResp.PricePromotionInfo pricePromotionInfo = data.getPricePromotionInfo();
+            Matcher matcher = tb.matcher(content);
+            String replaceAll = content;
+            if (matcher.find()) {
+                String match = matcher.group();
+                replaceAll = StringUtils.replace(content, match, data.getTbkPwd());
+            } else {
+                replaceAll = data.getTbkPwd();
+            }
 
             commandDTO.setContent(replaceAll);
             List<CommandDTO.Product> products = new ArrayList<>();
@@ -263,38 +271,52 @@ public class CommandService {
                 product.setCouponUrls(Collections.singletonList(data.getCouponShortUrl()));
                 product.setCouponUrl(data.getCouponShortUrl());
             }
-            String itemUrlFormat = "https://uland.taobao.com/item/edetail?id=%s";
-            product.setItemUrl(String.format(itemUrlFormat, data.getNumIid()));
-
             CommandDTO.Item item = new CommandDTO.Item();
-            item.setImage(itemBasicInfo.getPictUrl());
+            if (data.getItemBasicInfo() != null) {
+                String itemUrlFormat = "https://uland.taobao.com/item/edetail?id=%s";
+                product.setItemUrl(String.format(itemUrlFormat, data.getItemId()));
 
-            // 券后价
-            long promotionPrice = ProductValueHelper.calVeApiPromotionPrice(JSONObject.parseObject(JsonUtils.toJSONString(data)));
-            item.setReservePrice(promotionPrice);
+                item.setImage(itemBasicInfo.getPictUrl());
 
-            item.setOriginalPrice(new BigDecimal(pricePromotionInfo.getReservePrice()).multiply(new BigDecimal(100)).longValue());
+                // 券后价
+                long promotionPrice = ProductValueHelper.calVeApiPromotionPrice(JSONObject.parseObject(JsonUtils.toJSONString(data)));
+                item.setReservePrice(promotionPrice);
+
+                item.setOriginalPrice(new BigDecimal(pricePromotionInfo.getReservePrice()).multiply(new BigDecimal(100)).longValue());
 //            item.setShopDsr(NumberUtils.toLong(data.getShopDsr()));
-            // 接口升级为detail=2之后，shopDsr字段被移除
-            item.setShopDsr(0L);
-            item.setVolume(NumberUtils.toLong(itemBasicInfo.getVolume()));
-            item.setNumIid(data.getNumIid());
-            item.setTitle(itemBasicInfo.getTitle());
-            item.setCommissionRate(new BigDecimal(data.getCommissionRate()).multiply(new BigDecimal(100)).longValue());
-            item.setShopTitle(itemBasicInfo.getShopTitle());
+                // 接口升级为detail=2之后，shopDsr字段被移除
+                item.setShopDsr(0L);
+                item.setVolume(NumberUtils.toLong(itemBasicInfo.getVolume()));
+                item.setNumIid(data.getItemId());
+                item.setTitle(itemBasicInfo.getTitle());
+                item.setCommissionRate(new BigDecimal(data.getCommissionRate()).multiply(new BigDecimal(100)).longValue());
+                item.setShopTitle(itemBasicInfo.getShopTitle());
 
-            String numIid = data.getNumIid();
-            // XgBGorXFGtXxwmvX5BT0oYcAUg-yz3oeZi6a2bapxdcyb
-            String[] idArr = StringUtils.split(numIid, "-");
-            String itemId = idArr[1];
-            MaocheProductV2DO unionProductDO = maocheProductV2Service.getProduct(itemId, "NORMAL");
-            if (unionProductDO != null) {
-                Long uiid = unionProductDO.getProductId();
-                item.setId(uiid);
+                String numIid = data.getItemId();
+                // XgBGorXFGtXxwmvX5BT0oYcAUg-yz3oeZi6a2bapxdcyb
+                String[] idArr = StringUtils.split(numIid, "-");
+                String itemId = idArr[1];
+                MaocheProductV2DO unionProductDO = maocheProductV2Service.getProduct(itemId, "NORMAL");
+                if (unionProductDO != null) {
+                    Long uiid = unionProductDO.getProductId();
+                    item.setId(uiid);
+                }
+
+            } else {
+                item.setImage("");
+                // 券后价
+                item.setReservePrice(0L);
+                item.setOriginalPrice(0L);
+                item.setShopDsr(0L);
+                item.setVolume(0L);
+                item.setNumIid(data.getTbkPwd());
+                item.setTitle(data.getCpsFullTpwd());
+                item.setCommissionRate(0L);
+                item.setShopTitle("");
             }
+
             product.setItem(item);
             products.add(product);
-
             commandDTO.setProducts(products);
             Result<CommandDTO> result = Result.OK(commandDTO);
             if (item.getId() != null) {
@@ -381,7 +403,7 @@ public class CommandService {
                 detail.addExchangeLog(redirectRes.getMessage());
 
                 // 微信客户端内打开-直接整个单子认为失败
-                if (redirectRes.getCode() == 10010) {
+                if (redirectRes.getCode() == 10010 || redirectRes.getCode() == 10011) {
                     match = false;
                     break;
                 }
@@ -483,15 +505,15 @@ public class CommandService {
                                                 // 整个内容直接请求维易接口，做替换
                                                 // https://www.veapi.cn/apidoc/taobaolianmeng/283
                                                 Map<String, Object> objectMap = new HashMap<>();
-                                                objectMap.put("detail", 2);
-                                                objectMap.put("deepcoupon", 1);
-                                                objectMap.put("couponId", 1);
+//                                                objectMap.put("detail", 2);
+//                                                objectMap.put("deepcoupon", 1);
+//                                                objectMap.put("couponId", 1);
                                                 // https://www.veapi.cn/apidoc/taobaolianmeng/283
-                                                Result<CommandResponseV2> response = tbApiService.getCommonCommand(tklRichText, objectMap);
+                                                Result<GeneralConvertResp> response = tbApiService.generalConvert(tklRichText, objectMap);
 
                                                 String tbkPwd = null;
                                                 if (Result.isOK(response)) {
-                                                    CommandResponseV2 tbProduct = response.getResult();
+                                                    GeneralConvertResp tbProduct = response.getResult();
                                                     tbkPwd = tbProduct.getTbkPwd();
                                                     detail.setApiRes(true);
                                                     if (tbkPwd != null) {
@@ -538,11 +560,11 @@ public class CommandService {
                                         objectMap.put("deepcoupon", 1);
                                         objectMap.put("couponId", 1);
                                         // https://www.veapi.cn/apidoc/taobaolianmeng/283
-                                        Result<CommandResponseV2> response = tbApiService.getCommonCommand(tbCommand, objectMap);
+                                        Result<GeneralConvertResp> response = tbApiService.generalConvert(tbCommand, objectMap);
 
                                         String tbkPwd = null;
                                         if (Result.isOK(response)) {
-                                            CommandResponseV2 tbProduct = response.getResult();
+                                            GeneralConvertResp tbProduct = response.getResult();
                                             tbkPwd = tbProduct.getTbkPwd();
                                             detail.setApiRes(true);
                                             if (tbkPwd != null) {
@@ -683,10 +705,12 @@ public class CommandService {
 //                String html = OkHttpService.doGetHtml(url);
                 Map<String, String> data = new HashMap<>();
                 data.put("url", html);
-                if (StringUtils.isNotBlank(html) && html.contains("请在微信客户端打开链接")) {
-                    logInfos.add("url " + "请在微信客户端打开链接");
-                    // 直接失败
-                    return Result.ERROR(10010, "请在微信客户端打开链接");
+                if (StringUtils.isNotBlank(html)) {
+                    if (html.contains("请在微信客户端打开链接")) {
+                        logInfos.add("url " + "请在微信客户端打开链接");
+                        // 直接失败
+                        return Result.ERROR(10010, "请在微信客户端打开链接");
+                    }
                 }
 
                 // 解密的结果默认就是重定向的结果
@@ -696,6 +720,14 @@ public class CommandService {
                 if (matcher.find()) {
                     url = res;
                     redirectUrl = res;
+                } else {
+                    // 判断是不是小程序的链接
+                    String newUrl = processWeixinUrl(res);
+                    // 不相同，说明转成功了
+                    if (StringUtils.isNotBlank(newUrl) && !newUrl.equals(url)) {
+                        url = newUrl;
+                        redirectUrl = newUrl;
+                    }
                 }
 
                 logInfos.add("解密结果为：" + res);
@@ -715,6 +747,27 @@ public class CommandService {
         }
         return result;
     }
+
+    private String processWeixinUrl(String url) {
+        // weixin://dl/business/?appid=wx91d27dbf599dff74&path=pages/union/proxy/proxy&query=spreadUrl=https%3A%2F%2Fu.jd.com%2FqaLkcfv
+        if (StringUtils.isBlank(url) || !url.startsWith("weixin://")) {
+            return url;
+        }
+
+        Map<String, String> parameters = UrlUtils.getWeixinParameters(url);
+        String query = parameters.get("query");
+        if (StringUtils.isBlank(query)) {
+            return url;
+        }
+
+        Matcher matcher = jd.matcher(query);
+        if (matcher.find()) {
+            return matcher.group();
+        }
+
+        return url;
+    }
+
 
     private boolean needRedirect(String uri, List<String> retryUrls) {
         if (StringUtils.isBlank(uri)) {
@@ -759,6 +812,7 @@ public class CommandService {
         list.add("i.kun7.cn");
         list.add("kurl04.cn");
         list.add("m.cute-cat.cn");
+        list.add("4kma.cn");
 
         String host = null;
         try {
@@ -819,8 +873,8 @@ public class CommandService {
 
 
     public static void main(String[] args) {
-        String content = "拍1:https://y.q5url.cn/47GjnC ";
-        String s = matchUrl(content);
-        System.out.println(s);
+        String content = "weixin://dl/business/?appid=wx91d27dbf599dff74&path=pages/union/proxy/proxy&query=spreadUrl=https%3A%2F%2Fu.jd.com%2FqaLkcfv";
+        Map<String, String> parameters = UrlUtils.getWeixinParameters(content);
+        System.out.println(1);
     }
 }

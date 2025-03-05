@@ -27,5 +27,15 @@
 		</where>
 		ORDER BY id asc limit #{limit}
 	</select>
+
+	<select id="listByNames" resultType="MaocheTagDO">
+		select * from maoche_tag
+		<where>
+			tag_name in
+			<foreach collection="names" item="name" close=")" open="(" separator=",">
+				#{name}
+			</foreach>
+		</where>
+	</select>
 	
 </mapper>

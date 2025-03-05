@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -69,6 +70,18 @@ public class MaocheBrandLibMapper extends CrudService<MaocheBrandLibDao, MaocheB
         MaocheBrandLibDO lib = dao.getById(id);
 
         return lib;
+    }
+
+    public MaocheBrandLibDO getByBrandId(Long brandId) {
+        if (brandId == null || brandId <= 0) {
+            throw new IllegalStateException("参数错误");
+        }
+        // 获取品牌库信息
+        List<MaocheBrandLibDO> libs = dao.listByBrandIds(Collections.singletonList(brandId));
+        if (CollectionUtils.isEmpty(libs)) {
+            return null;
+        }
+        return libs.get(0);
     }
 
     public List<MaocheBrandLibDO> listByIds(List<Long> ids) {

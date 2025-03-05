@@ -19,4 +19,6 @@ public interface MaocheTagDao extends CrudDao<MaocheTagDO> {
 
     List<MaocheTagDO> findAll(@Param("id") Long id, @Param("limit") Integer limit);
 
+    List<MaocheTagDO> listByNames(@Param("names") List<String> names);
+
 }

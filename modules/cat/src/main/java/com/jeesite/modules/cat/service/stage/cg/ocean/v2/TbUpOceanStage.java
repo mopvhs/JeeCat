@@ -29,6 +29,7 @@ import com.jeesite.modules.cat.service.cg.third.KdlApiService;
 import com.jeesite.modules.cat.service.cg.third.dto.ShortUrlDetail;
 import com.jeesite.modules.cat.service.cg.third.tb.TbApiService;
 import com.jeesite.modules.cat.service.cg.third.tb.dto.CommandResponseV2;
+import com.jeesite.modules.cat.service.cg.third.tb.dto.GeneralConvertResp;
 import com.jeesite.modules.cat.service.es.dto.MaocheMessageSyncIndex;
 import com.jeesite.modules.cat.service.message.DingDingService;
 import com.jeesite.modules.cat.service.stage.cg.ocean.OceanContext;
@@ -115,7 +116,7 @@ public class TbUpOceanStage extends AbstraUpOceanStage {
 
         List<ShortUrlDetail> shortUrlDetails = commandContext.listShortDetails();
 
-        Map<String, CommandResponseV2> productMap = new HashMap<>();
+        Map<String, GeneralConvertResp> productMap = new HashMap<>();
         Map<String, Object> apiErrorMap = new HashMap<>();
         try {
             for (ShortUrlDetail urlDetail : shortUrlDetails) {
@@ -124,17 +125,17 @@ public class TbUpOceanStage extends AbstraUpOceanStage {
                 String searchUrl = urlDetail.getSearchUrl();
                 // https://www.veapi.cn/apidoc/taobaolianmeng/283
                 Map<String, Object> objectMap = new HashMap<>();
-                objectMap.put("detail", 2);
-                objectMap.put("deepcoupon", 1);
-                objectMap.put("couponId", 1);
+//                objectMap.put("detail", 2);
+//                objectMap.put("deepcoupon", 1);
+//                objectMap.put("couponId", 1);
                 // https://www.veapi.cn/apidoc/taobaolianmeng/283
-                Result<CommandResponseV2> response = tbApiService.getCommonCommand(searchUrl, objectMap);
+                Result<GeneralConvertResp> response = tbApiService.generalConvert(searchUrl, objectMap);
                 long left = System.currentTimeMillis() - startTime;
                 if (!Result.isOK(response)) {
                     apiErrorMap.put(searchUrl, response);
                     urlDetail.addExchangeLog("查询淘宝口令失败:" + JsonUtils.toJSONString(response));
                 } else {
-                    CommandResponseV2 commandResponseV2 = response.getResult();
+                    GeneralConvertResp commandResponseV2 = response.getResult();
                     productMap.put(searchUrl, commandResponseV2);
                     urlDetail.setTbProduct(commandResponseV2);
                     apiRes = true;
@@ -197,7 +198,7 @@ public class TbUpOceanStage extends AbstraUpOceanStage {
     public void saveMessageAndProduct(OceanUpContext context) {
 
         MaocheRobotCrawlerMessageSyncDO messageSync = context.getMessageSync();
-        Map<String, CommandResponseV2> productMap = context.getTbProductMap();
+        Map<String, GeneralConvertResp> productMap = context.getTbProductMap();
         List<MaocheRobotCrawlerMessageProductDO> messageProducts = context.getMessageProducts();
 
         if (messageSync == null || MapUtils.isEmpty(productMap) || CollectionUtils.isEmpty(messageProducts)) {
@@ -213,7 +214,7 @@ public class TbUpOceanStage extends AbstraUpOceanStage {
             Matcher matcher = CommandService.tb.matcher(item);
             if (matcher.find()) {
                 String group = matcher.group();
-                CommandResponseV2 responseV2 = productMap.get(item);
+                GeneralConvertResp responseV2 = productMap.get(item);
                 if (responseV2 != null) {
                     String tbkPwd = responseV2.getTbkPwd();
                     msgBuilder.append(tbkPwd).append("\n");
@@ -231,9 +232,9 @@ public class TbUpOceanStage extends AbstraUpOceanStage {
 
         long processed = 0;
         List<String> resourceIds = new ArrayList<>();
-        for (Map.Entry<String, CommandResponseV2> entry : productMap.entrySet()) {
-            CommandResponseV2 data = entry.getValue();
-            String numIid = data.getNumIid();
+        for (Map.Entry<String, GeneralConvertResp> entry : productMap.entrySet()) {
+            GeneralConvertResp data = entry.getValue();
+            String numIid = data.getItemId();
             MaocheRobotCrawlerMessageProductDO productDO = mseeageProductMap.get(numIid);
             if (productDO == null) {
                 continue;

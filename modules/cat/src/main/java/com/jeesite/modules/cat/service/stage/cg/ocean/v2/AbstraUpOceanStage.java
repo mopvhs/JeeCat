@@ -19,6 +19,7 @@ import com.jeesite.modules.cat.service.cg.ocean.OceanSearchService;
 import com.jeesite.modules.cat.service.cg.third.dto.JdUnionIdPromotion;
 import com.jeesite.modules.cat.service.cg.third.dto.ShortUrlDetail;
 import com.jeesite.modules.cat.service.cg.third.tb.dto.CommandResponseV2;
+import com.jeesite.modules.cat.service.cg.third.tb.dto.GeneralConvertResp;
 import com.jeesite.modules.cat.service.es.OceanEsService;
 import com.jeesite.modules.cat.service.es.dto.MaocheMessageProductIndex;
 import com.jeesite.modules.cat.service.es.dto.MaocheMessageSyncIndex;
@@ -468,29 +469,29 @@ public abstract class AbstraUpOceanStage implements OceanUpStage {
 
     public List<MaocheRobotCrawlerMessageProductDO> buildTbProducts(OceanUpContext context) {
 
-        Map<String, CommandResponseV2> productMap = context.getTbProductMap();
+        Map<String, GeneralConvertResp> productMap = context.getTbProductMap();
         if (MapUtils.isEmpty(productMap)) {
             return null;
         }
 
         List<MaocheRobotCrawlerMessageProductDO> messageProducts = new ArrayList<>();
-        for (Map.Entry<String, CommandResponseV2> entry : productMap.entrySet()) {
-            CommandResponseV2 tbProduct = entry.getValue();
-            CommandResponseV2.ItemBasicInfo itemBasicInfo = tbProduct.getItemBasicInfo();
-            CommandResponseV2.PricePromotionInfo pricePromotionInfo = tbProduct.getPricePromotionInfo();
+        for (Map.Entry<String, GeneralConvertResp> entry : productMap.entrySet()) {
+            GeneralConvertResp tbProduct = entry.getValue();
+            GeneralConvertResp.ItemBasicInfo itemBasicInfo = tbProduct.getItemBasicInfo();
+            GeneralConvertResp.PricePromotionInfo pricePromotionInfo = tbProduct.getPricePromotionInfo();
 
-            if (tbProduct.getNumIid() == null) {
+            if (tbProduct.getItemId() == null) {
                 continue;
             }
 
             // XgBGorXFGtXxwmvX5BT0oYcAUg-yz3oeZi6a2bapxdcyb
-            String[] idArr = StringUtils.split(tbProduct.getNumIid(), "-");
+            String[] idArr = StringUtils.split(tbProduct.getItemId(), "-");
             String itemIdSuffix = idArr[1];
 
             MaocheRobotCrawlerMessageProductDO productDO = new MaocheRobotCrawlerMessageProductDO();
             productDO.setResourceId(itemIdSuffix);
             productDO.setInnerId("0");
-            productDO.setItemId(tbProduct.getNumIid());
+            productDO.setItemId(tbProduct.getItemId());
             productDO.setApiContent(JsonUtils.toJSONString(tbProduct));
             productDO.setCategory(itemBasicInfo.getCategoryName());
             productDO.setTitle(itemBasicInfo.getTitle());
@@ -678,7 +679,7 @@ public abstract class AbstraUpOceanStage implements OceanUpStage {
             }
             // 京东商品
             JdUnionIdPromotion promotion = url.getPromotion();
-            CommandResponseV2 tbProduct = url.getTbProduct();
+            GeneralConvertResp tbProduct = url.getTbProduct();
             if (promotion != null) {
                 SimilarDetail detail = SimilarDetail.convertProduct(promotion);
                 if (detail == null) {

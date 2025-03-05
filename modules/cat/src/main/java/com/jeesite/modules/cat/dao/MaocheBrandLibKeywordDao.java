@@ -22,6 +22,8 @@ public interface MaocheBrandLibKeywordDao extends CrudDao<MaocheBrandLibKeywordD
 
     List<MaocheBrandLibKeywordDO> listByIds(@Param("ids") List<Long> ids);
 
+    List<MaocheBrandLibKeywordDO> listByKeywords(@Param("libId") Long libId, @Param("keywords") List<String> keywords);
+
     MaocheBrandLibKeywordDO getById(@Param("id") Long id);
 
     int incrSubscribeCount(@Param("id") Long id, @Param("count") Integer count);

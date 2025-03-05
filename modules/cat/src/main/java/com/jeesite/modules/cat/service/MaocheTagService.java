@@ -83,8 +83,6 @@ public class MaocheTagService extends CrudService<MaocheTagDao, MaocheTagDO> {
 		dao.add(maocheTagDO);
 	}
 
-
-	
 	/**
 	 * 更新状态
 	 * @param maocheTagDO

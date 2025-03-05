@@ -77,11 +77,13 @@ public class QyWeiXinService {
             imageMap.put("md5", Md5Utils.md5Image(img));
 
             String url = String.format(URL_FORMAT, webHook);
-
+            // https://developer.work.weixin.qq.com/document/path/91770
             Map<String, Object> params = new HashMap<>();
             params.put("msgtype", "image");
             params.put("image", imageMap);
             String doPost = FlameHttpService.doPost(url, JsonUtils.toJSONString(params));
+
+            log.info("企微发图: param:{}, result:{}", JsonUtils.toJSONString(params), doPost);
             // 解析错误信息
             try {
                 JSONObject res = JSONObject.parseObject(doPost);

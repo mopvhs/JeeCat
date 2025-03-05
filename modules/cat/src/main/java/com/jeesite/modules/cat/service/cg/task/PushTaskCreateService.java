@@ -3,6 +3,7 @@ package com.jeesite.modules.cat.service.cg.task;
 import com.jeesite.common.lang.StringUtils;
 import com.jeesite.common.utils.JsonUtils;
 import com.jeesite.common.web.Result;
+import com.jeesite.modules.cat.entity.MaocheBrandLibKeywordDO;
 import com.jeesite.modules.cat.entity.MaochePushTaskDO;
 import com.jeesite.modules.cat.entity.MaocheTaskDO;
 import com.jeesite.modules.cat.enums.task.TaskResourceTypeEnum;
@@ -22,8 +23,10 @@ import com.jeesite.modules.cat.model.task.dto.TaskRequest;
 import com.jeesite.modules.cat.service.MaochePushTaskService;
 import com.jeesite.modules.cat.service.MaocheTaskService;
 import com.jeesite.modules.cat.service.cg.CgUnionProductService;
+import com.jeesite.modules.cat.service.cg.brand.BrandLibTaskService;
 import com.jeesite.modules.cat.service.cg.third.tb.TbApiService;
 import com.jeesite.modules.cat.service.cg.third.tb.dto.CommandResponseV2;
+import com.jeesite.modules.cat.service.cg.third.tb.dto.GeneralConvertResp;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.stereotype.Component;
@@ -54,6 +57,9 @@ public class PushTaskCreateService {
 
     @Resource
     private TbApiService tbApiService;
+
+    @Resource
+    private BrandLibTaskService brandLibTaskService;
 
     /**
      * 创建任务
@@ -154,10 +160,22 @@ public class PushTaskCreateService {
                 pushTaskDO.setCreateDate(new Date());
                 pushTaskDO.setUpdateDate(new Date());
 
+                MaocheBrandLibKeywordDO keywordDO = brandLibTaskService.matchBrandLib(item.getDetail());
+                Map<String, Object> tmpRemarks = new HashMap<>();
+                if (keywordDO != null) {
+                    tmpRemarks.put("kwId", keywordDO.getId());
+                    tmpRemarks.put("kwVal", keywordDO.getKeyword());
+                } else {
+                    tmpRemarks.put("match", false);
+                }
+
+                pushTaskDO.setRemarks(JsonUtils.toJSONString(tmpRemarks));
                 PushTaskContentDetail detail = new PushTaskContentDetail(item.getDetail(), item.getImg());
                 // 创建发送内容
                 pushTaskDO.setContent(JsonUtils.toJSONString(detail));
                 maochePushTaskService.save(pushTaskDO);
+
+                log.info("createProductTask taskId:{}, pushTaskId:{}, 匹配关键词:{}", task.getId(), pushTaskDO.getId(), JsonUtils.toJSONString(keywordDO));
 
             } catch (Exception e) {
                 log.error("创建子任务失败，item:{}", JsonUtils.toJSONString(item), e);
@@ -231,10 +249,26 @@ public class PushTaskCreateService {
                 pushTaskDO.setCreateDate(new Date());
                 pushTaskDO.setUpdateDate(new Date());
 
+                PushTaskContentDetail detail = buildPushTaskContentDetail(productIndex);
                 // 创建发送内容
-                pushTaskDO.setContent(JsonUtils.toJSONString(buildPushTaskContentDetail(productIndex)));
-                maochePushTaskService.save(pushTaskDO);
+                pushTaskDO.setContent(JsonUtils.toJSONString(detail));
 
+                MaocheBrandLibKeywordDO keywordDO = null;
+                if (detail != null) {
+                    keywordDO = brandLibTaskService.matchBrandLib(detail.getDetail());
+                    log.info("createProductTask taskId:{}, pushTaskId:{}, 匹配关键词:{}", task.getId(), pushTaskDO.getId(), JsonUtils.toJSONString(keywordDO));
+                }
+
+                Map<String, Object> tmpRemarks = new HashMap<>();
+                if (keywordDO != null) {
+                    tmpRemarks.put("kwId", keywordDO.getId());
+                    tmpRemarks.put("kwVal", keywordDO.getKeyword());
+                } else {
+                    tmpRemarks.put("match", false);
+                }
+                pushTaskDO.setRemarks(JsonUtils.toJSONString(tmpRemarks));
+
+                maochePushTaskService.save(pushTaskDO);
                 pushTasks.add(pushTaskDO);
 
             } catch (Exception e) {
@@ -303,14 +337,14 @@ public class PushTaskCreateService {
         // 淘宝口令
 //        Result<String> eApiUrl = cgUnionProductService.getEApiUrl("V73687541H40026415", index.getItemId(), "mm_30153430_909250463_109464700418");
         Map<String, Object> objectMap = new HashMap<>();
-        objectMap.put("detail", 2);
-        objectMap.put("deepcoupon", 1);
-        objectMap.put("couponId", 1);
-        Result<CommandResponseV2> commonCommand = tbApiService.getCommonCommand(index.getItemId(), objectMap);
+//        objectMap.put("detail", 2);
+//        objectMap.put("deepcoupon", 1);
+//        objectMap.put("couponId", 1);
+        Result<GeneralConvertResp> commonCommand = tbApiService.generalConvert(index.getItemId(), objectMap);
         if (!Result.isOK(commonCommand)) {
             return null;
         }
-        CommandResponseV2 result = commonCommand.getResult();
+        GeneralConvertResp result = commonCommand.getResult();
         if (result == null) {
             return null;
         }

@@ -2,6 +2,7 @@ package com.jeesite.modules.cat.service.cg.third.dto;
 
 import com.jeesite.common.lang.StringUtils;
 import com.jeesite.modules.cat.service.cg.third.tb.dto.CommandResponseV2;
+import com.jeesite.modules.cat.service.cg.third.tb.dto.GeneralConvertResp;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -29,7 +30,7 @@ public class ShortUrlDetail implements Serializable {
     // jd商品信息
     private JdUnionIdPromotion promotion;
     // tb商品信息
-    private CommandResponseV2 tbProduct;
+    private GeneralConvertResp tbProduct;
 
     // 转链接口是否成功
     private Boolean apiRes;

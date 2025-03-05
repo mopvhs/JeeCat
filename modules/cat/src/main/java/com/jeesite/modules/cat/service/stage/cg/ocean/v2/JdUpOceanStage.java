@@ -19,6 +19,7 @@ import com.jeesite.modules.cat.service.cg.third.DingDanXiaApiService;
 import com.jeesite.modules.cat.service.cg.third.dto.JdUnionIdPromotion;
 import com.jeesite.modules.cat.service.cg.third.dto.ShortUrlDetail;
 import com.jeesite.modules.cat.service.cg.third.tb.dto.CommandResponseV2;
+import com.jeesite.modules.cat.service.cg.third.tb.dto.GeneralConvertResp;
 import com.jeesite.modules.cat.service.es.dto.MaocheMessageSyncIndex;
 import com.jeesite.modules.cat.service.stage.cg.ocean.exception.QueryThirdApiException;
 import com.jeesite.modules.cat.service.toolbox.CommandService;
@@ -112,7 +113,7 @@ public class JdUpOceanStage extends AbstraUpOceanStage {
 
         boolean isSpecialUri = false;
         List<JdUnionIdPromotion> promotions = new ArrayList<>();
-        Map<String, CommandResponseV2> tbProductMap = new HashMap<>();
+        Map<String, GeneralConvertResp> tbProductMap = new HashMap<>();
 
         for (ShortUrlDetail item : urlDetails) {
             if (isSpecialUri(item.getContentUrl()) && !isSpecialUri) {
@@ -128,7 +129,7 @@ public class JdUpOceanStage extends AbstraUpOceanStage {
                 apiError.put(item.getContentUrl(), item.getErrorMsg());
             }
 
-            CommandResponseV2 tbProduct = item.getTbProduct();
+            GeneralConvertResp tbProduct = item.getTbProduct();
             if (tbProduct != null) {
                 tbProductMap.put(item.getReplaceUrl(), tbProduct);
             }
