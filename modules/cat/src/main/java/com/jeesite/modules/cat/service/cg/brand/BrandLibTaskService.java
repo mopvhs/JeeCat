@@ -14,6 +14,7 @@ import com.jeesite.modules.cat.helper.CatRobotHelper;
 import com.jeesite.modules.cat.model.CarAlimamaUnionProductIndex;
 import com.jeesite.modules.cat.model.MaocheBrandLibraryIndex;
 import com.jeesite.modules.cat.model.brandlib.BrandLibIndex;
+import com.jeesite.modules.cat.service.cg.brand.dto.MatchKeywordDTO;
 import com.jeesite.modules.cat.service.toolbox.CommandService;
 import com.vdurmont.emoji.EmojiParser;
 import lombok.extern.slf4j.Slf4j;
@@ -48,7 +49,7 @@ public class BrandLibTaskService {
      * 发单任务匹配品牌库
      * @return
      */
-    public MaocheBrandLibKeywordDO matchBrandLib(String content) {
+    public MatchKeywordDTO matchBrandLib(String content) {
 
         if (StringUtils.isBlank(content)) {
             return null;
@@ -141,11 +142,19 @@ public class BrandLibTaskService {
                 break;
             }
         }
+
+        MatchKeywordDTO result = null;
         if (match != null) {
             log.info("content ：{} \n 命中品牌:{} \n 命中关键词：{}", content, lib.getProductName(), match.getKeyword());
+            result  = new MatchKeywordDTO();
+            result.setKeywordId(match.getIid());
+            result.setKeyword(match.getKeyword());
+            result.setBrandName(lib.getProductName());
+            result.setLibId(match.getBrandLibId());
         }
 
-        return match;
+
+        return result;
     }
 
     private static boolean doMatch(String content, String keyword) {

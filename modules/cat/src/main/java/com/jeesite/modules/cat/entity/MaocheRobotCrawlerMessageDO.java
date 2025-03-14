@@ -36,6 +36,8 @@ import java.util.Date;
 		@Column(name="update_time", attrName="updateTime", label="update_time"),
 		@Column(name="aff_type", attrName="affType", label="aff_type"),
 		@Column(name="unique_hash", attrName="uniqueHash", label="unique_hash"),
+		@Column(name="status", attrName="status", label="status"),
+		@Column(name="relation_id", attrName="relationId", label="relationId"),
 	}, orderBy="a.id DESC"
 )
 public class MaocheRobotCrawlerMessageDO extends DataEntity<MaocheRobotCrawlerMessageDO> {
@@ -61,6 +63,8 @@ public class MaocheRobotCrawlerMessageDO extends DataEntity<MaocheRobotCrawlerMe
 	private Long processed;
 	private String affType;
 	private String uniqueHash;
+	private String status;
+	private Long relationId;
 
 	/**
 	 * 重载默认方法，主键类型互转，方便操作
@@ -241,5 +245,23 @@ public class MaocheRobotCrawlerMessageDO extends DataEntity<MaocheRobotCrawlerMe
 
 	public void setUniqueHash(String uniqueHash) {
 		this.uniqueHash = uniqueHash;
+	}
+
+	@Override
+	public String getStatus() {
+		return status;
+	}
+
+	@Override
+	public void setStatus(String status) {
+		this.status = status;
+	}
+
+	public Long getRelationId() {
+		return relationId;
+	}
+
+	public void setRelationId(Long relationId) {
+		this.relationId = relationId;
 	}
 }

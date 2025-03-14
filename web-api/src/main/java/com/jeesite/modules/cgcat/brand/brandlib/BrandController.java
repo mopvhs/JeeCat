@@ -321,13 +321,13 @@ public class BrandController {
     @Resource
     private MaochePushTaskDao maochePushTaskDao;
 
-    @RequestMapping(value = "brand/keyword/content/match")
-    public Result<MaocheBrandLibKeywordDO> matchKeyword(@RequestParam String content) {
-
-        MaocheBrandLibKeywordDO keywordDO = brandLibTaskService.matchBrandLib(content);
-
-        return Result.OK(keywordDO);
-    }
+//    @RequestMapping(value = "brand/keyword/content/match")
+//    public Result<MaocheBrandLibKeywordDO> matchKeyword(@RequestParam String content) {
+//
+//        MaocheBrandLibKeywordDO keywordDO = brandLibTaskService.matchBrandLib(content);
+//
+//        return Result.OK(keywordDO);
+//    }
 
     @RequestMapping(value = "brand/keyword/content/match/check")
     public Result<String> matchKeyword() {
@@ -358,7 +358,7 @@ public class BrandController {
                     String detailDesc = detail.getDetail();
                     checkContent += detailDesc;
                 }
-                MaocheBrandLibKeywordDO keywordDO = brandLibTaskService.matchBrandLib(checkContent);
+//                MaocheBrandLibKeywordDO keywordDO = brandLibTaskService.matchBrandLib(checkContent);
             }
             breakFlag = true;
             if (breakFlag) {

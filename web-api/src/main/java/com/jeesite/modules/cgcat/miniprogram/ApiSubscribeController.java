@@ -194,14 +194,23 @@ public class ApiSubscribeController {
 
         // 获取到关联的品牌库id
         List<MaocheBrandLibKeywordDO> keywordDOs = maocheBrandLibKeywordDao.listByIds(libKeywordIds);
+        if (CollectionUtils.isEmpty(keywordDOs)) {
+            return Result.OK(homeVO);
+        }
         List<Long> libIds = keywordDOs.stream().map(MaocheBrandLibKeywordDO::getBrandLibId).toList();
         keywordMap = keywordDOs.stream().collect(Collectors.toMap(MaocheBrandLibKeywordDO::getIid, Function.identity(), (o1, o2) -> o1));
 
         List<MaocheBrandLibDO> libDOs = maocheBrandLibMapper.listByIds(libIds);
+        if (CollectionUtils.isEmpty(libDOs)) {
+            return Result.OK(homeVO);
+        }
         libMap = libDOs.stream().collect(Collectors.toMap(MaocheBrandLibDO::getIid, Function.identity(), (o1, o2) -> o1));
 
         List<Long> brandIds = libDOs.stream().map(MaocheBrandLibDO::getBrandId).toList();
         List<MaocheBrandDO> brandDOs = maocheBrandMapper.listByIds(brandIds);
+        if (CollectionUtils.isEmpty(brandDOs)) {
+            return Result.OK(homeVO);
+        }
         brandMap = brandDOs.stream().collect(Collectors.toMap(MaocheBrandDO::getIid, Function.identity(), (o1, o2) -> o1));
 
 

@@ -114,6 +114,8 @@ public class OceanContentHelper {
         deletions.add("❸");
         deletions.add("近期史.抵.");
         deletions.add("史.抵.");
+        deletions.add("猫车:mp://WoWnjYcWSdj01es");
+        deletions.add("mp://WoWnjYcWSdj01es");
 
         for (String item : deletions) {
             AbstraUpOceanStage.TextBO textBO = new AbstraUpOceanStage.TextBO(item, item.length());
@@ -259,6 +261,8 @@ public class OceanContentHelper {
         replacements.put("超级卜贴", "超级补贴");
         replacements.put("下箪", "下单");
         replacements.put("國伋", "国际");
+        replacements.put("凑単", "凑单");
+        replacements.put("単", "单");
 
     }
 

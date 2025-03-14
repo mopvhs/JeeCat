@@ -47,6 +47,7 @@ import com.jeesite.modules.cat.service.cg.inner.InnerApiService;
 import com.jeesite.modules.cat.service.cg.third.VeApiService;
 import com.jeesite.modules.cat.service.cg.third.tb.TbApiService;
 import com.jeesite.modules.cat.service.cg.third.tb.dto.CommandResponseV2;
+import com.jeesite.modules.cat.service.cg.third.tb.dto.GeneralConvertResp;
 import com.jeesite.modules.cat.service.helper.ProductSearchHelper;
 import com.jeesite.modules.cat.service.message.DingDingService;
 import com.jeesite.modules.cgcat.dto.HistorySearchKeywordVO;
@@ -491,7 +492,9 @@ public class CgProductPushController {
         objectMap.put("detail", 2);
         objectMap.put("deepcoupon", 1);
         objectMap.put("couponId", 1);
-        Result<CommandResponseV2> commonCommand = tbApiService.getCommonCommand(request.getItemId(), objectMap);
+//        Result<CommandResponseV2> commonCommand = tbApiService.getCommonCommand(request.getItemId(), objectMap);
+
+        Result<GeneralConvertResp> commonCommand = tbApiService.generalConvert(request.getItemId(), objectMap);
 
         if (!Result.isOK(commonCommand) || commonCommand.getResult() == null || StringUtils.isBlank(commonCommand.getResult().getTbkPwd())) {
             String errorMsg = "哎呀，来晚了，宝贝卖完啦！";
@@ -527,7 +530,7 @@ public class CgProductPushController {
             return Result.ERROR(500, errorMsg);
         }
 
-        CommandResponseV2 result = commonCommand.getResult();
+        GeneralConvertResp result = commonCommand.getResult();
         return Result.OK(result.getTbkPwd());
     }
 

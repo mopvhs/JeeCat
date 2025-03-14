@@ -30,6 +30,13 @@ public class RpaUserAdapter {
             return null;
         }
 
+        // 模拟登录
+        if (token.equalsIgnoreCase("Bearer yhq")) {
+            JSONObject object = new JSONObject();
+            object.put("id", 1L);
+            return object;
+        }
+
 //        String postUrl = "http://127.0.0.1:48080/app-api/api/member/auth/user/get";
         String postUrl = domain + "/app-api/api/member/auth/user/get";
 

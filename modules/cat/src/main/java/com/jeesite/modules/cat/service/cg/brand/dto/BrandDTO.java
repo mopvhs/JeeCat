@@ -1,4 +1,4 @@
-package com.jeesite.modules.cat.service.cg.brand;
+package com.jeesite.modules.cat.service.cg.brand.dto;
 
 import com.jeesite.modules.cat.aop.MaocheBrandIndex;
 import lombok.Data;

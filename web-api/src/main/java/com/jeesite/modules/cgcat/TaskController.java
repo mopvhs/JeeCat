@@ -25,6 +25,7 @@ import com.jeesite.modules.cat.service.MaocheRobotCrawlerMessageSyncService;
 import com.jeesite.modules.cat.service.MaocheTaskService;
 import com.jeesite.modules.cat.service.cg.CgUnionProductService;
 import com.jeesite.modules.cat.service.cg.brand.BrandLibTaskService;
+import com.jeesite.modules.cat.service.cg.brand.dto.MatchKeywordDTO;
 import com.jeesite.modules.cat.service.cg.task.dto.BelongLibDTO;
 import com.jeesite.modules.cat.service.cg.task.dto.NameDetail;
 import com.jeesite.modules.cat.service.cg.task.dto.ProductDetail;
@@ -32,6 +33,7 @@ import com.jeesite.modules.cat.service.cg.task.dto.TaskDetail;
 import com.jeesite.modules.cat.service.cg.task.dto.TaskInfo;
 import com.jeesite.modules.cat.service.cg.third.tb.TbApiService;
 import com.jeesite.modules.cat.service.es.TaskEsService;
+import com.jeesite.modules.cat.xxl.job.ocean.OceanRelationXxlJob;
 import com.jeesite.modules.cat.xxl.job.task.PushTaskIndexXxlJob;
 import com.jeesite.modules.cgcat.dto.task.BelongLibReq;
 import com.jeesite.modules.cgcat.dto.task.SourceTaskCreateReq;
@@ -343,15 +345,13 @@ public class TaskController {
             }
             // 关键词匹配
             String content = req.getContent();
-            MaocheBrandLibKeywordDO keywordDO = brandLibTaskService.matchBrandLib(content);
+            MatchKeywordDTO keywordDO = brandLibTaskService.matchBrandLib(content);
             if (keywordDO == null) {
                 return Result.OK(new ArrayList<>());
             }
-            Long iid = keywordDO.getIid();
-            Long libId = keywordDO.getBrandLibId();
             // 查询
-            MaocheBrandLibDO brandLibDO = maocheBrandLibDao.getById(libId);
-            BelongLibDTO dto = BelongLibDTO.toDTO(keywordDO, brandLibDO);
+//            MaocheBrandLibDO brandLibDO = maocheBrandLibDao.getById(libId);
+            BelongLibDTO dto = BelongLibDTO.toDTO(keywordDO);
 
             return Result.OK(Collections.singletonList(dto));
         } catch (Exception e) {
@@ -363,11 +363,26 @@ public class TaskController {
     @Resource
     private PushTaskIndexXxlJob pushTaskIndexXxlJob;
 
+    @Resource
+    private OceanRelationXxlJob oceanRelationXxlJob;
+
     @RequestMapping(value = "/source/push/task/index")
     public Result<?> indexAll() {
 
         try {
             pushTaskIndexXxlJob.execute();
+        } catch (Exception e) {
+            return Result.ERROR(500, "处理失败");
+        }
+
+        return Result.OK("处理完成");
+    }
+
+    @RequestMapping(value = "/source/ocean/relation/xxl/job")
+    public Result<?> oceanRelationXxlJob() {
+
+        try {
+            oceanRelationXxlJob.execute();
         } catch (Exception e) {
             return Result.ERROR(500, "处理失败");
         }

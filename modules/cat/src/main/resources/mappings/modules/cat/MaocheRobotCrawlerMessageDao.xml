@@ -35,5 +35,29 @@
 		</where>
 		ORDER BY id asc limit #{limit}
 	</select>
+
+	<select id="listRelationMessage" resultType="MaocheRobotCrawlerMessageDO">
+		SELECT *
+		FROM maoche_robot_crawler_message
+		<where>
+			status = "SPECIAL"
+		</where>
+		ORDER BY time asc limit 100
+	</select>
+
+	<update id="relationMessage">
+		update maoche_robot_crawler_message
+		<set>
+			status = "FINISHED",
+			relation_id = #{relationId}
+		</set>
+		<where>
+			id in
+			<foreach collection="ids" item="id" open="(" separator="," close=")">
+				#{id}
+			</foreach>
+		</where>
+
+	</update>
 	
 </mapper>

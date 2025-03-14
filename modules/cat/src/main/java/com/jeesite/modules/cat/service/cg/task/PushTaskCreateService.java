@@ -24,6 +24,7 @@ import com.jeesite.modules.cat.service.MaochePushTaskService;
 import com.jeesite.modules.cat.service.MaocheTaskService;
 import com.jeesite.modules.cat.service.cg.CgUnionProductService;
 import com.jeesite.modules.cat.service.cg.brand.BrandLibTaskService;
+import com.jeesite.modules.cat.service.cg.brand.dto.MatchKeywordDTO;
 import com.jeesite.modules.cat.service.cg.third.tb.TbApiService;
 import com.jeesite.modules.cat.service.cg.third.tb.dto.CommandResponseV2;
 import com.jeesite.modules.cat.service.cg.third.tb.dto.GeneralConvertResp;
@@ -160,11 +161,10 @@ public class PushTaskCreateService {
                 pushTaskDO.setCreateDate(new Date());
                 pushTaskDO.setUpdateDate(new Date());
 
-                MaocheBrandLibKeywordDO keywordDO = brandLibTaskService.matchBrandLib(item.getDetail());
+                MatchKeywordDTO keywordDO = brandLibTaskService.matchBrandLib(item.getDetail());
                 Map<String, Object> tmpRemarks = new HashMap<>();
                 if (keywordDO != null) {
-                    tmpRemarks.put("kwId", keywordDO.getId());
-                    tmpRemarks.put("kwVal", keywordDO.getKeyword());
+                    tmpRemarks.put("matchDetail", keywordDO);
                 } else {
                     tmpRemarks.put("match", false);
                 }
@@ -253,7 +253,7 @@ public class PushTaskCreateService {
                 // 创建发送内容
                 pushTaskDO.setContent(JsonUtils.toJSONString(detail));
 
-                MaocheBrandLibKeywordDO keywordDO = null;
+                MatchKeywordDTO keywordDO = null;
                 if (detail != null) {
                     keywordDO = brandLibTaskService.matchBrandLib(detail.getDetail());
                     log.info("createProductTask taskId:{}, pushTaskId:{}, 匹配关键词:{}", task.getId(), pushTaskDO.getId(), JsonUtils.toJSONString(keywordDO));
@@ -261,8 +261,7 @@ public class PushTaskCreateService {
 
                 Map<String, Object> tmpRemarks = new HashMap<>();
                 if (keywordDO != null) {
-                    tmpRemarks.put("kwId", keywordDO.getId());
-                    tmpRemarks.put("kwVal", keywordDO.getKeyword());
+                    tmpRemarks.put("matchDetail", keywordDO);
                 } else {
                     tmpRemarks.put("match", false);
                 }
