@@ -12,13 +12,20 @@ import java.util.List;
  * @author YHQ
  * @version 2023-04-30
  */
-@MyBatisDao(dataSourceName = "ds2")
+@MyBatisDao
 public interface MaocheRobotCrawlerMessageDao extends CrudDao<MaocheRobotCrawlerMessageDO> {
+
     List<MaocheRobotCrawlerMessageDO> findAll(@Param("id") Long id, @Param("limit") Integer limit);
+
+    MaocheRobotCrawlerMessageDO getById(@Param("id") Long id);
 
     List<MaocheRobotCrawlerMessageDO> startById(@Param("id") Long id, @Param("limit") Integer limit, @Param("affTypes") List<String> affTypes);
 
     List<MaocheRobotCrawlerMessageDO> listRelationMessage();
 
+    List<MaocheRobotCrawlerMessageDO> listFinishedRelationMessage();
+
     int relationMessage(@Param("ids") List<Long> ids, @Param("relationId") Long relationId);
+
+    int updateStatus(@Param("ids") List<Long> ids, @Param("status") String status);
 }

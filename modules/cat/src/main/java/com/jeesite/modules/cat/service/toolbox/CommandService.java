@@ -541,7 +541,7 @@ public class CommandService {
                             detail.addExchangeLog("重定向链接【" + redirectUrl + "】, 解析获取不到k的参数，不执行转链");
                             DingDingService.sendParseDingDingMsg("快站{},解析获取不到k的参数", redirectUrl);
                         }
-                    } else if (redirectUrl.contains("t.q5url.cn")) {
+                    } else if (redirectUrl.contains("t.q5url.cn") || redirectUrl.contains("i.kunq5.cn")) {
                         // 获取原地址:
                             try {
                                 // http://zzj.cute-cat.cn/dn2.html?taowords=nGEn3dC8n5C&image=https://img.alicdn.com/bao/uploaded/i1/2213875018643/O1CN013PW8262DiY9ILGevq_!!0-item_pic.jpg&url=https://s.tb.cn/h.gkh1uEe
@@ -813,6 +813,7 @@ public class CommandService {
         list.add("kurl04.cn");
         list.add("m.cute-cat.cn");
         list.add("4kma.cn");
+        list.add("i.kunq5.cn");
 
         String host = null;
         try {

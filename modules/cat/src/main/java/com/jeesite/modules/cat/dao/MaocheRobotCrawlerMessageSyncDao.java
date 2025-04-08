@@ -37,6 +37,9 @@ public interface MaocheRobotCrawlerMessageSyncDao extends CrudDao<MaocheRobotCra
 
     List<MaocheRobotCrawlerMessageSyncDO> getByRobotMsgId(@Param("robotMsgId") Long robotMsgId);
 
+    List<MaocheRobotCrawlerMessageSyncDO> listRobotMsgIds(@Param("robotMsgIds") List<Long> robotMsgIds, @Param("status") String status);
+
+
     /**
      *
      * @param status

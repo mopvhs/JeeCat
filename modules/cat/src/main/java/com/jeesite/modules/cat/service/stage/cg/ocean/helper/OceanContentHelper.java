@@ -116,6 +116,11 @@ public class OceanContentHelper {
         deletions.add("史.抵.");
         deletions.add("猫车:mp://WoWnjYcWSdj01es");
         deletions.add("mp://WoWnjYcWSdj01es");
+        deletions.add("猫车:mp://WoWnjYcWSdj01es");
+        deletions.add("mp://WoWnjYcWSdj01es");
+        deletions.add("全网最低价");
+        deletions.add("WoWnjYcWSdj01es");
+        deletions.add("猫车:mp://");
 
         for (String item : deletions) {
             AbstraUpOceanStage.TextBO textBO = new AbstraUpOceanStage.TextBO(item, item.length());

@@ -7,12 +7,15 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.jeesite.common.lang.StringUtils;
 import com.jeesite.common.utils.JsonUtils;
+import com.jeesite.common.utils.UrlUtils;
 import lombok.Data;
+import org.apache.commons.collections.MapUtils;
 
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static com.jeesite.modules.cat.helper.ProductV2Helper.N_YUAN_REGEX;
 
@@ -313,5 +316,30 @@ public class GeneralConvertResp implements Serializable {
 
         @JsonProperty("subsidy_rate")
         private String subsidyRate;
+    }
+
+    public static String analyzingItemId(GeneralConvertResp tbProduct) {
+        if (tbProduct == null) {
+            return null;
+        }
+        String itemId = tbProduct.getItemId();
+        GeneralConvertResp.ItemBasicInfo itemBasicInfo = tbProduct.getItemBasicInfo();
+        GeneralConvertResp.PricePromotionInfo pricePromotionInfo = tbProduct.getPricePromotionInfo();
+        if (StringUtils.isBlank(itemId)) {
+            if (itemBasicInfo == null || StringUtils.isBlank(itemBasicInfo.getItemUrl())) {
+                return null;
+            }
+            String itemUrl = itemBasicInfo.getItemUrl();
+            // https://uland.taobao.com/item/edetail?id=g4kQxqPU3t20YWJwR5iYMOibUr-QA0RODib7nd058YtB
+            Map<String, String> parameters = UrlUtils.getParameters(itemUrl);
+            if (MapUtils.isNotEmpty(parameters)) {
+                itemId = parameters.get("id");
+            }
+        }
+        if (StringUtils.isBlank(itemId)) {
+            return null;
+        }
+
+        return itemId;
     }
 }

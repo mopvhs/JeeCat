@@ -13,6 +13,7 @@ import com.jeesite.modules.cat.service.FlameProxyHttpService;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.BooleanUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -65,8 +66,14 @@ public class InnerApiService {
         if (o == null) {
             return Result.ERROR(501, "接口数据解析异常");
         }
-        Boolean success = (Boolean) o;
-        if (BooleanUtil.isTrue(success)) {
+        boolean success = false;
+        if (o instanceof String) {
+            success = BooleanUtils.toBoolean(String.valueOf(o));
+        } else if (o instanceof Boolean) {
+            success = (Boolean) o;
+        }
+
+        if (success) {
             return Result.OK(response);
         }
 

@@ -4,6 +4,7 @@ import com.jeesite.common.codec.Md5Utils;
 import com.jeesite.common.lang.NumberUtils;
 import com.jeesite.common.lang.StringUtils;
 import com.jeesite.common.utils.JsonUtils;
+import com.jeesite.common.utils.UrlUtils;
 import com.jeesite.modules.cat.cache.CacheService;
 import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageProductDO;
 import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageSyncDO;
@@ -480,12 +481,25 @@ public abstract class AbstraUpOceanStage implements OceanUpStage {
             GeneralConvertResp.ItemBasicInfo itemBasicInfo = tbProduct.getItemBasicInfo();
             GeneralConvertResp.PricePromotionInfo pricePromotionInfo = tbProduct.getPricePromotionInfo();
 
-            if (tbProduct.getItemId() == null) {
+//            String itemId = tbProduct.getItemId();
+//            if (StringUtils.isBlank(itemId)) {
+//                if (itemBasicInfo == null || StringUtils.isBlank(itemBasicInfo.getItemUrl())) {
+//                    continue;
+//                }
+//                String itemUrl = itemBasicInfo.getItemUrl();
+//                // https://uland.taobao.com/item/edetail?id=g4kQxqPU3t20YWJwR5iYMOibUr-QA0RODib7nd058YtB
+//                Map<String, String> parameters = UrlUtils.getParameters(itemUrl);
+//                if (MapUtils.isNotEmpty(parameters)) {
+//                    itemId = parameters.get("id");
+//                }
+//            }
+            String itemId = GeneralConvertResp.analyzingItemId(tbProduct);
+            if (StringUtils.isBlank(itemId)) {
                 continue;
             }
 
             // XgBGorXFGtXxwmvX5BT0oYcAUg-yz3oeZi6a2bapxdcyb
-            String[] idArr = StringUtils.split(tbProduct.getItemId(), "-");
+            String[] idArr = StringUtils.split(itemId, "-");
             String itemIdSuffix = idArr[1];
 
             MaocheRobotCrawlerMessageProductDO productDO = new MaocheRobotCrawlerMessageProductDO();

@@ -28,6 +28,7 @@ import com.jeesite.modules.cat.service.OkHttpService;
 import com.jeesite.modules.cat.service.cg.brandlib.BrandLibBizService;
 import com.jeesite.modules.cat.service.cg.brandlib.dto.BrandLibKeywordCreateRequest;
 import com.jeesite.modules.cat.xxl.job.CgProductSyncXxlJob;
+import com.jeesite.modules.cat.xxl.job.ocean.AIOceanXxlJob;
 import com.jeesite.modules.cat.xxl.job.task.SyncOceanSimilarXxlJob;
 import com.jeesite.modules.cgcat.dto.BrandLibImportDTO;
 import com.jeesite.modules.cgcat.dto.PushTaskRuleKeywordRequest;
@@ -141,6 +142,15 @@ public class TestController {
         String s = FlameHttpService.doPost("https://wx.mtxtool.com/cat_url_decrypt", JsonUtils.toJSONString(data));
 
         return s;
+    }
+
+    @Resource
+    private AIOceanXxlJob aiOceanXxlJob;
+
+    @RequestMapping(value = "/test/aiOceanXxlJob")
+    public String aiOceanXxlJob() throws Exception {
+        aiOceanXxlJob.execute();
+        return "执行完成";
     }
 
     @RequestMapping(value = "/test/import/excel")

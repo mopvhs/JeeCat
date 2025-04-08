@@ -152,6 +152,18 @@
 		</where>
 	</select>
 
+	<select id="listRobotMsgIds" resultType="MaocheRobotCrawlerMessageSyncDO">
+		SELECT *
+		FROM maoche_robot_crawler_message_sync
+		<where>
+			robot_msg_id in
+			<foreach collection="robotMsgIds" open="(" close=")" separator="," item="robotMsgId">
+				#{robotMsgId}
+			</foreach>
+			and status = #{status}
+		</where>
+	</select>
+
 	<select id="listStatusAffType" resultType="MaocheRobotCrawlerMessageSyncDO">
 		SELECT *
 		FROM maoche_robot_crawler_message_sync

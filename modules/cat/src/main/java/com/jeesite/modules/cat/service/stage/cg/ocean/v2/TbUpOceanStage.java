@@ -199,12 +199,12 @@ public class TbUpOceanStage extends AbstraUpOceanStage {
 
         MaocheRobotCrawlerMessageSyncDO messageSync = context.getMessageSync();
         Map<String, GeneralConvertResp> productMap = context.getTbProductMap();
-        List<MaocheRobotCrawlerMessageProductDO> messageProducts = context.getMessageProducts();
+        List<MaocheRobotCrawlerMessageProductDO> messageProducts = Optional.ofNullable(context.getMessageProducts()).orElse(new ArrayList<>());
 
-        if (messageSync == null || MapUtils.isEmpty(productMap) || CollectionUtils.isEmpty(messageProducts)) {
-            throw new IllegalArgumentException("messageSync or data or messageProducts is null");
+        if (messageSync == null || (MapUtils.isEmpty(productMap) && CollectionUtils.isEmpty(messageProducts))) {
+            throw new IllegalArgumentException("messageSync or (data and messageProducts) is null");
         }
-
+        // 如果是券，是没有淘宝接续出来的商品的messageProducts
         Map<String, MaocheRobotCrawlerMessageProductDO> mseeageProductMap = messageProducts.stream().collect(Collectors.toMap(MaocheRobotCrawlerMessageProductDO::getItemId, Function.identity(), (o1, o2) -> o1));
 
         String msg = messageSync.getMsg();
@@ -234,12 +234,14 @@ public class TbUpOceanStage extends AbstraUpOceanStage {
         List<String> resourceIds = new ArrayList<>();
         for (Map.Entry<String, GeneralConvertResp> entry : productMap.entrySet()) {
             GeneralConvertResp data = entry.getValue();
-            String numIid = data.getItemId();
+            String numIid = GeneralConvertResp.analyzingItemId(data);
+            if (StringUtils.isBlank(numIid)) {
+                continue;
+            }
             MaocheRobotCrawlerMessageProductDO productDO = mseeageProductMap.get(numIid);
             if (productDO == null) {
                 continue;
             }
-
             // XgBGorXFGtXxwmvX5BT0oYcAUg-yz3oeZi6a2bapxdcyb
             String[] idArr = StringUtils.split(numIid, "-");
             String itemIdSuffix = idArr[1];
@@ -294,27 +296,30 @@ public class TbUpOceanStage extends AbstraUpOceanStage {
         // 获取今天开始时间
         long endTime = DateUtils.getOfDayFirst(createDate).getTime() - 1;
         // 判断3天前内是否存在
-        OceanMessageCondition condition = new OceanMessageCondition();
+        if (CollectionUtils.isNotEmpty(resourceIds)) {
+            // resourceIds 排序
+            Collections.sort(resourceIds);
+
+            OceanMessageCondition condition = new OceanMessageCondition();
 //        condition.setResourceIds(Collections.singletonList(resourceId));
-        condition.setResourceIds(resourceIds);
-        condition.setAffType("tb");
-        condition.setGteCreateDate(startTime);
-        condition.setLteCreateDate(endTime);
-        ElasticSearchData<MaocheMessageSyncIndex, CatProductBucketTO> searchMsg = oceanSearchService.searchMsg(
-                condition,
-                null,
-                null,
-                null,
-                0, resourceIds.size());
-        if (searchMsg != null && CollectionUtils.isEmpty(searchMsg.getDocuments())) {
+            condition.setResourceIds(resourceIds);
+            condition.setAffType("tb");
+            condition.setGteCreateDate(startTime);
+            condition.setLteCreateDate(endTime);
+            ElasticSearchData<MaocheMessageSyncIndex, CatProductBucketTO> searchMsg = oceanSearchService.searchMsg(
+                    condition,
+                    null,
+                    null,
+                    null,
+                    0, resourceIds.size());
+            if (searchMsg != null && CollectionUtils.isEmpty(searchMsg.getDocuments())) {
+                newProduct = 1;
+            }
+        } else {
             newProduct = 1;
         }
 
         messageSync.addRemarks("newProduct", newProduct);
-
-        // resourceIds 排序
-        Collections.sort(resourceIds);
-
         messageSync.setStatus("NORMAL");
         messageSync.setProcessed(processed);
         messageSync.setResourceIds(StringUtils.join(resourceIds, ","));

@@ -930,3 +930,6 @@ xxl:
 
 rpa:
   domain: http://127.0.0.1:48080
+
+jubo:
+  domain: http://127.0.0.1:13086

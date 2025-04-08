@@ -36,7 +36,7 @@ jdbc:
     readDataSourceNames: ~
     loadBalancerAlgorithm: RANDOM
 
-  # 多数据源名称列表，多个用逗号隔开，使用方法：@MyBatisDao(dataSourceName="10.150.16.8:3306")
+  # 多数据源名称列表，多个用逗号隔开，使用方法：@MyBatisDao(dataSourceName="ds2")
   dataSourceNames: ds2,maoche_java,maoche_product
 
   maoche-java:

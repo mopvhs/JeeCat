@@ -61,7 +61,6 @@ public class OceanRelationXxlJob extends IJobHandler {
 
     private void doRelationship(List<MaocheRobotCrawlerMessageDO> messages) {
 
-        Map<Long, List<MaocheRobotCrawlerMessageDO>> relationMap = new HashMap<>();
         long relationId = 0L;
         long lastMsgTime = 0L;
 
@@ -97,6 +96,18 @@ public class OceanRelationXxlJob extends IJobHandler {
             }
 
             lastMsgTime = msg.getTime().getTime();
+        }
+
+        // 如果还有relations，需要判断是否已经距离现在很久了
+        if (CollectionUtils.isNotEmpty(relations)) {
+            MaocheRobotCrawlerMessageDO messageDO = relations.get(relations.size() - 1);
+            long left = System.currentTimeMillis() - messageDO.getTime().getTime() - (2 * ms);
+            // 最好一条距离现在已经超过2分钟，可以直接认定为一条新的关系
+            if (left >= 0) {
+                List<Long> ids = relations.stream().map(MaocheRobotCrawlerMessageDO::getIid).toList();
+                relationId = relations.get(0).getIid();
+                maocheRobotCrawlerMessageDao.relationMessage(ids, relationId);
+            }
         }
 
     }
