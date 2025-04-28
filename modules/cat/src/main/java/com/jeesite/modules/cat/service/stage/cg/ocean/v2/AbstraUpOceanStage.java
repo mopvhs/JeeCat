@@ -3,9 +3,11 @@ package com.jeesite.modules.cat.service.stage.cg.ocean.v2;
 import com.jeesite.common.codec.Md5Utils;
 import com.jeesite.common.lang.NumberUtils;
 import com.jeesite.common.lang.StringUtils;
+import com.jeesite.common.utils.DateTimeUtils;
 import com.jeesite.common.utils.JsonUtils;
 import com.jeesite.common.utils.UrlUtils;
 import com.jeesite.modules.cat.cache.CacheService;
+import com.jeesite.modules.cat.dao.MaocheRobotCrawlerMessageSyncDao;
 import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageProductDO;
 import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageSyncDO;
 import com.jeesite.modules.cat.enums.ElasticSearchIndexEnum;
@@ -16,6 +18,8 @@ import com.jeesite.modules.cat.model.CatProductBucketTO;
 import com.jeesite.modules.cat.model.ocean.OceanMessageCondition;
 import com.jeesite.modules.cat.model.ocean.OceanMessageProductCondition;
 import com.jeesite.modules.cat.service.MaocheRobotCrawlerMessageSyncService;
+import com.jeesite.modules.cat.service.SimHashService;
+import com.jeesite.modules.cat.service.cg.OceanSyncService;
 import com.jeesite.modules.cat.service.cg.ocean.OceanSearchService;
 import com.jeesite.modules.cat.service.cg.third.dto.JdUnionIdPromotion;
 import com.jeesite.modules.cat.service.cg.third.dto.ShortUrlDetail;
@@ -30,6 +34,7 @@ import com.jeesite.modules.cat.service.stage.cg.ocean.SimilarDetail;
 import com.jeesite.modules.cat.service.stage.cg.ocean.exception.QueryThirdApiException;
 import com.jeesite.modules.cat.service.stage.cg.ocean.helper.OceanContentHelper;
 import com.jeesite.modules.cat.service.stage.cg.ocean.helper.OceanMonitorHelper;
+import com.jeesite.modules.cat.service.toolbox.CommandService;
 import com.jeesite.modules.cat.service.toolbox.dto.CommandContext;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -43,6 +48,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -59,6 +65,9 @@ public abstract class AbstraUpOceanStage implements OceanUpStage {
     private MaocheRobotCrawlerMessageSyncService maocheRobotCrawlerMessageSyncService;
 
     @Resource
+    private MaocheRobotCrawlerMessageSyncDao maocheRobotCrawlerMessageSyncDao;
+
+    @Resource
     private OceanEsService oceanEsService;
 
     @Resource
@@ -69,6 +78,12 @@ public abstract class AbstraUpOceanStage implements OceanUpStage {
 
     @Resource
     private CacheService cacheService;
+
+//    @Resource
+//    private OceanSyncService oceanSyncService;
+
+//    @Resource
+//    private SimHashService simHashService;
 
     @Override
     public void process(OceanUpContext context) {
@@ -83,17 +98,18 @@ public abstract class AbstraUpOceanStage implements OceanUpStage {
             // 3. 保存商品数据到消息中
             buildBaseMessageProducts(context);
 
-            // 计算相似内容code
-            calSimilar(context);
-
-            // 判断是否为相似商品
-            checkSimilar(context);
+            // 1.1 对干预处理完成的消息，计算一个simHash
+//            calSimHash(context);
+//            // 计算相似内容code
+//            calSimilar(context);
+//            // 判断是否为相似商品，兼容形式
+//            checkSimilar(context);
 
             // 4. 保存商品数据
             saveMessageAndProduct(context);
 
             // 相似文案判断
-            similarMsgCheck(context);
+//            similarMsgCheck(context);
 
             // 6. 构建索引
             indexEx(context);
@@ -108,10 +124,33 @@ public abstract class AbstraUpOceanStage implements OceanUpStage {
             String action = e.getAction();
             // 查询失败后，是否需要保存消息
             if (QueryThirdApiException.QUERY_FAIL.equals(action)) {
+
+                // 判断是否达到失败频控次数，3次
+                String key = "sync_fail_retry_" + context.getMessageSync().getId();
+                String val = cacheService.get(key);
+                long times = NumberUtils.toLong(val);
+                if (times <= 3) {
+                    // 重试
+                    cacheService.incr(key);
+                    cacheService.expire(key, (int) TimeUnit.DAYS.toSeconds(1));
+                    // 重新调用下接口
+                    // 调用接口
+//                    oceanSyncService.retryOceanAnalysis(context.getMessageSync().getId());
+
+                    MaocheRobotCrawlerMessageSyncDO syncDO = maocheRobotCrawlerMessageSyncDao.getById(NumberUtils.toLong(context.getMessageSync().getId()));
+                    if (syncDO == null) {
+                        return;
+                    }
+                    String affType = syncDO.getAffType();
+                    OceanUpContext retryContext = new OceanUpContext(syncDO);
+                    process(retryContext);
+                    return;
+                }
+
                 updateFailQueryProduct(context);
 
                 // 需要写索引
-                List<Map<String, Object>> messageSyncIndex = OceanContentHelper.getMessageSyncIndex(Collections.singletonList(context.getMessageSync()));
+                List<Map<String, Object>> messageSyncIndex = OceanContentHelper.getMessageSyncIndex(Collections.singletonList(context.getMessageSync()), Collections.singletonList(context.getRobotMsg()));
                 elasticSearch7Service.index(messageSyncIndex, ElasticSearchIndexEnum.MAOCHE_OCEAN_MESSAGE_SYNC_INDEX, "id", 10);
 
                 return;
@@ -123,6 +162,7 @@ public abstract class AbstraUpOceanStage implements OceanUpStage {
             DingDingService.sendParseDingDingMsg("公海流程处理异常 message :{}, e:{}", JsonUtils.toJSONString(context.getMessageSync()), e.getMessage());
         }
     }
+
 
     public void statLog(OceanUpContext context) {
         try {
@@ -434,7 +474,8 @@ public abstract class AbstraUpOceanStage implements OceanUpStage {
         if (StringUtils.isBlank(msg)) {
             return affType;
         }
-        boolean contains = msg.contains("y.q5url.cn") || msg.contains("y-03.cn");
+//        boolean contains = msg.contains("y.q5url.cn") || msg.contains("y-03.cn");
+        boolean contains = msg.contains("y.q5url.cn");
 
         return contains ? "tb" : affType;
     }
@@ -717,6 +758,56 @@ public abstract class AbstraUpOceanStage implements OceanUpStage {
         context.setSimilar(similar);
     }
 
+    public void calSimHash(OceanUpContext context) {
+        if (context == null || context.getMessageSync() == null || StringUtils.isBlank(context.getMessageSync().getMsg())) {
+            return;
+        }
+        SimilarContext similar = new SimilarContext();
+
+        String msg = context.getMessageSync().getMsg();
+        String simHash = doCalSimHash(msg);
+        similar.setSimHash(simHash);
+
+        context.getMessageSync().setUniqueHash(simHash);
+        context.setSimilar(similar);
+    }
+
+    public static String doCalSimHash(String msg) {
+        String[] split = msg.split("\n");
+        StringBuilder str = new StringBuilder();
+        // 判断是否带口令或者是链接，忽略
+        for (String line : split) {
+            Matcher matcher = CommandService.jd.matcher(line);
+            if (matcher.find()) {
+                continue;
+            }
+            matcher = CommandService.tb.matcher(line);
+            if (matcher.find()) {
+                continue;
+            }
+            str.append(line);
+        }
+        String simHash = SimHashService.get(str.toString());
+        if (StringUtils.isBlank(simHash)) {
+            simHash = Md5Utils.md5(str.toString());
+        }
+        return simHash;
+    }
+
+    public static void main(String[] args) {
+        String msg = "✨有好价✨\n" +
+                "@\uD83C\uDF5F 朗诺宠物鸡肉冻干300g\n" +
+                "+赠猫粮试吃8g*4\n" +
+                "\uD83D\uDCB0105，88vip\uD83D\uDCB099.7\n" +
+                "(2wr1VXY4Pur)/ CA21,)/ AC01\n" +
+                "---------------------\n" +
+                "自助查车 dwz.cn/qveM26UV";
+
+        String c = OceanContentHelper.interposeMsg(msg);
+
+        System.out.println(c);
+    }
+
     public void checkSimilar(OceanUpContext context) {
         // 获取转链详情
         SimilarContext similar = context.getSimilar();
@@ -725,25 +816,29 @@ public abstract class AbstraUpOceanStage implements OceanUpStage {
         }
 
         MaocheRobotCrawlerMessageSyncDO messageSync = context.getMessageSync();
-        String calCode = similar.calCode();
+        String simHash = similar.getSimHash();
 
         // 判断3天前内是否存在
+        long daysAgo = DateTimeUtils.nDaysAgo(3);
+
         OceanMessageCondition condition = new OceanMessageCondition();
-        condition.setUniqueHash(calCode);
+        condition.setUniqueHash(simHash);
         condition.setAffType(getAffType());
+        condition.setGteCreateDate(daysAgo);
         // 查询存在一样的uniqueHash的数据，通过es查询
-        ElasticSearchData<MaocheMessageSyncIndex, CatProductBucketTO> searchData = oceanSearchService.searchMsg(condition, null, null, null, 0, 1000);
+        ElasticSearchData<MaocheMessageSyncIndex, CatProductBucketTO> searchData = oceanSearchService.searchMsg(condition, null, null, null, 0, 10);
         // 异常的时候，再查询一次
         if (searchData == null) {
-            searchData = oceanSearchService.searchMsg(condition, null, null, null, 0, 1000);
+            searchData = oceanSearchService.searchMsg(condition, null, null, null, 0, 10);
         }
         List<Long> similarIds = new ArrayList<>();
         if (searchData == null || CollectionUtils.isEmpty(searchData.getDocuments())) {
             // 为空的时候 做一次db的查询，es刷磁盘需要时间，短时间内可能会查询不出来
-            MaocheRobotCrawlerMessageSyncDO query = new MaocheRobotCrawlerMessageSyncDO();
-            query.setUniqueHash(calCode);
-            query.setStatus("NORMAL");
-            List<MaocheRobotCrawlerMessageSyncDO> similarMsgs = maocheRobotCrawlerMessageSyncService.findList(query);
+//            MaocheRobotCrawlerMessageSyncDO query = new MaocheRobotCrawlerMessageSyncDO();
+//            query.setUniqueHash(simHash);
+//            query.setStatus("NORMAL");
+//            List<MaocheRobotCrawlerMessageSyncDO> similarMsgs = maocheRobotCrawlerMessageSyncService.findList(query);
+            List<MaocheRobotCrawlerMessageSyncDO> similarMsgs = maocheRobotCrawlerMessageSyncDao.findSimHashMessages(simHash, OceanStatusEnum.FAIL.name(), DateTimeUtils.getStringDate(new Date(daysAgo)));
             if (CollectionUtils.isNotEmpty(similarMsgs)) {
                 similarIds = similarMsgs.stream().map(MaocheRobotCrawlerMessageSyncDO::getUiid).toList();
             }
@@ -751,11 +846,15 @@ public abstract class AbstraUpOceanStage implements OceanUpStage {
             List<MaocheMessageSyncIndex> documents = searchData.getDocuments();
             similarIds = documents.stream().map(MaocheMessageSyncIndex::getId).collect(Collectors.toList());
         }
+        // 移除自身
+        if (CollectionUtils.isNotEmpty(similarIds)) {
+            similarIds.remove(messageSync.getUiid());
+        }
 
         // 修改状态为相似内容
-        if (similarIds.contains(messageSync.getUiid()) && similarIds.size() > 1) {
+        if (CollectionUtils.isNotEmpty(similarIds)) {
             messageSync.setStatus(OceanStatusEnum.SIMILAR.name());
-            messageSync.setUniqueHash(calCode);
+            messageSync.setUniqueHash(simHash);
         }
 
     }

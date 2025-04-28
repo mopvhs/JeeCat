@@ -5,6 +5,7 @@ import com.jeesite.common.lang.NumberUtils;
 import com.jeesite.common.utils.JsonUtils;
 import com.jeesite.common.web.Result;
 import com.jeesite.modules.cat.cache.CacheService;
+import com.jeesite.modules.cat.dao.MaocheRobotCrawlerMessageSyncDao;
 import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageDO;
 import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageSyncDO;
 import com.jeesite.modules.cat.entity.MaocheSyncDataInfoDO;
@@ -51,10 +52,13 @@ public class OceanSyncService {
     private ElasticSearch7Service elasticSearch7Service;
 
     @Resource
-    private OceanStage tbOceanStage;
+    private MaocheRobotCrawlerMessageSyncDao maocheRobotCrawlerMessageSyncDao;
 
-    @Resource
-    private OceanStage jdOceanStage;
+//    @Resource
+//    private OceanStage tbOceanStage;
+//
+//    @Resource
+//    private OceanStage jdOceanStage;
 
     @Resource
     private OceanUpStage tbUpOceanStage;
@@ -136,7 +140,7 @@ public class OceanSyncService {
 
         if (CollectionUtils.isNotEmpty(crawlerMessages)) {
             // 需要写索引
-            List<Map<String, Object>> messageSyncIndex = OceanContentHelper.getMessageSyncIndex(crawlerMessages);
+            List<Map<String, Object>> messageSyncIndex = OceanContentHelper.getMessageSyncIndex(crawlerMessages, messages);
             elasticSearch7Service.index(messageSyncIndex, ElasticSearchIndexEnum.MAOCHE_OCEAN_MESSAGE_SYNC_INDEX, "id", step);
         }
 
@@ -182,20 +186,20 @@ public class OceanSyncService {
                 for (MaocheRobotCrawlerMessageDO message : messages) {
 //            offset = String.valueOf(message.getId());
                     // afftype干预订正
-                    String affType = message.getAffType();
-                    String msg = message.getMsg();
-                    affType = AbstraOceanStage.fixAffType(msg, affType);
-                    message.setAffType(affType);
-                    try {
-                        OceanContext context = new OceanContext(message);
-                        if (affType.equals("tb")) {
-                            tbOceanStage.process(context);
-                        } else if (affType.equals("jd")) {
-                            jdOceanStage.process(context);
-                        }
-                    } catch (Exception e) {
-                        break;
-                    }
+//                    String affType = message.getAffType();
+//                    String msg = message.getMsg();
+//                    affType = AbstraOceanStage.fixAffType(msg, affType);
+//                    message.setAffType(affType);
+//                    try {
+//                        OceanContext context = new OceanContext(message);
+//                        if (affType.equals("tb")) {
+//                            tbOceanStage.process(context);
+//                        } else if (affType.equals("jd")) {
+//                            jdOceanStage.process(context);
+//                        }
+//                    } catch (Exception e) {
+//                        break;
+//                    }
                 };
             }
         }).start();

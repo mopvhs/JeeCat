@@ -59,7 +59,7 @@
 		<where>
 			status = "FINISHED"
 		</where>
-		ORDER BY time desc limit 100
+		ORDER BY time desc limit 200
 	</select>
 
 	<update id="relationMessage">

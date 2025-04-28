@@ -45,7 +45,7 @@ public class OkHttpService {
 
 
     public static HttpUrl doGetHttpUrlWithProxy(String url) {
-
+        Response response = null;
         try {
             Proxy proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(ip, port));
             log.info("doGetHttpUrlWithProxy url:{}", url);
@@ -69,16 +69,22 @@ public class OkHttpService {
                     .addHeader("Connection","close")
                     .build();
 
-            Response response = client.newCall(request).execute();
+            response = client.newCall(request).execute();
 
             return response.request().url();
         } catch (Exception e) {
             log.error("doGetHttpUrlWithProxy exception url:{}", url, e);
+        } finally {
+            // 确保响应被关闭
+            if (response != null) {
+                response.close();
+            }
         }
         return null;
     }
 
     public static String doGetHtmlWithProxy(String url) {
+        Response response = null;
 
         try {
             Proxy proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(ip, port));
@@ -103,11 +109,16 @@ public class OkHttpService {
                     .addHeader("Connection","close")
                     .build();
 
-            Response response = client.newCall(request).execute();
+            response = client.newCall(request).execute();
 
             return response.body().string();
         } catch (Exception e) {
             log.error("doGetHttpUrlWithProxy exception url:{}", url, e);
+        } finally {
+            // 确保响应被关闭
+            if (response != null) {
+                response.close();
+            }
         }
         return null;
     }

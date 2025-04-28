@@ -4,7 +4,9 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.jeesite.common.lang.StringUtils;
 import com.jeesite.common.utils.DateTimeUtils;
 import com.jeesite.common.utils.JsonUtils;
+import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageDO;
 import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageSyncDO;
+import com.jeesite.modules.cat.service.cg.third.dto.ShortUrlDetail;
 import com.jeesite.modules.cat.service.es.dto.MaocheMessageSyncIndex;
 import com.jeesite.modules.cat.service.stage.cg.ocean.v2.AbstraUpOceanStage;
 import com.jeesite.modules.cat.service.toolbox.CommandService;
@@ -20,8 +22,10 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class OceanContentHelper {
 
@@ -120,7 +124,9 @@ public class OceanContentHelper {
         deletions.add("mp://WoWnjYcWSdj01es");
         deletions.add("全网最低价");
         deletions.add("WoWnjYcWSdj01es");
-        deletions.add("猫车:mp://");
+        deletions.add("小小独家");
+        deletions.add("直接戳\uD83D\uDC49:");
+//        deletions.add("猫车:mp://");
 
         for (String item : deletions) {
             AbstraUpOceanStage.TextBO textBO = new AbstraUpOceanStage.TextBO(item, item.length());
@@ -144,6 +150,13 @@ public class OceanContentHelper {
         deletionUrls.add("s.q5url.cn");
         deletionUrls.add("http://t.q5url.cn/1kVxzo");
         deletionUrls.add("http://t.q5url.cn");
+        deletionUrls.add("车群");
+    }
+
+    public static List<String> regularDeletion = new ArrayList<>();
+
+    static {
+        regularDeletion.add("^(?=.*猫车)(?=.*mp:\\/\\/).+$");
     }
 
     public static Map<String, List<Pattern>> groupWhiteUrlMap = new HashMap<>();
@@ -300,6 +313,25 @@ public class OceanContentHelper {
 
         for (String line : split) {
             String replace = line;
+            // 处理@某某人
+            if (replace.contains("@") && replace.contains(" ")) {
+                int i = replace.indexOf("@");
+                if (i >= 0) {
+                    String a = replace.substring(i);
+                    if (a.contains(" ")) {
+                        int b = a.indexOf(" ");
+                        if (b > 0) {
+                            String substring = a.substring(0, b);
+                            replace = replace.replace(substring, "");
+                        }
+                    }
+                }
+            }
+
+            if (replace.equals("-")) {
+                continue;
+            }
+
             // 是否包含 url
             for (String url : deletionUrls) {
                 if (replace.contains(url)) {
@@ -310,6 +342,19 @@ public class OceanContentHelper {
             if (StringUtils.isBlank(replace)) {
                 continue;
             }
+
+            for (String regular : regularDeletion) {
+                Pattern p = Pattern.compile(regular);
+                Matcher matcher = p.matcher(replace);
+                if (matcher.find()) {
+                    replace = null;
+                    break;
+                }
+            }
+            if (StringUtils.isBlank(replace)) {
+                continue;
+            }
+
             String replaceAscii = ByteUtils.toHexAscii(replace.getBytes(StandardCharsets.UTF_8));
 
             if (replace.equals("\n") || replace.equals("\uFE0F\uFE0F") || hexAscii.equals(replace) || hexAscii.equals(replaceAscii)) {
@@ -358,6 +403,11 @@ public class OceanContentHelper {
                 continue;
             }
 
+            Matcher matcher = CommandService.tb.matcher(replace);
+            if (matcher.find()) {
+                replace = StringUtils.trim2(replace);
+            }
+
             builder.append(replace).append("\n");
         }
 
@@ -366,21 +416,41 @@ public class OceanContentHelper {
 
 
     public static void main(String[] args) {
-        Pattern pattern = Pattern.compile("jd.q5url.cn/[a-z A-Z 0-9]+");
-        String content = "https://jd.q5url.cn/1DWRe8";
+//        Pattern pattern = Pattern.compile("jd.q5url.cn/[a-z A-Z 0-9]+");
+//        String content = "https://jd.q5url.cn/1DWRe8";
+//
+//        String regex = "t.q5url.cn/[a-z 0-9]+";
+////        String urlRegex = "https?:\\/\\/[^\\s]+|[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}[\\/?]*[^\\s]*";
+////        String urlRegex = "https?:\\/\\/[^\\s]+|[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}\\/[^\\s]*";
+//
+//
+////        Pattern pattern = Pattern.compile(regex);
+////        Pattern pattern2 = Pattern.compile(urlRegex);
+//        String[] split = content.split("\n");
+//        for (String item : split) {
+//            String match = match(item, pattern);
+//            System.out.println(match);
+//        }
 
-        String regex = "t.q5url.cn/[a-z 0-9]+";
-//        String urlRegex = "https?:\\/\\/[^\\s]+|[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}[\\/?]*[^\\s]*";
-//        String urlRegex = "https?:\\/\\/[^\\s]+|[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}\\/[^\\s]*";
+        String replace = "京喜抑菌除臭尿垫共10片?3.3\n" +
+                "https://u.jd.com/1g0sTi7\n" +
+                "京喜宠物免洗手套共12只?4.9\n" +
+                "https://u.jd.com/1G0snZ2\n" +
+                "眼部清洁湿巾200片*2罐?5.7\n" +
+                "https://u.jd.com/110sO6d\n" +
+                "纯水清洁湿巾80抽*10包?9.9\n" +
+                "https://u.jd.com/1r0sz7r\n" +
+                "✅默认规格全部买一赠一 !!!\n" +
+                "-\n" +
+                "→车群http://cyg888.cn/s/2y0zly\n";
 
-
-//        Pattern pattern = Pattern.compile(regex);
-//        Pattern pattern2 = Pattern.compile(urlRegex);
-        String[] split = content.split("\n");
+        String[] split = replace.split("\n");
         for (String item : split) {
-            String match = match(item, pattern);
-            System.out.println(match);
+            if (item.equals("-")) {
+                System.out.println("1");
+            }
         }
+
     }
 
     public static String match(String content, Pattern pattern) {
@@ -404,6 +474,37 @@ public class OceanContentHelper {
             if (index == null) {
                 continue;
             }
+            Map<String, Object> map = JsonUtils.toReferenceType(JsonUtils.toJSONString(index), new TypeReference<Map<String, Object>>() {
+            });
+
+            list.add(map);
+        }
+
+        return list;
+    }
+
+    public static List<Map<String, Object>> getMessageSyncIndex(List<MaocheRobotCrawlerMessageSyncDO> crawlerMessages,
+                                                                List<MaocheRobotCrawlerMessageDO> robotMessages) {
+        if (CollectionUtils.isEmpty(crawlerMessages) || CollectionUtils.isEmpty(robotMessages)) {
+            return new ArrayList<>();
+        }
+
+        Map<Long, MaocheRobotCrawlerMessageDO> messageDOMap = robotMessages.stream().collect(Collectors.toMap(MaocheRobotCrawlerMessageDO::getIid, Function.identity(), (o1, o2) -> o1));
+
+        List<Map<String, Object>> list = new ArrayList<>();
+        for (MaocheRobotCrawlerMessageSyncDO item : crawlerMessages) {
+            MaocheMessageSyncIndex index = MaocheMessageSyncIndex.toIndex(item);
+            if (index == null) {
+                continue;
+            }
+
+            MaocheRobotCrawlerMessageDO messageDO = messageDOMap.get(index.getRobotMsgId());
+            if (messageDO != null) {
+                index.setRobotChatId(messageDO.getFromgid());
+                index.setRobotSendId(messageDO.getFromid());
+                index.setOceanStatus(messageDO.getStatus());
+            }
+
             Map<String, Object> map = JsonUtils.toReferenceType(JsonUtils.toJSONString(index), new TypeReference<Map<String, Object>>() {
             });
 

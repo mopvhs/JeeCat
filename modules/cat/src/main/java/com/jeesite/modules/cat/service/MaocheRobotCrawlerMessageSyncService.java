@@ -5,6 +5,7 @@ import java.util.Date;
 import java.util.List;
 
 import com.jeesite.common.lang.StringUtils;
+import com.jeesite.common.utils.JsonUtils;
 import com.jeesite.common.web.Result;
 import com.jeesite.modules.cat.enums.OceanStatusEnum;
 import org.apache.commons.collections.CollectionUtils;
@@ -23,7 +24,7 @@ import com.jeesite.modules.cat.dao.MaocheRobotCrawlerMessageSyncDao;
  */
 @Service
 public class MaocheRobotCrawlerMessageSyncService extends CrudService<MaocheRobotCrawlerMessageSyncDao, MaocheRobotCrawlerMessageSyncDO> {
-	
+
 	/**
 	 * 获取单条数据
 	 * @param maocheRobotCrawlerMessageSyncDO
@@ -33,7 +34,7 @@ public class MaocheRobotCrawlerMessageSyncService extends CrudService<MaocheRobo
 	public MaocheRobotCrawlerMessageSyncDO get(MaocheRobotCrawlerMessageSyncDO maocheRobotCrawlerMessageSyncDO) {
 		return dao.getByEntity(maocheRobotCrawlerMessageSyncDO);
 	}
-	
+
 	/**
 	 * 查询分页数据
 	 * @param maocheRobotCrawlerMessageSyncDO 查询条件
@@ -44,7 +45,7 @@ public class MaocheRobotCrawlerMessageSyncService extends CrudService<MaocheRobo
 	public Page<MaocheRobotCrawlerMessageSyncDO> findPage(MaocheRobotCrawlerMessageSyncDO maocheRobotCrawlerMessageSyncDO) {
 		return super.findPage(maocheRobotCrawlerMessageSyncDO);
 	}
-	
+
 	/**
 	 * 查询列表数据
 	 * @param maocheRobotCrawlerMessageSyncDO
@@ -54,7 +55,7 @@ public class MaocheRobotCrawlerMessageSyncService extends CrudService<MaocheRobo
 	public List<MaocheRobotCrawlerMessageSyncDO> findList(MaocheRobotCrawlerMessageSyncDO maocheRobotCrawlerMessageSyncDO) {
 		return super.findList(maocheRobotCrawlerMessageSyncDO);
 	}
-	
+
 	/**
 	 * 保存数据（插入或更新）
 	 * @param maocheRobotCrawlerMessageSyncDO
@@ -64,7 +65,7 @@ public class MaocheRobotCrawlerMessageSyncService extends CrudService<MaocheRobo
 	public void save(MaocheRobotCrawlerMessageSyncDO maocheRobotCrawlerMessageSyncDO) {
 		dao.add(maocheRobotCrawlerMessageSyncDO);
 	}
-	
+
 	/**
 	 * 更新状态
 	 * @param maocheRobotCrawlerMessageSyncDO
@@ -74,7 +75,7 @@ public class MaocheRobotCrawlerMessageSyncService extends CrudService<MaocheRobo
 	public void updateStatus(MaocheRobotCrawlerMessageSyncDO maocheRobotCrawlerMessageSyncDO) {
 		super.updateStatus(maocheRobotCrawlerMessageSyncDO);
 	}
-	
+
 	/**
 	 * 删除数据
 	 * @param maocheRobotCrawlerMessageSyncDO
@@ -120,6 +121,7 @@ public class MaocheRobotCrawlerMessageSyncService extends CrudService<MaocheRobo
 		dao.add(maocheRobotCrawlerMessageSyncDO);
 		boolean res = StringUtils.isNotBlank(maocheRobotCrawlerMessageSyncDO.getId());
 		if (res) {
+			logger.info("addIfAbsentV2 msy {}", JsonUtils.toJSONString(maocheRobotCrawlerMessageSyncDO));
 			return Result.OK(syncDOs);
 		} else {
 			return Result.ERROR(500, "新增失败");

@@ -239,6 +239,24 @@ public class DateUtils extends org.apache.commons.lang3.time.DateUtils {
 	 * @param date 日期
 	 * @return
 	 */
+	public static Date getOfDayFirst(Date date, int hour) {
+		if (date == null){
+			return null;
+		}
+		Calendar calendar = Calendar.getInstance();
+		calendar.setTime(date);
+		calendar.set(Calendar.HOUR_OF_DAY, hour);
+		calendar.set(Calendar.MINUTE, 0);
+		calendar.set(Calendar.SECOND, 0);
+		calendar.set(Calendar.MILLISECOND, 0);
+		return calendar.getTime();
+	}
+
+	/**
+	 * 获取一天的开始时间（如：2015-11-3 00:00:00.000）
+	 * @param date 日期
+	 * @return
+	 */
 	public static Date getOfDayFirst(Date date) {
 		if (date == null){
 			return null;

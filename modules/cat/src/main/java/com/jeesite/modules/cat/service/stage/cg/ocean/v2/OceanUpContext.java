@@ -28,7 +28,7 @@ public class OceanUpContext implements Serializable {
     public OceanUpContext(MaocheRobotCrawlerMessageSyncDO messageSync) {
         this.messageSync = messageSync;
     }
-
+    private MaocheRobotCrawlerMessageDO robotMsg;
     // 中间处理结果
     // 洗完数据后的消息
     private MaocheRobotCrawlerMessageSyncDO messageSync;
@@ -45,6 +45,16 @@ public class OceanUpContext implements Serializable {
     // 转链详情
     private CommandContext commandContext;
 
+    /**
+     * 凑单-是否忽略相似判断
+     */
+    private boolean ignoreSimHash;
+
+    /**
+     * 券-是否忽略相似判断
+     */
+    private boolean couponIgnoreSimHash;
+
     // 是否只存在特殊的uri
     // y-03.cn   3.cn    jd.cn   t.cn    q5url.cn    kurl06.cn
     private boolean onlySpecialUri = false;
@@ -59,4 +69,6 @@ public class OceanUpContext implements Serializable {
     private boolean indexResult = false;
 
     private SimilarContext similar;
+
+
 }

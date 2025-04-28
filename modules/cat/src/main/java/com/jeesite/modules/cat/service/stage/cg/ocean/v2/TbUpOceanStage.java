@@ -3,16 +3,20 @@ package com.jeesite.modules.cat.service.stage.cg.ocean.v2;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.jeesite.common.codec.EncodeUtils;
+import com.jeesite.common.codec.Md5Utils;
 import com.jeesite.common.lang.DateUtils;
 import com.jeesite.common.lang.NumberUtils;
 import com.jeesite.common.lang.StringUtils;
+import com.jeesite.common.utils.DateTimeUtils;
 import com.jeesite.common.utils.JsonUtils;
 import com.jeesite.common.utils.UrlUtils;
 import com.jeesite.common.web.Result;
+import com.jeesite.modules.cat.dao.MaocheRobotCrawlerMessageSyncDao;
 import com.jeesite.modules.cat.entity.MaocheAlimamaUnionProductDO;
 import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageDO;
 import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageProductDO;
 import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageSyncDO;
+import com.jeesite.modules.cat.enums.OceanStatusEnum;
 import com.jeesite.modules.cat.es.config.model.ElasticSearchData;
 import com.jeesite.modules.cat.helper.ProductValueHelper;
 import com.jeesite.modules.cat.model.CatProductBucketTO;
@@ -85,6 +89,9 @@ public class TbUpOceanStage extends AbstraUpOceanStage {
     @Resource
     private KdlApiService kdlApiService;
 
+    @Resource
+    private MaocheRobotCrawlerMessageSyncDao maocheRobotCrawlerMessageSyncDao;
+
     @Override
     public String getAffType() {
         return "tb";
@@ -118,6 +125,7 @@ public class TbUpOceanStage extends AbstraUpOceanStage {
 
         Map<String, GeneralConvertResp> productMap = new HashMap<>();
         Map<String, Object> apiErrorMap = new HashMap<>();
+        boolean hasFailed = false;
         try {
             for (ShortUrlDetail urlDetail : shortUrlDetails) {
                 long startTime = System.currentTimeMillis();
@@ -132,6 +140,7 @@ public class TbUpOceanStage extends AbstraUpOceanStage {
                 Result<GeneralConvertResp> response = tbApiService.generalConvert(searchUrl, objectMap);
                 long left = System.currentTimeMillis() - startTime;
                 if (!Result.isOK(response)) {
+                    hasFailed = true;
                     apiErrorMap.put(searchUrl, response);
                     urlDetail.addExchangeLog("查询淘宝口令失败:" + JsonUtils.toJSONString(response));
                 } else {
@@ -151,7 +160,7 @@ public class TbUpOceanStage extends AbstraUpOceanStage {
         syncDO.addCommandContext(commandContext);
         syncDO.addApiError(apiErrorMap);
 
-        if (MapUtils.isEmpty(productMap)) {
+        if (MapUtils.isEmpty(productMap) || hasFailed) {
             throw new QueryThirdApiException(QueryThirdApiException.QUERY_FAIL, "查询淘宝api失败");
         }
 
@@ -169,7 +178,7 @@ public class TbUpOceanStage extends AbstraUpOceanStage {
             if (matcher.find()) {
                 ShortUrlDetail detail = new ShortUrlDetail(item);
                 detail.addExchangeLog(item);
-                shortUrlDetailMap.put(item, detail);
+                shortUrlDetailMap.put(StringUtils.trim2(item), detail);
             }
         }
     }
@@ -208,11 +217,16 @@ public class TbUpOceanStage extends AbstraUpOceanStage {
         Map<String, MaocheRobotCrawlerMessageProductDO> mseeageProductMap = messageProducts.stream().collect(Collectors.toMap(MaocheRobotCrawlerMessageProductDO::getItemId, Function.identity(), (o1, o2) -> o1));
 
         String msg = messageSync.getMsg();
+        CommandContext commandContext = context.getCommandContext();
+        if (commandContext != null && StringUtils.isNotBlank(commandContext.getResContent())) {
+            msg = commandContext.getResContent();
+        }
         String[] split = msg.split("\n");
         StringBuilder msgBuilder = new StringBuilder();
         for (String item : split) {
             Matcher matcher = CommandService.tb.matcher(item);
             if (matcher.find()) {
+                item = StringUtils.trim2(item);
                 String group = matcher.group();
                 GeneralConvertResp responseV2 = productMap.get(item);
                 if (responseV2 != null) {
@@ -232,6 +246,7 @@ public class TbUpOceanStage extends AbstraUpOceanStage {
 
         long processed = 0;
         List<String> resourceIds = new ArrayList<>();
+        List<String> hashProducts = new ArrayList<>();
         for (Map.Entry<String, GeneralConvertResp> entry : productMap.entrySet()) {
             GeneralConvertResp data = entry.getValue();
             String numIid = GeneralConvertResp.analyzingItemId(data);
@@ -267,6 +282,13 @@ public class TbUpOceanStage extends AbstraUpOceanStage {
                 }
             }
 
+            GeneralConvertResp.ItemBasicInfo itemBasicInfo = data.getItemBasicInfo();
+            if (itemBasicInfo != null) {
+                String sellerId = itemBasicInfo.getSellerId();
+                String title = itemBasicInfo.getTitle();
+                hashProducts.add(sellerId + "_" + title);
+            }
+
             String resourceId = itemIdSuffix;
             if (uiid > 0 && unionProductDO == null) {
                 MaocheAlimamaUnionProductDO query = new MaocheAlimamaUnionProductDO();
@@ -285,6 +307,34 @@ public class TbUpOceanStage extends AbstraUpOceanStage {
             }
             if (uiid > 0) {
                 productDO.setInnerId(String.valueOf(uiid));
+            }
+        }
+
+        String hash = null;
+        if (!context.isIgnoreSimHash() && CollectionUtils.isNotEmpty(hashProducts)) {
+            // 排序
+            hashProducts = hashProducts.stream().sorted().collect(Collectors.toList());
+            // toJsonString -> md5
+            hash = Md5Utils.md5(JsonUtils.toJSONString(hashProducts));
+        }
+
+        String status = OceanStatusEnum.NORMAL.name();
+        // todo 有部分是忽略相似度判断的，需要忽略
+        if (StringUtils.isNotBlank(hash)) {
+            // 获取今天凌晨4点的时间戳
+            Date startTime = DateUtils.getOfDayFirst(new Date(), 2);
+            // 如果当前时间小于4点，则获取前一天的数据
+            if (startTime.getTime() > System.currentTimeMillis()) {
+                startTime = DateUtils.getOfDayFirst(DateUtils.addDays(new Date(), -1), 4);
+            }
+
+            String date = DateTimeUtils.getStringDate(startTime);
+            List<MaocheRobotCrawlerMessageSyncDO> simProductSyncMsgList = maocheRobotCrawlerMessageSyncDao.listByProductUniqueHash(hash, "NORMAL", date);
+            if (CollectionUtils.isNotEmpty(simProductSyncMsgList)) {
+                simProductSyncMsgList = simProductSyncMsgList.stream().filter(i -> !i.getId().equals(messageSync.getId())).collect(Collectors.toList());
+                if (CollectionUtils.isNotEmpty(simProductSyncMsgList)) {
+                    status = OceanStatusEnum.SIMILAR.name();
+                }
             }
         }
 
@@ -320,9 +370,10 @@ public class TbUpOceanStage extends AbstraUpOceanStage {
         }
 
         messageSync.addRemarks("newProduct", newProduct);
-        messageSync.setStatus("NORMAL");
+        messageSync.setStatus(status);
         messageSync.setProcessed(processed);
         messageSync.setResourceIds(StringUtils.join(resourceIds, ","));
+        messageSync.setProductHash(hash);
         boolean res = maocheRobotCrawlerMessageSyncService.updateById(messageSync);
         if (!res) {
             log.error("messageSync is exist message:{}", JsonUtils.toJSONString(messageSync));

@@ -354,9 +354,13 @@ public abstract class AbstraOceanStage implements OceanStage {
             log.error("保存失败的查询商品数据失败, messageSync is null");
             return;
         }
-        messageSync.setStatus(OceanStatusEnum.FAIL.name());
-        messageSync.setRemarks(context.getFailRemarks());
-        maocheRobotCrawlerMessageSyncService.save(messageSync);
+        MaocheRobotCrawlerMessageSyncDO update = new MaocheRobotCrawlerMessageSyncDO();
+
+        update.setId(messageSync.getId());
+        // 不修改msg的内容
+        update.setStatus(OceanStatusEnum.FAIL.name());
+        update.setRemarks(context.getFailRemarks());
+        maocheRobotCrawlerMessageSyncService.updateById(messageSync);
     }
 
     @Override
@@ -584,9 +588,9 @@ public abstract class AbstraOceanStage implements OceanStage {
         if (StringUtils.isBlank(msg)) {
             return affType;
         }
-        boolean contains = msg.contains("y.q5url.cn") || msg.contains("y-03.cn");
-
-        return contains ? "tb" : affType;
+//        boolean contains = msg.contains("y.q5url.cn") || msg.contains("y-03.cn");
+        return affType;
+//        return contains ? "tb" : affType;
     }
 
     @Data

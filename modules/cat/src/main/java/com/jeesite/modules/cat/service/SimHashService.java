@@ -2,18 +2,15 @@ package com.jeesite.modules.cat.service;
 
 import com.hankcs.hanlp.HanLP;
 import com.hankcs.hanlp.dictionary.stopword.CoreStopWordDictionary;
-
-import java.math.BigInteger;
-import java.util.List;
-import java.util.stream.Collectors;
-
 import com.hankcs.hanlp.seg.common.Term;
 import com.hankcs.hanlp.tokenizer.StandardTokenizer;
 import com.jeesite.common.utils.JsonUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.Jsoup;
 
-import org.apache.commons.compress.compressors.lz77support.LZ77Compressor;
+import java.math.BigInteger;
+import java.util.List;
+import java.util.stream.Collectors;
 
 
 public class SimHashService {

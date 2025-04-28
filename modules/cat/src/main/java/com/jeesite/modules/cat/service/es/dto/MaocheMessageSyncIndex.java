@@ -42,6 +42,16 @@ public class MaocheMessageSyncIndex implements Serializable {
 
     private Long newProduct;        // 是否新品
 
+    private String robotChatId;     // 群id
+
+    private String robotSendId;     // 发送人id
+
+    private String oceanStatus;
+
+    private Long relationId;        // 公海关联关系id
+
+    private Long aiOcean;      // ai进度 1是
+
 
     public static MaocheMessageSyncIndex toIndex(MaocheRobotCrawlerMessageSyncDO syncDO) {
         if (syncDO == null || syncDO.getUiid() == null || syncDO.getUiid() <= 0) {

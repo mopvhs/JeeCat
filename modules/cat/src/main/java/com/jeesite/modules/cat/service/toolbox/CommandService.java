@@ -35,6 +35,7 @@ import com.jeesite.modules.cat.service.cg.third.tb.dto.GeneralConvertResp;
 import com.jeesite.modules.cat.service.message.DingDingService;
 import com.jeesite.modules.cat.service.toolbox.dto.CommandContext;
 import com.jeesite.modules.cat.service.toolbox.dto.CommandDTO;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.HttpUrl;
 import org.apache.commons.collections.CollectionUtils;
@@ -42,6 +43,8 @@ import org.apache.commons.lang3.BooleanUtils;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
+import java.io.Serial;
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.net.URL;
 import java.util.ArrayList;
@@ -90,7 +93,8 @@ public class CommandService {
     private DwzApiService dwzApiService;
 
     // 淘宝
-    public static Pattern tb = Pattern.compile("\\((.*?)\\)\\/|\\/(.*?)\\/\\/");
+//    public static Pattern tb = Pattern.compile("\\((.*?)\\)\\/|\\/(.*?)\\/\\/");
+    public static Pattern tb = Pattern.compile("\\((.*?)\\)\\/|\\/(.*?)\\/\\/|\\$(.*?)\\$://|\\$(.*?)\\)|\\¥(.*?)\\¥");
 
     // 京东
     public static Pattern jd = Pattern.compile("(http|https):\\/\\/[a-zA-Z0-9-\\.]+\\.[a-z]{2,}(\\/\\S*)");
@@ -119,7 +123,7 @@ public class CommandService {
     public Result<CommandDTO> doDwz(CommandContext context) {
 
         Result<CommandDTO> exchangeJd = doExchangeJd(context);
-        if (exchangeJd == null) {
+        if (!Result.isOK(exchangeJd)) {
             return exchangeJd;
         }
         CommandDTO data = exchangeJd.getResult();
@@ -389,8 +393,8 @@ public class CommandService {
         Map<String, String> commandMap = new HashMap<>();
         List<CommandDTO.Product> products = new ArrayList<>();
         for (Map.Entry<String, ShortUrlDetail> entry : shortUrlDetailMap.entrySet()) {
+            match = false;
             String apiError = null;
-
             String url = entry.getKey();
             ShortUrlDetail detail = entry.getValue();
 
@@ -412,7 +416,19 @@ public class CommandService {
             Result<JdUnionIdPromotion> result = new Result<>();
             String searchUrl = Optional.ofNullable(redirectUrl).orElse(url);
             detail.setSearchUrl(searchUrl);
-            if (searchUrl.contains("t.q5url.cn/tkl.html")) {
+
+            if (searchUrl.contains("coupon.m.jd.com")) {
+                match = true;
+                result.setSuccess(true);
+                // 获取到转链后的地址
+                detail.setApiRes(true);
+                detail.setReplaceUrl(searchUrl);
+                detail.addExchangeLog(searchUrl);
+                content = content.replace(url, searchUrl);
+                continue;
+            }
+
+            if (needAnalysisTbUrl(searchUrl)) {
                 result = Result.ERROR(304, "淘客链接");
             } else {
                 result = dingDanXiaApiService.jdByUnionidPromotionWithCoupon("8On9yn1NtuJhyTMHzkz5p83YtGyXGnB6", searchUrl, 1002248572L, 3100684498L);
@@ -458,13 +474,12 @@ public class CommandService {
                 }
                 products.add(product);
             } else {
-
-                try {
-                    csOpLogService.addLog(searchUrl, "fail_exchange_jd", "jd_command", "maoche", "订单侠jd转链失败",
-                            content, JsonUtils.toJSONString(result));
-                } catch (Exception e) {
-                    log.error("京东转链失败写日志异常，searchUrl:{}", searchUrl, e);
-                }
+//                try {
+//                    csOpLogService.addLog(searchUrl, "fail_exchange_jd", "jd_command", "maoche", "订单侠jd转链失败",
+//                            content, JsonUtils.toJSONString(result));
+//                } catch (Exception e) {
+//                    log.error("京东转链失败写日志异常，searchUrl:{}", searchUrl, e);
+//                }
 
                 apiError = searchUrl + "订单侠搜索失败：" + result.getMessage();
                 if (StringUtils.isNotBlank(redirectUrl)) {
@@ -472,7 +487,83 @@ public class CommandService {
                     detail.setReplaceUrl(redirectUrl);
                     detail.addExchangeLog("存在重定向链接, 判断是否执行重定向转链：" + redirectUrl);
                     // 判断域名是否是快站的
-                    if (redirectUrl.contains(".kuaizhan.com")) {
+                    if (needAnalysisTbUrl(redirectUrl)) {
+                        // 获取原地址:
+                        try {
+                            // http://zzj.cute-cat.cn/dn2.html?taowords=nGEn3dC8n5C&image=https://img.alicdn.com/bao/uploaded/i1/2213875018643/O1CN013PW8262DiY9ILGevq_!!0-item_pic.jpg&url=https://s.tb.cn/h.gkh1uEe
+                            URL urlObj = new URL(EncodeUtils.decodeUrl(redirectUrl));
+//                                Map<String, String> parameters = extractParameters(urlObj);
+                            Map<String, Param> parameterMap = extractParameterMap(urlObj);
+                            if (MapUtils.isNotEmpty(parameterMap)) {
+
+                                Param param = Optional.ofNullable(parameterMap.get("taowords")).orElse(parameterMap.get("word"));
+
+                                if (param != null && CollectionUtils.isNotEmpty(param.getValues())) {
+                                    // 如果只有一个值，保持和以前一样
+                                    if (param.getValues().size() == 1) {
+                                        // 7(nGEn3dC8n5C)/ CA1500
+                                        Result<GeneralConvertResp> response = apiTb(param.getValues().get(0));
+
+                                        String tbkPwd = null;
+                                        if (Result.isOK(response)) {
+                                            GeneralConvertResp tbProduct = response.getResult();
+                                            tbkPwd = tbProduct.getTbkPwd();
+                                            detail.setApiRes(true);
+                                            if (tbkPwd != null) {
+                                                detail.setReplaceUrl(tbkPwd);
+                                                detail.addExchangeLog(tbkPwd);
+                                            }
+                                            detail.setTbProduct(tbProduct);
+                                            content = content.replace(url, tbProduct.getTbkPwd());
+                                            match = true;
+                                            isReplace = false;
+                                        }
+                                    } else {
+
+                                        StringBuilder replaceContent = new StringBuilder();
+                                        Param tipParam = parameterMap.get("tips");
+                                        List<String> tips = new ArrayList<>();
+                                        if (tipParam != null && CollectionUtils.isNotEmpty(tipParam.getValues())) {
+                                            tips = tipParam.getValues();
+                                        }
+
+                                        for (int i = 0; i < param.getValues().size(); i++) {
+                                            String key = param.getValues().get(i);
+                                            Result<GeneralConvertResp> response = apiTb(key);
+
+                                            String tbkPwd = null;
+                                            if (Result.isOK(response)) {
+                                                GeneralConvertResp tbProduct = response.getResult();
+                                                tbkPwd = tbProduct.getTbkPwd();
+                                                detail.setApiRes(true);
+                                                if (tbkPwd != null) {
+                                                    detail.setReplaceUrl(tbkPwd);
+                                                    detail.addExchangeLog(tbkPwd);
+                                                }
+                                                detail.setTbProduct(tbProduct);
+                                                match = true;
+
+                                                if (tips.size() > i) {
+                                                    replaceContent.append(tips.get(i)).append("\n");
+                                                }
+                                                replaceContent.append(tbProduct.getTbkPwd()).append("\n");
+
+                                            } else {
+                                                match = false;
+                                                break;
+                                            }
+                                        }
+                                        if (match) {
+                                            isReplace = false;
+                                            content = content.replace(url, replaceContent);
+                                        }
+                                    }
+                                }
+                            }
+                        } catch (Exception e) {
+                            log.error("middlePageContent 解析链接url失败 {}", redirectUrl, e);
+                        }
+                    }  else if (redirectUrl.contains(".kuaizhan.com")) {
                         Map<String, String> parameterMap = UrlUtils.getParametersWithSpilt(redirectUrl);
                         String value = parameterMap.get("k");
                         if (StringUtils.isNotBlank(value)) {
@@ -520,6 +611,8 @@ public class CommandService {
                                                         detail.setReplaceUrl(tbkPwd);
                                                         detail.addExchangeLog(tbkPwd);
                                                     }
+
+                                                    match = true;
                                                     detail.setTbProduct(tbProduct);
                                                     content = content.replace(url, tbProduct.getTbkPwd());
                                                 }
@@ -534,6 +627,7 @@ public class CommandService {
                                     detail.addExchangeLog("重定向链接【" + redirectUrl + "】, 转链失败" + s);
                                 }
                             } else {
+                                match = false;
                                 isReplace = false;
                             }
 
@@ -541,47 +635,7 @@ public class CommandService {
                             detail.addExchangeLog("重定向链接【" + redirectUrl + "】, 解析获取不到k的参数，不执行转链");
                             DingDingService.sendParseDingDingMsg("快站{},解析获取不到k的参数", redirectUrl);
                         }
-                    } else if (redirectUrl.contains("t.q5url.cn") || redirectUrl.contains("i.kunq5.cn")) {
-                        // 获取原地址:
-                            try {
-                                // http://zzj.cute-cat.cn/dn2.html?taowords=nGEn3dC8n5C&image=https://img.alicdn.com/bao/uploaded/i1/2213875018643/O1CN013PW8262DiY9ILGevq_!!0-item_pic.jpg&url=https://s.tb.cn/h.gkh1uEe
-                                URL urlObj = new URL(EncodeUtils.decodeUrl(redirectUrl));
-                                Map<String, String> parameters = extractParameters(urlObj);
-                                if (org.apache.commons.collections.MapUtils.isNotEmpty(parameters)) {
-                                    String key = Optional.ofNullable(parameters.get("taowords")).orElse(parameters.get("word"));
-                                    if (StringUtils.isNotBlank(key)) {
-                                        // 7(nGEn3dC8n5C)/ CA1500
-                                        String tbCommand = "7(" + key + ")/ CA1500";
-
-                                        // 整个内容直接请求维易接口，做替换
-                                        // https://www.veapi.cn/apidoc/taobaolianmeng/283
-                                        Map<String, Object> objectMap = new HashMap<>();
-                                        objectMap.put("detail", 2);
-                                        objectMap.put("deepcoupon", 1);
-                                        objectMap.put("couponId", 1);
-                                        // https://www.veapi.cn/apidoc/taobaolianmeng/283
-                                        Result<GeneralConvertResp> response = tbApiService.generalConvert(tbCommand, objectMap);
-
-                                        String tbkPwd = null;
-                                        if (Result.isOK(response)) {
-                                            GeneralConvertResp tbProduct = response.getResult();
-                                            tbkPwd = tbProduct.getTbkPwd();
-                                            detail.setApiRes(true);
-                                            if (tbkPwd != null) {
-                                                detail.setReplaceUrl(tbkPwd);
-                                                detail.addExchangeLog(tbkPwd);
-                                            }
-                                            detail.setTbProduct(tbProduct);
-                                            content = content.replace(url, tbProduct.getTbkPwd());
-                                            match = true;
-                                        }
-
-                                    }
-                                }
-                            } catch (Exception e) {
-                                log.error("middlePageContent 解析链接url失败 {}", redirectUrl, e);
-                            }
-                    }else {
+                    } else {
                         detail.addExchangeLog("重定向链接【" + redirectUrl + "】, 非sup331.kuaizhan.com，不执行重定向转链");
                     }
 
@@ -596,6 +650,9 @@ public class CommandService {
                 detail.setErrorMsg(apiError);
             }
             detail.setTs(System.currentTimeMillis() - startTime);
+            if (!match) {
+                break;
+            }
         }
 
         String resourceId = Optional.ofNullable(context.getRelationId()).orElse("jd");
@@ -627,6 +684,31 @@ public class CommandService {
         return result;
     }
 
+    private Result<GeneralConvertResp> apiTb(String tbk) {
+        String tbCommand = "7(" + tbk + ")/ CA1500";
+
+        // 整个内容直接请求维易接口，做替换
+        // https://www.veapi.cn/apidoc/taobaolianmeng/283
+        Map<String, Object> objectMap = new HashMap<>();
+        objectMap.put("detail", 2);
+        objectMap.put("deepcoupon", 1);
+        objectMap.put("couponId", 1);
+        // https://www.veapi.cn/apidoc/taobaolianmeng/283
+        return tbApiService.generalConvert(tbCommand, objectMap);
+    }
+
+    private static boolean needAnalysisTbUrl(String searchUrl) {
+        if (StringUtils.isBlank(searchUrl)) {
+            return false;
+        }
+
+        return searchUrl.contains("t.q5url.cn/tkl.html") ||
+                searchUrl.contains("t.q5url.cn") ||
+                searchUrl.contains("i.kunq5.cn") ||
+                searchUrl.contains("suz039.kuaizhan.com") ||
+                searchUrl.contains("cyg888.cn");
+    }
+
     public static Map<String, String> extractParameters(URL url) {
         Map<String, String> parameters = new LinkedHashMap<>();
         String query = url.getQuery();
@@ -643,6 +725,56 @@ public class CommandService {
 
         return parameters;
     }
+
+    public static Map<String, Param> extractParameterMap(URL url) {
+        Map<String, Param> parameterMap = new LinkedHashMap<>();
+//        String query = url.getQuery();
+        String string = url.toString();
+        int i = string.indexOf('?');
+        if (i <= 0) {
+            return new HashMap<>();
+        }
+        String query = string.substring( i + 1);
+
+        if (query != null) {
+            String[] pairs = query.split("&");
+            for (String pair : pairs) {
+                int idx = pair.indexOf("=");
+                String key = idx > 0 ? pair.substring(0, idx) : pair;
+                String value = idx > 0 && pair.length() > idx + 1 ? pair.substring(idx + 1) : null;
+                Param param = parameterMap.get(key);
+                if (param == null) {
+                    param = new Param();
+                    param.setKey(key);
+                }
+
+                param.addValue(value);
+
+                parameterMap.put(key, param);
+            }
+        }
+
+        return parameterMap;
+    }
+
+    @Data
+    public static class Param implements Serializable {
+
+        @Serial
+        private static final long serialVersionUID = 3207166375858223999L;
+
+        private String key;
+
+        private List<String> values;
+
+        public void addValue(String value) {
+            if (CollectionUtils.isEmpty(values)) {
+                values = new ArrayList<>();
+            }
+            values.add(value);
+        }
+    }
+
 
     /**
      * @param content
@@ -815,6 +947,9 @@ public class CommandService {
         list.add("4kma.cn");
         list.add("i.kunq5.cn");
 
+
+        list.add("y-03.cn");
+
         String host = null;
         try {
             URL url = new URL(uri);
@@ -874,8 +1009,24 @@ public class CommandService {
 
 
     public static void main(String[] args) {
-        String content = "weixin://dl/business/?appid=wx91d27dbf599dff74&path=pages/union/proxy/proxy&query=spreadUrl=https%3A%2F%2Fu.jd.com%2FqaLkcfv";
-        Map<String, String> parameters = UrlUtils.getWeixinParameters(content);
+//        String content = "weixin://dl/business/?appid=wx91d27dbf599dff74&path=pages/union/proxy/proxy&query=spreadUrl=https%3A%2F%2Fu.jd.com%2FqaLkcfv";
+//        Map<String, String> parameters = UrlUtils.getWeixinParameters(content);
+
+        String html = "<!DOCTYPE html>\n" +
+                "<html>\n" +
+                "<head>\n" +
+                "  <title>loading...</title>\n" +
+                "  <meta http-equiv=\"refresh\" content=\"0.1;url=weixin://dl/business/?appid=wx91d27dbf599dff74&path=pages/union/proxy/proxy&query=spreadUrl%3Dhttps%3A%2F%2Fu.jd.com%2F16pIi5P\">\n" +
+                "</head>\n" +
+                "<body>\n" +
+                "</body>";
+
+        if (html.contains("weixin://dl") && html.contains("spreadUrl")) {
+
+
+        }
+
+
         System.out.println(1);
     }
 }

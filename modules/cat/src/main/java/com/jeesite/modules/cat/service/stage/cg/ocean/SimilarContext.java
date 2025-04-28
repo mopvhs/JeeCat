@@ -19,13 +19,18 @@ public class SimilarContext implements Serializable {
     @Serial
     private static final long serialVersionUID = 2215503693050824872L;
 
+    @Deprecated
     private List<SimilarDetail> products;
 
     // 淘宝为空
+    @Deprecated
     private List<String> failUrls;
 
     // 口令或者链接个数
+    @Deprecated
     private Integer num;
+
+    private String simHash;
 
     public String calCode() {
         List<SimilarDetail> details = new ArrayList<>();

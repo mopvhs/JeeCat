@@ -54,4 +54,30 @@ public class WechatRobotAdapter {
         }
         return null;
     }
+
+    /**
+     * 获取图片原图（大图）指令提交
+     * @param wechatId
+     * @param msgSvrId
+     */
+    public void getImageDetail(String wechatId, String convId, String msgSvrId) {
+        if (StringUtils.isBlank(wechatId) || StringUtils.isBlank(convId) || StringUtils.isBlank(msgSvrId)) {
+            return;
+        }
+
+        String url = domain + "/api/app/image/detail";
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("wechatId", wechatId);
+        data.put("msgSrvId", msgSvrId);
+        data.put("friendId", convId);
+        Map<String, String> headers = new HashMap<>();
+        headers.put("token", "33DD94BBF49356583E460D1FA2907EDB");
+        try {
+            String response = FlameHttpService.doPostWithHeaders(url, JsonUtils.toJSONString(data), headers);
+            log.info("getImageDetail msg request {}, response {}", JsonUtils.toJSONString(data), response);
+        } catch (Exception e) {
+            log.error("getImageDetail msg exception request {}", JsonUtils.toJSONString(data), e);
+        }
+    }
 }

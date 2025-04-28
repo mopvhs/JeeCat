@@ -46,11 +46,11 @@
 		INSERT INTO maoche_robot_crawler_message_sync
 		(robot_msg_id, msg, wx_time, processed, aff_type,
 		resource_ids, unique_hash, ori_unique_hash, status, create_by, update_by,
-		create_date, update_date, remarks)
+		create_date, update_date, remarks, product_hash)
 		VALUES
 		(#{robotMsgId}, #{msg}, #{wxTime}, #{processed}, #{affType},
 		#{resourceIds}, #{uniqueHash}, #{oriUniqueHash}, #{status}, #{createBy}, #{updateBy},
-		#{createDate},#{updateDate},#{remarks})
+		#{createDate},#{updateDate},#{remarks}, #{productHash})
 
 	</insert>
 
@@ -75,6 +75,9 @@
 			</if>
 			<if test="remarks != null">
 				remarks = #{remarks},
+			</if>
+			<if test="productHash != null">
+				product_hash = #{productHash},
 			</if>
 		</set>
 		<where>
@@ -121,6 +124,14 @@
 		</where>
 	</select>
 
+	<select id="getById" resultType="MaocheRobotCrawlerMessageSyncDO">
+		SELECT *
+		FROM maoche_robot_crawler_message_sync
+		<where>
+			id = #{id}
+		</where>
+	</select>
+
 	<select id="listByOriUniqueHash" resultType="MaocheRobotCrawlerMessageSyncDO">
 		SELECT *
 		FROM maoche_robot_crawler_message_sync
@@ -134,6 +145,17 @@
 			</if>
 		</where>
 		order by create_date desc
+	</select>
+
+	<select id="listByProductUniqueHash" resultType="MaocheRobotCrawlerMessageSyncDO">
+		SELECT *
+		FROM maoche_robot_crawler_message_sync
+		<where>
+			product_hash = #{productHash}
+			and status =  #{status}
+			and create_date >= #{startTime}
+		</where>
+		order by id desc
 	</select>
 
 	<select id="listSimilar" resultType="MaocheRobotCrawlerMessageSyncDO">
@@ -160,7 +182,24 @@
 			<foreach collection="robotMsgIds" open="(" close=")" separator="," item="robotMsgId">
 				#{robotMsgId}
 			</foreach>
-			and status = #{status}
+			<if test="status != null">
+				and status = #{status}
+			</if>
+		</where>
+	</select>
+
+	<select id="listRobotStatusMsgIds" resultType="MaocheRobotCrawlerMessageSyncDO">
+		SELECT *
+		FROM maoche_robot_crawler_message_sync
+		<where>
+			robot_msg_id in
+			<foreach collection="robotMsgIds" open="(" close=")" separator="," item="robotMsgId">
+				#{robotMsgId}
+			</foreach>
+			and status in
+			<foreach collection="statusList" open="(" close=")" separator="," item="status">
+				#{status}
+			</foreach>
 		</where>
 	</select>
 
@@ -169,6 +208,18 @@
 		FROM maoche_robot_crawler_message_sync
 		<where>
 			status = #{status} and aff_type = #{affType} order by create_date desc limit #{limit}
+		</where>
+	</select>
+
+	<select id="findSimHashMessages" resultType="MaocheRobotCrawlerMessageSyncDO">
+		SELECT *
+		FROM maoche_robot_crawler_message_sync
+		<where>
+			wx_time >= #{wxTime}
+			<if test="status != null">
+				and status != #{status}
+			</if>
+			 and unique_hash = #{uniqueHash} order by create_date desc
 		</where>
 	</select>
 

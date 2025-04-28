@@ -41,6 +41,7 @@ import org.apache.commons.lang3.math.NumberUtils;
 		@Column(name="resource_ids", attrName="resourceIds", label="资源id"),
 		@Column(name="unique_hash", attrName="uniqueHash", label="hash"),
 		@Column(name="ori_unique_hash", attrName="oriUniqueHash", label="hash"),
+		@Column(name="product_hash", attrName="productHash", label="hash"),
 		@Column(includeEntity=DataEntity.class),
 }, orderBy="a.update_date DESC"
 )
@@ -57,6 +58,8 @@ public class MaocheRobotCrawlerMessageSyncDO extends DataEntity<MaocheRobotCrawl
 	private String resourceIds;        // 资源id
 	private String uniqueHash;        // hash-md5
 	private String oriUniqueHash;        // hash-md5
+
+	private String productHash;        // hash-md5
 
 	public MaocheRobotCrawlerMessageSyncDO() {
 		this(null);
@@ -173,6 +176,14 @@ public class MaocheRobotCrawlerMessageSyncDO extends DataEntity<MaocheRobotCrawl
 
 	public void addApiError(Map<String, Object> apiErrorMap) {
 		addRemarks("apiErrorMap", apiErrorMap);
+	}
+
+	public String getProductHash() {
+		return productHash;
+	}
+
+	public void setProductHash(String productHash) {
+		this.productHash = productHash;
 	}
 
 	public void addRemarks(String key, Object data) {
