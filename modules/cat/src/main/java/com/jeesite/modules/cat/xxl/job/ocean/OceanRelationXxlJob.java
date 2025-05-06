@@ -2,7 +2,10 @@ package com.jeesite.modules.cat.xxl.job.ocean;
 
 import com.jeesite.common.lang.NumberUtils;
 import com.jeesite.modules.cat.dao.MaocheRobotCrawlerMessageDao;
+import com.jeesite.modules.cat.dao.MaocheRobotCrawlerMessageSyncDao;
 import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageDO;
+import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageSyncDO;
+import com.jeesite.modules.cat.service.es.OceanEsService;
 import com.xxl.job.core.handler.IJobHandler;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +19,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -23,6 +28,12 @@ public class OceanRelationXxlJob extends IJobHandler {
 
     @Resource
     private MaocheRobotCrawlerMessageDao maocheRobotCrawlerMessageDao;
+
+    @Resource
+    private MaocheRobotCrawlerMessageSyncDao maocheRobotCrawlerMessageSyncDao;
+
+    @Resource
+    private OceanEsService oceanEsService;
 
     @Override
     @XxlJob("oceanRelationXxlJob")
@@ -107,6 +118,13 @@ public class OceanRelationXxlJob extends IJobHandler {
                 List<Long> ids = relations.stream().map(MaocheRobotCrawlerMessageDO::getIid).toList();
                 relationId = relations.get(0).getIid();
                 maocheRobotCrawlerMessageDao.relationMessage(ids, relationId);
+                // 更新索引
+                // 查询sync
+                List<MaocheRobotCrawlerMessageSyncDO> syncMsgs = maocheRobotCrawlerMessageSyncDao.listRobotMsgIds(ids, null);
+                Map<Long, MaocheRobotCrawlerMessageSyncDO> syncMap = syncMsgs.stream().collect(Collectors.toMap(MaocheRobotCrawlerMessageSyncDO::getRobotMsgId, Function.identity(), (o1, o2) -> o1));
+
+                oceanEsService.updateRobotState(ids, null, relationId, syncMap);
+
             }
         }
 

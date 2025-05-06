@@ -6,6 +6,7 @@ import com.jeesite.common.utils.JsonUtils;
 import com.jeesite.common.web.Result;
 import com.jeesite.modules.cat.cache.CacheService;
 import com.jeesite.modules.cat.dao.MaocheRobotCrawlerMessageDao;
+import com.jeesite.modules.cat.dao.MaocheRobotCrawlerMessageSyncDao;
 import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageDO;
 import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageSyncDO;
 import com.jeesite.modules.cat.enums.ElasticSearchIndexEnum;
@@ -16,6 +17,7 @@ import com.jeesite.modules.cat.service.MaocheRobotCrawlerMessageSyncService;
 import com.jeesite.modules.cat.service.cg.ocean.dto.AIMessage;
 import com.jeesite.modules.cat.service.cg.ocean.dto.AIMessageInfo;
 import com.jeesite.modules.cat.service.cg.third.WechatRobotAdapter;
+import com.jeesite.modules.cat.service.es.OceanEsService;
 import com.jeesite.modules.cat.service.message.QyWeiXinService;
 import com.jeesite.modules.cat.service.stage.cg.ocean.AbstraOceanStage;
 import com.jeesite.modules.cat.service.stage.cg.ocean.helper.OceanContentHelper;
@@ -42,8 +44,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Controller
@@ -74,6 +78,12 @@ public class SyncOceanController {
 
     @Resource
     private WechatRobotAdapter wechatRobotAdapter;
+
+    @Resource
+    private OceanEsService oceanEsService;
+
+    @Resource
+    private MaocheRobotCrawlerMessageSyncDao maocheRobotCrawlerMessageSyncDao;
 
     // 线程池
     private static ExecutorService threadPool = new ThreadPoolExecutor(32, 32,
@@ -119,9 +129,9 @@ public class SyncOceanController {
         boolean couponIgnoreSimHash = ignoreSimHash(affType, msg);
 
         String status = OceanStatusEnum.INIT.name();
-        if (ignoreSimHash || couponIgnoreSimHash) {
+      /*  if (ignoreSimHash || couponIgnoreSimHash) {
             status = OceanStatusEnum.NORMAL.name();
-        }
+        }*/
 
         String uniqueHash = AbstraUpOceanStage.doCalSimHash(msg);
 
@@ -143,7 +153,7 @@ public class SyncOceanController {
 
         String robotMsgNumKey = OceanMonitorHelper.getRobotMsgNumKey(affType);
         cacheService.incr(robotMsgNumKey);
-        Result<List<MaocheRobotCrawlerMessageSyncDO>> res = maocheRobotCrawlerMessageSyncService.addIfAbsentV2(sync, 3);
+        Result<List<MaocheRobotCrawlerMessageSyncDO>> res = maocheRobotCrawlerMessageSyncService.addIfAbsentV2(sync, 3, ignoreSimHash || couponIgnoreSimHash);
 
         if (Result.isOK(res)) {
             crawlerMessages.add(sync);
@@ -153,6 +163,8 @@ public class SyncOceanController {
                 cacheService.expire(robotMsgSameNumKey, 86400);
                 log.info("robotMsg messageSync is exist uniqueHash:{}", sync.getUniqueHash());
             }
+        } else if (res != null && res.getCode() == 300) {
+            crawlerMessages.addAll(res.getResult());
         } else {
             log.info("robotMsg messageSync is fail {}", sync.getUniqueHash());
         }
@@ -278,7 +290,9 @@ public class SyncOceanController {
         threadPool.submit(new Runnable() {
             @Override
             public void run() {
-                List<String> texts = new ArrayList<>();
+
+                boolean analysis = true;
+                List<Long> msgIds = new ArrayList<>();
                 // 判断单子是否可以发
                 for (AIMessage aiMessage : aiMessageInfo.getContents()) {
                     int contentType = aiMessage.getContentType();
@@ -286,13 +300,33 @@ public class SyncOceanController {
                         continue;
                     } else {
                         if (StringUtils.isEmpty(aiMessage.getAiContent())) {
-                            return;
+                            analysis = false;
+                            break;
                         }
                         if (aiMessage.getAiContent().contains("审核未通过，保持静默") || aiMessage.getAiContent().contains("保持静默") || aiMessage.getAiContent().contains("审核未通过")) {
-                            return;
+                            analysis = false;
+                            break;
                         }
                     }
                 }
+
+                if (!analysis) {
+                    for (AIMessage aiMessage : aiMessageInfo.getContents()) {
+                        if (aiMessage.getContentType() != 2) {
+                            msgIds.add(aiMessage.getMsgId());
+                        }
+                    }
+                    if (CollectionUtils.isNotEmpty(msgIds)) {
+                        List<MaocheRobotCrawlerMessageSyncDO> syncMsgs = maocheRobotCrawlerMessageSyncDao.listRobotMsgIds(msgIds, null);
+                        Map<Long, MaocheRobotCrawlerMessageSyncDO> syncMap = syncMsgs.stream().collect(Collectors.toMap(MaocheRobotCrawlerMessageSyncDO::getRobotMsgId, Function.identity(), (o1, o2) -> o1));
+                        // 更新索引
+                        oceanEsService.updateRobotState(msgIds, "AI_ANALYSIS_FAIL", null, syncMap);
+                        maocheRobotCrawlerMessageDao.updateStatus(msgIds, "AI_ANALYSIS_FAIL");
+                    }
+
+                    return;
+                }
+
                 for (AIMessage aiMessage : aiMessageInfo.getContents()) {
                     int contentType = aiMessage.getContentType();
                     if (contentType == 2) {
@@ -319,6 +353,7 @@ public class SyncOceanController {
                             continue;
                         }
 
+                        msgIds.add(aiMessage.getMsgId());
                         String content = aiMessage.getAiContent();
 
                         content = content.replaceAll("---------------------\\n", "");
@@ -333,6 +368,16 @@ public class SyncOceanController {
 
                         qyWeiXinService.sendText(content, token);
                     }
+                }
+
+                if (CollectionUtils.isNotEmpty(msgIds)) {
+
+                    List<MaocheRobotCrawlerMessageSyncDO> syncMsgs = maocheRobotCrawlerMessageSyncDao.listRobotMsgIds(msgIds, null);
+                    Map<Long, MaocheRobotCrawlerMessageSyncDO> syncMap = syncMsgs.stream().collect(Collectors.toMap(MaocheRobotCrawlerMessageSyncDO::getRobotMsgId, Function.identity(), (o1, o2) -> o1));
+                    // 更新索引
+                    oceanEsService.updateRobotState(msgIds, "AI_FINISHED", null, syncMap);
+                    maocheRobotCrawlerMessageDao.updateStatus(msgIds, "AI_FINISHED");
+
                 }
             }
         });

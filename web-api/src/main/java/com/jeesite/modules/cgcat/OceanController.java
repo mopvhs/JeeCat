@@ -6,8 +6,11 @@ import com.jeesite.common.lang.NumberUtils;
 import com.jeesite.common.lang.StringUtils;
 import com.jeesite.common.web.Result;
 import com.jeesite.modules.cat.BrandLibCondition;
+import com.jeesite.modules.cat.dao.WxChatDao;
 import com.jeesite.modules.cat.entity.MaocheCategoryMappingDO;
 import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageSyncDO;
+import com.jeesite.modules.cat.entity.WxChatDO;
+import com.jeesite.modules.cat.enums.OceanStatusEnum;
 import com.jeesite.modules.cat.es.config.model.ElasticSearchData;
 import com.jeesite.modules.cat.helper.CatRobotHelper;
 import com.jeesite.modules.cat.model.BrandLibTO;
@@ -52,6 +55,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -86,6 +91,9 @@ public class OceanController {
 
     @Resource
     private BrandLibService brandLibService;
+
+    @Resource
+    private WxChatDao wxChatDao;
 
 //    @RequestMapping(value = "ocean/msg/product/search")
 //    public Page<OceanMessageProductVO> oceanMsgProductSearch(@RequestBody OceanMsgProductSearchRequest query,
@@ -203,13 +211,13 @@ public class OceanController {
             keywords.add(query.getKeyword());
         }
 
-        String status = "NORMAL";
         if (StringUtils.isNotBlank(query.getStatus())) {
-            status = query.getStatus();
+            messageCondition.setStatus(query.getStatus());
+        } else {
+            List<String> oceanStatus = OceanStatusEnum.listGroup("ai_ocean");
+            messageCondition.setOceanStatus(oceanStatus);
         }
-
         messageCondition.setKeywords(keywords);
-        messageCondition.setStatus(status);
 
         if (StringUtils.isNotBlank(query.getCategoryName())) {
             messageCondition.setCategoryNames(Collections.singletonList(query.getCategoryName()));
@@ -238,12 +246,31 @@ public class OceanController {
 
         List<MaocheMessageSyncIndex> documents = searchMsg.getDocuments();
         List<Long> ids = documents.stream().map(MaocheMessageSyncIndex::getId).distinct().toList();
+        // 获取群id
+        List<String> chatWxIds = documents.stream().map(MaocheMessageSyncIndex::getRobotChatId).filter(Objects::nonNull).distinct().toList();
+        // 查机器人表
+        Map<String, WxChatDO> chatMap = new HashMap<>();
+        if (CollectionUtils.isNotEmpty(chatWxIds)) {
+            List<WxChatDO> chats = wxChatDao.listByWxChatIds(chatWxIds);
+            chatMap = chats.stream().collect(Collectors.toMap(WxChatDO::getChatWxId, Function.identity(), (o, n) -> n));
+        }
 
         // 根据id查询同步的消息
         List<MaocheRobotCrawlerMessageSyncDO> messageSyncDOs = maocheRobotCrawlerMessageSyncService.listByIds(ids);
         Map<Long, MaocheRobotCrawlerMessageSyncDO> syncDOMap = messageSyncDOs.stream().collect(Collectors.toMap(MaocheRobotCrawlerMessageSyncDO::getUiid, Function.identity(), (o, n) -> n));
 
         List<OceanMessageVO> vos = OceanMessageVO.toVOs(documents);
+
+        for (OceanMessageVO vo : vos) {
+            String chatWxId = vo.getChatWxId();
+            if (StringUtils.isNotBlank(chatWxId) && chatMap.get(chatWxId) != null) {
+                String name = chatMap.get(chatWxId).getName();
+                vo.setChatName(name);
+            }
+            String status = Optional.ofNullable(vo.getAiStatus()).orElse(vo.getStatus());
+            vo.setStatusDesc(OceanStatusEnum.getStatusDesc(status));
+        }
+
         // 对url加html <a>标签
         OceanMessageVO.replaceUrl2Html(vos, syncDOMap);
 
@@ -259,7 +286,6 @@ public class OceanController {
         OceanMessageProductCondition msgProductCondition = new OceanMessageProductCondition();
         msgProductCondition.setMsgIds(msgIds);
         ElasticSearchData<MaocheMessageProductIndex, CatProductBucketTO> msgProductData = oceanSearchService.searchProduct(msgProductCondition, null, null, 0, 1000);
-
 
         log.info("查询消息商品耗时：{}", System.currentTimeMillis() - start);
         if (msgProductData != null && CollectionUtils.isNotEmpty(msgProductData.getDocuments())) {

@@ -282,6 +282,15 @@ public class OceanContentHelper {
         replacements.put("凑単", "凑单");
         replacements.put("単", "单");
 
+        replacements.put("(KkkHVd6OmlS)/ AC00", "(KFUNVeHtLNC)/ CA21,)/ AC01");
+        replacements.put("(ANKaVeHdXnO)/ AC00", "(KFUNVeHtLNC)/ CA21,)/ AC01");
+        replacements.put("(ARp9Ves5iCL)/ AC00", "(KFUNVeHtLNC)/ CA21,)/ AC01");
+        replacements.put("(8TDRVetNj8P)/ AC00", "(KFUNVeHtLNC)/ CA21,)/ AC01");
+        replacements.put("/8TDRVetNj8P// AC00", "(KFUNVeHtLNC)/ CA21,)/ AC01");
+        replacements.put("(cjPVVetB2f4)/ AC00", "(KFUNVeHtLNC)/ CA21,)/ AC01");
+        replacements.put("(lEf6VetJXBH)/ AC00", "(KFUNVeHtLNC)/ CA21,)/ AC01");
+        replacements.put("/ZnEuVeG7FEj// AC01", "(KFUNVeHtLNC)/ CA21,)/ AC01");
+
     }
 
     public static String interposeMsg(String msg) {
@@ -503,6 +512,14 @@ public class OceanContentHelper {
                 index.setRobotChatId(messageDO.getFromgid());
                 index.setRobotSendId(messageDO.getFromid());
                 index.setOceanStatus(messageDO.getStatus());
+                index.setRelationId(messageDO.getRelationId());
+//                Long aiOcean = 0L;
+//                if ("SPECIAL".equals(messageDO.getStatus()) || ) {
+//                    aiOcean = 1L;
+//                } else if ("OCEAN".equals(messageDO.getStatus())) {
+//                    aiOcean = 2L;
+//                }
+//                index.setAiOcean(0L);
             }
 
             Map<String, Object> map = JsonUtils.toReferenceType(JsonUtils.toJSONString(index), new TypeReference<Map<String, Object>>() {

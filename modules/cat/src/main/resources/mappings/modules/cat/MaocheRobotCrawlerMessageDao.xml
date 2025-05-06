@@ -53,11 +53,24 @@
 		ORDER BY time asc limit 100
 	</select>
 
+	<select id="listByIds" resultType="MaocheRobotCrawlerMessageDO">
+		SELECT * from maoche_robot_crawler_message
+		<where>
+			id in
+			<foreach collection="ids" item="id" open="(" separator="," close=")">
+				#{id}
+			</foreach>
+		</where>
+	</select>
+
 	<select id="listFinishedRelationMessage" resultType="MaocheRobotCrawlerMessageDO">
 		SELECT *
 		FROM maoche_robot_crawler_message
 		<where>
 			status = "FINISHED"
+			<if test="time != null">
+				and `time` >= #{time}
+			</if>
 		</where>
 		ORDER BY time desc limit 200
 	</select>

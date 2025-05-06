@@ -1,6 +1,7 @@
 package com.jeesite.modules.cat.xxl.job.ocean;
 
 import com.alibaba.fastjson.JSONObject;
+import com.jeesite.common.lang.DateUtils;
 import com.jeesite.common.lang.NumberUtils;
 import com.jeesite.common.lang.StringUtils;
 import com.jeesite.common.utils.JsonUtils;
@@ -10,11 +11,14 @@ import com.jeesite.modules.cat.dao.MaocheRobotCrawlerMessageDao;
 import com.jeesite.modules.cat.dao.MaocheRobotCrawlerMessageSyncDao;
 import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageDO;
 import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageSyncDO;
+import com.jeesite.modules.cat.enums.ElasticSearchIndexEnum;
 import com.jeesite.modules.cat.enums.OceanStatusEnum;
+import com.jeesite.modules.cat.es.config.es7.ElasticSearch7Service;
 import com.jeesite.modules.cat.service.FlameHttpService;
 import com.jeesite.modules.cat.service.cg.ocean.dto.AIMessage;
 import com.jeesite.modules.cat.service.cg.ocean.dto.AIMessageInfo;
 import com.jeesite.modules.cat.service.cg.third.WechatRobotAdapter;
+import com.jeesite.modules.cat.service.es.OceanEsService;
 import com.xxl.job.core.handler.IJobHandler;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import lombok.Data;
@@ -29,7 +33,9 @@ import java.io.InterruptedIOException;
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +43,8 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static com.jeesite.modules.cat.enums.OceanStatusEnum.AI_FAILED_TIMEOUT;
 
 @Slf4j
 @Component
@@ -52,14 +60,26 @@ public class AIOceanXxlJob extends IJobHandler {
     private WechatRobotAdapter wechatRobotAdapter;
 
     @Resource
+    private ElasticSearch7Service elasticSearch7Service;
+
+    @Resource
     private CacheService cacheService;
+
+    @Resource
+    private OceanEsService oceanEsService;
 
     @Override
     @XxlJob("aiOceanXxlJob")
     public void execute() throws Exception {
 
+        // 30分钟内车单
+        long time = System.currentTimeMillis() - (30 * 60 * 1000L);
+//        Date date = new Date(time);
+//        Date dayFirst = DateUtils.getOfDayFirst(DateUtils.addDays(new Date(), -1));
+//        String formatDate = DateUtils.formatDateTime(date);
+
         // 拉取最近的100条 status = finished 按照 time倒序
-        List<MaocheRobotCrawlerMessageDO> dos = maocheRobotCrawlerMessageDao.listFinishedRelationMessage();
+        List<MaocheRobotCrawlerMessageDO> dos = maocheRobotCrawlerMessageDao.listFinishedRelationMessage(null);
         if (CollectionUtils.isEmpty(dos)) {
             return;
         }
@@ -68,13 +88,13 @@ public class AIOceanXxlJob extends IJobHandler {
         Map<Long, List<MaocheRobotCrawlerMessageDO>> group = new HashMap<>();
         dispatchGroup(group, dos);
 
-        // 判断消息的关联关系
-        relationship(group);
+        // 发消息给ai
+        dispatchMessage(group);
 
 
     }
 
-    private void relationship(Map<Long, List<MaocheRobotCrawlerMessageDO>> group) {
+    private void dispatchMessage(Map<Long, List<MaocheRobotCrawlerMessageDO>> group) {
 
         int max = 10;
         int i = 0;
@@ -86,7 +106,7 @@ public class AIOceanXxlJob extends IJobHandler {
             List<MaocheRobotCrawlerMessageDO> value = entry.getValue();
             try {
                 // 关联关系处理
-                boolean res = doRelationship(value);
+                boolean res = doDispatchMessage(value);
                 // todo 先处理一次
                 if (res) {
                     Thread.sleep(2000);
@@ -100,7 +120,7 @@ public class AIOceanXxlJob extends IJobHandler {
 
     }
 
-    private boolean doRelationship(List<MaocheRobotCrawlerMessageDO> messages) {
+    private boolean doDispatchMessage(List<MaocheRobotCrawlerMessageDO> messages) {
 
         // 查询关联关系下的公海消息，找到已经处理完成的（状态=NORMAL）
 
@@ -115,7 +135,7 @@ public class AIOceanXxlJob extends IJobHandler {
         List<MaocheRobotCrawlerMessageSyncDO> syncMsgs = maocheRobotCrawlerMessageSyncDao.listRobotMsgIds(msgIds, null);
         if (CollectionUtils.isEmpty(syncMsgs)) {
             // 无数据，并且messages只有一个，而且是图片
-            if (messages.size() == 1 && messages.get(0).getMsg().equals("2")) {
+            if (messages.size() == 1 && messages.get(0).getMsgtype().equals("2")) {
                 // 直接失败
                 maocheRobotCrawlerMessageDao.updateStatus(msgIds, "FAILED_TEXT_MISSED");
                 return false;
@@ -132,7 +152,13 @@ public class AIOceanXxlJob extends IJobHandler {
         int picNum = 0;
         boolean similar = false;
         boolean failed = false;
+        long current = System.currentTimeMillis();
+        boolean timeout = false;
         List<AIMessage> aiMessages = new ArrayList<>();
+
+        long minutes = TimeUnit.MINUTES.toMillis(30);
+
+//        long before30Min = System.currentTimeMillis() - 30 * 60 * 1000L;
 
         // 判断是否满足组合发送到AI
         long retryMsgId = 0;
@@ -145,6 +171,11 @@ public class AIOceanXxlJob extends IJobHandler {
                 picNum++;
                 msg.setContentType(2);
                 String img = getImg(message.getMsg());
+                // 如果没有md5直接忽略图片
+                String md5 = getImgMd5(message.getMsg());
+                if (StringUtils.isBlank(md5)) {
+                    continue;
+                }
                 // todo 查询原图是否下载完成
                 JSONObject messageDetail = wechatRobotAdapter.getMessageDetail(message.getToid(), message.getMsgsvrid());
                 if (messageDetail == null || StringUtils.isBlank(messageDetail.getString("ext"))) {
@@ -152,7 +183,8 @@ public class AIOceanXxlJob extends IJobHandler {
                     String imgKey = "imgMatch_" + message.getMsgsvrid();
                     String s = cacheService.get(imgKey);
                     long c = NumberUtils.toLong(s);
-                    if (c <= 2) {
+                    // 1次机会
+                    if (c < 1) {
                         cacheService.incr(imgKey);
                         cacheService.expire(imgKey, 86400);
                         log.info("大图获取为空 getMsgsvrid {}", message.getMsgsvrid());
@@ -161,7 +193,7 @@ public class AIOceanXxlJob extends IJobHandler {
                         wechatRobotAdapter.getImageDetail(message.getToid(), message.getFromgid(), message.getMsgsvrid());
                         break;
                     } else {
-                        match = false;
+                        continue;
                     }
 
                 } else {
@@ -179,6 +211,13 @@ public class AIOceanXxlJob extends IJobHandler {
                     match = false;
                     break;
                 }
+                // 单子超过30分钟
+                long time = syncDO.getWxTime().getTime();
+                if (current - time > minutes) {
+                    timeout = true;
+                    break;
+                }
+
                 if (OceanStatusEnum.FAIL.name().equals(syncDO.getStatus())) {
                     // 相似的消息，直接跳过
                     failed = true;
@@ -187,6 +226,11 @@ public class AIOceanXxlJob extends IJobHandler {
                 if (OceanStatusEnum.SIMILAR.name().equals(syncDO.getStatus())) {
                     // 相似的消息，直接跳过
                     similar = true;
+                    break;
+                }
+                if (!OceanStatusEnum.NORMAL.name().equals(syncDO.getStatus())) {
+                    // 相似的消息，直接跳过
+                    failed = true;
                     break;
                 }
 
@@ -205,11 +249,23 @@ public class AIOceanXxlJob extends IJobHandler {
         if (imgMatch != null && !imgMatch) {
             return false;
         }
+        if (timeout) {
+            // 更新索引
+            oceanEsService.updateRobotState(msgIds, AI_FAILED_TIMEOUT.name(), null, syncMap);
+
+            maocheRobotCrawlerMessageDao.updateStatus(msgIds, AI_FAILED_TIMEOUT.name());
+            return false;
+        }
         if (failed) {
+            // 更新索引
+            oceanEsService.updateRobotState(msgIds, "FAILED_ANALYSIS", null, syncMap);
+
             maocheRobotCrawlerMessageDao.updateStatus(msgIds, "FAILED_ANALYSIS");
             return false;
         }
         if (similar) {
+            oceanEsService.updateRobotState(msgIds, "FAILED_SIMILAR", null, syncMap);
+
             maocheRobotCrawlerMessageDao.updateStatus(msgIds, "FAILED_SIMILAR");
             return false;
         }
@@ -243,6 +299,8 @@ public class AIOceanXxlJob extends IJobHandler {
         // todo 发送给Ai，并且标记状态为新的状态
         String s = FlameHttpService.doPost("https://wx.mtxtool.com/maoche/enqueue_task.html", JsonUtils.toJSONString(info));
 
+        // 更新索引
+        oceanEsService.updateRobotState(msgIds, "OCEAN", null, syncMap);
         maocheRobotCrawlerMessageDao.updateStatus(msgIds, "OCEAN");
 
         return true;
@@ -254,7 +312,10 @@ public class AIOceanXxlJob extends IJobHandler {
         return jsonObject.getString("Thumb");
     }
 
-
+    private static String getImgMd5(String msg) {
+        JSONObject jsonObject = JSONObject.parseObject(msg);
+        return jsonObject.getString("Md5");
+    }
 
 
     private void dispatchGroup(Map<Long, List<MaocheRobotCrawlerMessageDO>> group, List<MaocheRobotCrawlerMessageDO> dos) {

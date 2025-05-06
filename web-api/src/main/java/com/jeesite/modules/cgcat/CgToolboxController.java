@@ -3,16 +3,21 @@ package com.jeesite.modules.cgcat;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.RateLimiter;
 import com.jeesite.common.codec.Md5Utils;
 import com.jeesite.common.lang.NumberUtils;
 import com.jeesite.common.lang.StringUtils;
 import com.jeesite.common.utils.DateTimeUtils;
+import com.jeesite.common.utils.JsonUtils;
 import com.jeesite.common.web.Result;
 import com.jeesite.modules.cat.cache.CacheService;
+import com.jeesite.modules.cat.dao.MaocheRobotCrawlerMessageDao;
 import com.jeesite.modules.cat.dao.MaocheRobotCrawlerMessageSyncDao;
+import com.jeesite.modules.cat.dao.WxChatDao;
 import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageDO;
 import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageSyncDO;
+import com.jeesite.modules.cat.entity.WxChatDO;
 import com.jeesite.modules.cat.enums.ElasticSearchIndexEnum;
 import com.jeesite.modules.cat.es.config.es7.ElasticSearch7Service;
 import com.jeesite.modules.cat.service.FlameProxyHttpService;
@@ -27,6 +32,7 @@ import com.jeesite.modules.cat.service.cg.inner.InnerApiService;
 import com.jeesite.modules.cat.service.cg.third.DingDanXiaApiService;
 import com.jeesite.modules.cat.service.cg.third.VeApiService;
 import com.jeesite.modules.cat.service.cg.third.tb.TbApiService;
+import com.jeesite.modules.cat.service.es.OceanEsService;
 import com.jeesite.modules.cat.service.stage.cg.ocean.AbstraOceanStage;
 import com.jeesite.modules.cat.service.stage.cg.ocean.OceanContext;
 import com.jeesite.modules.cat.service.stage.cg.ocean.OceanStage;
@@ -59,6 +65,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -291,9 +298,20 @@ public class CgToolboxController {
         List<Long> collect = Arrays.stream(split).map(NumberUtils::toLong).collect(Collectors.toList());
         List<MaocheRobotCrawlerMessageSyncDO> messages = maocheRobotCrawlerMessageSyncDao.listByIds(collect);
 
-        for (MaocheRobotCrawlerMessageSyncDO message : messages) {
-            OceanUpContext context = new OceanUpContext(message);
+        if (CollectionUtils.isEmpty(messages)) {
+            return Result.ERROR(404, "未找到数据");
+        }
+        List<Long> robotMsgIds = messages.stream().map(MaocheRobotCrawlerMessageSyncDO::getRobotMsgId).collect(Collectors.toList());
 
+        List<MaocheRobotCrawlerMessageDO> dos = maocheRobotCrawlerMessageDao.listByIds(robotMsgIds);
+        Map<Long, MaocheRobotCrawlerMessageDO> map = dos.stream().collect(Collectors.toMap(MaocheRobotCrawlerMessageDO::getIid, Function.identity(), (o1, o2) -> o1));
+
+        for (MaocheRobotCrawlerMessageSyncDO message : messages) {
+
+            MaocheRobotCrawlerMessageDO robotMsg = map.get(message.getRobotMsgId());
+
+            OceanUpContext context = new OceanUpContext(message);
+            context.setRobotMsg(robotMsg);
             // afftype干预订正
             String affType = message.getAffType();
             if (affType.equals("tb")) {
@@ -320,6 +338,59 @@ public class CgToolboxController {
         Result<String> sync = oceanSyncService.sync();
 
         return sync;
+    }
+
+    @Resource
+    private OceanEsService oceanEsService;
+
+    /**
+     * 消息同步测试
+     * @return
+     */
+    @RequestMapping(value = "/maoche/robot/message/sync/es")
+    @ResponseBody
+    public String allSyncEs(Long startId) {
+
+            long id = startId;
+            int limit = 100;
+            int i = 0;
+            while (true) {
+                try {
+                    List<MaocheRobotCrawlerMessageSyncDO> all = maocheRobotCrawlerMessageSyncDao.findAll(id, limit);
+                    if (CollectionUtils.isEmpty(all)) {
+                        break;
+                    }
+                    i += all.size();
+                    id = all.get(all.size() - 1).getUiid();
+
+                    List<List<MaocheRobotCrawlerMessageSyncDO>> partition = Lists.partition(all, 10);
+                    for (List<MaocheRobotCrawlerMessageSyncDO> list : partition) {
+                        List<Long> ids = list.stream().map(MaocheRobotCrawlerMessageSyncDO::getUiid).collect(Collectors.toList());
+                        oceanEsService.indexEs(ids, 10);
+                    }
+
+                } catch (Exception e) {
+
+                }
+            }
+
+
+        return "同步:" + i;
+    }
+
+    @Resource
+    private WxChatDao wxChatDao;
+
+    /**
+     * 初始池消息同步测试
+     * @return
+     */
+    @RequestMapping(value = "/maoche/test/robot/message/chat")
+    @ResponseBody
+    public String getChat() {
+        WxChatDO byEntity = wxChatDao.getById(1L);
+
+        return JsonUtils.toJSONString(byEntity);
     }
 
     /**
@@ -431,6 +502,8 @@ public class CgToolboxController {
     private ElasticSearch7Service elasticSearch7Service;
     @Resource
     private MaocheRobotCrawlerMessageSyncDao maocheRobotCrawlerMessageSyncDao;
+    @Resource
+    private MaocheRobotCrawlerMessageDao maocheRobotCrawlerMessageDao;
 
     /**
      * 消息同步测试

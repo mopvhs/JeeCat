@@ -70,7 +70,7 @@ public class OceanSyncService {
     private CacheService cacheService;
 
     public Result<String> robotMsg() {
-        MaocheSyncDataInfoDO dataInfo = maocheSyncDataInfoService.getLatestSyncDataInfo("maoche_robot_crawler_message");
+        /*MaocheSyncDataInfoDO dataInfo = maocheSyncDataInfoService.getLatestSyncDataInfo("maoche_robot_crawler_message");
         long syncDataId = 0;
         long maxId = 0;
         int step = 50;
@@ -133,6 +133,8 @@ public class OceanSyncService {
                     cacheService.incr(robotMsgSameNumKey);
                     log.info("robotMsg messageSync is exist uniqueHash:{}", sync.getUniqueHash());
                 }
+            } else if (res != null && res.getCode() == 300) {
+                crawlerMessages.addAll(res.getResult());
             } else {
                 log.info("robotMsg messageSync is fail {}", sync.getUniqueHash());
             }
@@ -148,7 +150,7 @@ public class OceanSyncService {
         log.info("robotMsg {}", JsonUtils.toJSONString(collect));
 
         // 更新位点
-        maocheSyncDataInfoService.addOrUpdateOffset(syncDataId, "maoche_robot_crawler_message", offset);
+        maocheSyncDataInfoService.addOrUpdateOffset(syncDataId, "maoche_robot_crawler_message", offset);*/
 
         return Result.OK("操作完成");
     }

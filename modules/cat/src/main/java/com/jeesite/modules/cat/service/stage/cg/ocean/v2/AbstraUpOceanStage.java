@@ -8,6 +8,7 @@ import com.jeesite.common.utils.JsonUtils;
 import com.jeesite.common.utils.UrlUtils;
 import com.jeesite.modules.cat.cache.CacheService;
 import com.jeesite.modules.cat.dao.MaocheRobotCrawlerMessageSyncDao;
+import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageDO;
 import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageProductDO;
 import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageSyncDO;
 import com.jeesite.modules.cat.enums.ElasticSearchIndexEnum;

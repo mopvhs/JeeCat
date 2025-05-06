@@ -19,11 +19,13 @@ public interface MaocheRobotCrawlerMessageDao extends CrudDao<MaocheRobotCrawler
 
     MaocheRobotCrawlerMessageDO getById(@Param("id") Long id);
 
+    List<MaocheRobotCrawlerMessageDO> listByIds(@Param("ids") List<Long> ids);
+
     List<MaocheRobotCrawlerMessageDO> startById(@Param("id") Long id, @Param("limit") Integer limit, @Param("affTypes") List<String> affTypes);
 
     List<MaocheRobotCrawlerMessageDO> listRelationMessage();
 
-    List<MaocheRobotCrawlerMessageDO> listFinishedRelationMessage();
+    List<MaocheRobotCrawlerMessageDO> listFinishedRelationMessage(@Param("time") String time);
 
     int relationMessage(@Param("ids") List<Long> ids, @Param("relationId") Long relationId);
 

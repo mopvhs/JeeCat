@@ -37,7 +37,24 @@ jdbc:
     loadBalancerAlgorithm: RANDOM
 
   # 多数据源名称列表，多个用逗号隔开，使用方法：@MyBatisDao(dataSourceName="ds2")
-  dataSourceNames: ds2,maoche_java,maoche_product
+  dataSourceNames: ds2,maoche_java,maoche_product,jubo
+
+  jubo:
+    type: mysql
+    driver: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://sh-cdb-7ulfxtus.sql.tencentcdb.com:27983/jubo?useSSL=false&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=CONVERT_TO_NULL&serverTimezone=Asia/Shanghai
+    username: root
+    password: 4vqCz_bTo.b2Xh*.
+    testSql: SELECT 1
+    # 其它数据源支持密码加密
+    encrypt:
+      username: false
+      password: true
+    # 其它数据源支持连接池设置
+    pool:
+      init: 10
+      minIdle: 30
+      maxActive: 1000
 
   maoche-java:
     type: mysql

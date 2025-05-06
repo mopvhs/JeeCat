@@ -87,34 +87,48 @@ public class MaocheRobotCrawlerMessageSyncService extends CrudService<MaocheRobo
 	}
 
 
-	public Result<List<MaocheRobotCrawlerMessageSyncDO>> addIfAbsentV2(MaocheRobotCrawlerMessageSyncDO maocheRobotCrawlerMessageSyncDO, int nDayAgo) {
+	public Result<List<MaocheRobotCrawlerMessageSyncDO>> addIfAbsentV2(MaocheRobotCrawlerMessageSyncDO maocheRobotCrawlerMessageSyncDO, int nDayAgo, boolean ignoreSimHash) {
 		Long robotMsgId = maocheRobotCrawlerMessageSyncDO.getRobotMsgId();
 		if (robotMsgId == null || robotMsgId <= 0) {
 			return Result.ERROR(400, "参数错误");
 		}
-		// 判断ori_unique_hash是否一样
-		String oriUniqueHash = maocheRobotCrawlerMessageSyncDO.getOriUniqueHash();
-		List<MaocheRobotCrawlerMessageSyncDO> syncDOs = dao.listByOriUniqueHash(oriUniqueHash, null);
 
-		boolean isNew = true;
+		// 查询下，是否已经存在
+		List<MaocheRobotCrawlerMessageSyncDO> syncDOs = dao.getByRobotMsgId(robotMsgId);
 		if (CollectionUtils.isNotEmpty(syncDOs)) {
-			MaocheRobotCrawlerMessageSyncDO latest = syncDOs.get(0);
-			Date createDate = latest.getCreateDate();
-			if (createDate != null) {
-				long time = createDate.getTime();
-				// n天内的，就认为是相似的
-				long nDayAgoTime = System.currentTimeMillis() - (nDayAgo * 86400000L);
-				//  history-----nDayAgo-----currentTime
-				// nDayAgoTime
-				if (time > nDayAgoTime) {
-					isNew = false;
+			Result<List<MaocheRobotCrawlerMessageSyncDO>> ok = Result.ERROR(300, "数据已存在");
+			ok.setResult(syncDOs);
+			return ok;
+		}
+
+		// 不忽略相似度计算
+		if (!ignoreSimHash) {
+
+			// 判断ori_unique_hash是否一样
+			String oriUniqueHash = maocheRobotCrawlerMessageSyncDO.getOriUniqueHash();
+			syncDOs = dao.listByOriUniqueHash(oriUniqueHash, null);
+
+			boolean isNew = true;
+			if (CollectionUtils.isNotEmpty(syncDOs)) {
+				MaocheRobotCrawlerMessageSyncDO latest = syncDOs.get(0);
+				Date createDate = latest.getCreateDate();
+				if (createDate != null) {
+					long time = createDate.getTime();
+					// n天内的，就认为是相似的
+					long nDayAgoTime = System.currentTimeMillis() - (nDayAgo * 86400000L);
+					//  history-----nDayAgo-----currentTime
+					// nDayAgoTime
+					if (time > nDayAgoTime) {
+						isNew = false;
+					}
 				}
 			}
+			// 设置为相似
+			if (!isNew) {
+				maocheRobotCrawlerMessageSyncDO.setStatus(OceanStatusEnum.SIMILAR.name());
+			}
 		}
-		// 设置为相似
-		if (!isNew && maocheRobotCrawlerMessageSyncDO.getStatus().equalsIgnoreCase(OceanStatusEnum.INIT.name())) {
-			maocheRobotCrawlerMessageSyncDO.setStatus(OceanStatusEnum.SIMILAR.name());
-		}
+
 //		List<MaocheRobotCrawlerMessageSyncDO> syncDOs = dao.getByRobotMsgId(robotMsgId);
 		// 新增
 

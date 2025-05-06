@@ -48,6 +48,9 @@ public class OceanMessageCondition implements Serializable {
     @EsItemAspect
     private String status;
 
+    @EsItemAspect(queryType = "itemsQuery")
+    private List<String> oceanStatus;
+
     // 格式：如果没有，默认desc
     // updateTime desc
     // updateTime asc

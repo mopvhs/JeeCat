@@ -50,7 +50,7 @@ public class MaocheMessageSyncIndex implements Serializable {
 
     private Long relationId;        // 公海关联关系id
 
-    private Long aiOcean;      // ai进度 1是
+    private Long aiOcean;      // 0 普通 ai进度 1是 2 发给了ai
 
 
     public static MaocheMessageSyncIndex toIndex(MaocheRobotCrawlerMessageSyncDO syncDO) {

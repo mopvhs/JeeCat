@@ -47,6 +47,19 @@ public class OceanMessageVO implements Serializable {
 
     private Date createDate;
 
+    // 实际上就是 oceanStatus 新增字典
+    private String aiStatus;
+
+    private String status;
+
+    private String statusDesc;
+
+    private String chatName;
+
+    private String chatWxId;
+
+    private String robotSendId;
+
     private List<UnionProductTO> products;
 
     public static OceanMessageVO toVO(MaocheMessageSyncIndex index) {
@@ -60,6 +73,11 @@ public class OceanMessageVO implements Serializable {
         dto.setAffType(index.getAffType());
         dto.setMsg(index.getMsg());
         dto.setCreateDate(new Date(index.getCreateDate()));
+        dto.setStatus(index.getStatus());
+
+        dto.setChatWxId(index.getRobotChatId());
+        dto.setRobotSendId(index.getRobotSendId());
+        dto.setAiStatus(index.getOceanStatus());
 
         return dto;
     }
