@@ -410,6 +410,9 @@ public class CommandService {
                 if (redirectRes.getCode() == 10010 || redirectRes.getCode() == 10011) {
                     match = false;
                     break;
+                } else if (redirectRes.getCode() == 20010) {
+                    match = false;
+                    break;
                 }
             }
 
@@ -834,6 +837,10 @@ public class CommandService {
             if (needDecodeUrl(url)) {
                 logInfos.add("命中url解密规则：" + url);
                 String html = OkHttpService.doGetHtmlWithProxy(url);
+                if (StringUtils.isBlank(html)) {
+                    log.error("获取原地址失败，url {}", url);
+                    return Result.ERROR(20010, "通过代理获取html失败");
+                }
 //                String html = OkHttpService.doGetHtml(url);
                 Map<String, String> data = new HashMap<>();
                 data.put("url", html);
@@ -861,8 +868,11 @@ public class CommandService {
                         redirectUrl = newUrl;
                     }
                 }
-
+                logInfos.add("解密入参：" + JsonUtils.toJSONString(data));
                 logInfos.add("解密结果为：" + res);
+                if ("0".equals(res)) {
+                    log.error("获取原地址结果不符合预期 url {}, res {}", url, JsonUtils.toJSONString(logInfos));
+                }
             }
 
             HttpUrl httpUrl = OkHttpService.doGetHttpUrlWithProxy(url);

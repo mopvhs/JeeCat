@@ -59,4 +59,16 @@ public enum OceanStatusEnum {
         }
         return "未知";
     }
+
+    public static OceanStatusEnum getByStatus(String status) {
+        if (StringUtils.isBlank(status)) {
+            return null;
+        }
+        for (OceanStatusEnum obe : values()) {
+            if (obe.name().equals(status)) {
+                return obe;
+            }
+        }
+        return null;
+    }
 }

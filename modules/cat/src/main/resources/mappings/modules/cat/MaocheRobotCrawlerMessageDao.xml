@@ -53,6 +53,14 @@
 		ORDER BY time asc limit 100
 	</select>
 
+	<select id="listByRelationId" resultType="MaocheRobotCrawlerMessageDO">
+		SELECT *
+		FROM maoche_robot_crawler_message
+		<where>
+			relation_id = #{relationId}
+		</where>
+	</select>
+
 	<select id="listByIds" resultType="MaocheRobotCrawlerMessageDO">
 		SELECT * from maoche_robot_crawler_message
 		<where>

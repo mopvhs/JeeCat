@@ -141,8 +141,22 @@ public class AIOceanXxlJob extends IJobHandler {
                 return false;
             }
 
-            log.error("查询关联关系下的公海消息获取到的数据为空 机器人消息id：{}", JsonUtils.toJSONString(msgIds));
+            // 多次不存在，直接废弃
+            String key = StringUtils.join(msgIds, "_");
+            String val = cacheService.get(key);
+            Long incr = NumberUtils.toLong(val);
+            if (incr <= 10) {
+                incr = cacheService.incr(key);
+                cacheService.expire(key, (int) TimeUnit.DAYS.toSeconds(1));
+                log.error("查询关联关系下的公海消息获取到的数据为空 机器人消息id：{}", JsonUtils.toJSONString(msgIds));
+                return false;
+            }
+
+            cacheService.delete(key);
+            // 多次不存在，直接废弃
+            maocheRobotCrawlerMessageDao.updateStatus(msgIds, "FAILED_SYNC_MISSED");
             return false;
+
         }
 
         Map<Long, MaocheRobotCrawlerMessageSyncDO> syncMap = syncMsgs.stream().collect(Collectors.toMap(MaocheRobotCrawlerMessageSyncDO::getRobotMsgId, Function.identity(), (o1, o2) -> o1));

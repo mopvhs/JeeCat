@@ -217,6 +217,8 @@ public class BrandLibTaskService {
         content = content.replaceAll("。", "");
         content = content.replaceAll("\\.", "");
         content = content.replaceAll("~", "");
+        content = content.replaceAll("\\[", "");
+        content = content.replaceAll("\\]", "");
 
         content = filterEmoji(content);
         return content;

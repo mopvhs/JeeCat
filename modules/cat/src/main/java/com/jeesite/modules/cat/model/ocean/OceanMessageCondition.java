@@ -36,6 +36,9 @@ public class OceanMessageCondition implements Serializable {
     @EsItemAspect(queryType = "itemsQuery")
     private List<String> resourceIds;
 
+    @EsItemAspect(queryType = "itemsQuery", field = "robotMsgId")
+    private List<Long> robotMsgIds;
+
     @EsItemAspect
     private Long newProduct;
 

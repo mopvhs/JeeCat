@@ -6,8 +6,11 @@ import com.jeesite.common.lang.NumberUtils;
 import com.jeesite.common.lang.StringUtils;
 import com.jeesite.common.web.Result;
 import com.jeesite.modules.cat.BrandLibCondition;
+import com.jeesite.modules.cat.dao.MaocheRobotCrawlerMessageDao;
+import com.jeesite.modules.cat.dao.MaocheRobotCrawlerMessageSyncDao;
 import com.jeesite.modules.cat.dao.WxChatDao;
 import com.jeesite.modules.cat.entity.MaocheCategoryMappingDO;
+import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageDO;
 import com.jeesite.modules.cat.entity.MaocheRobotCrawlerMessageSyncDO;
 import com.jeesite.modules.cat.entity.WxChatDO;
 import com.jeesite.modules.cat.enums.OceanStatusEnum;
@@ -94,6 +97,12 @@ public class OceanController {
 
     @Resource
     private WxChatDao wxChatDao;
+
+    @Resource
+    private MaocheRobotCrawlerMessageSyncDao maocheRobotCrawlerMessageSyncDao;
+
+    @Resource
+    private MaocheRobotCrawlerMessageDao maocheRobotCrawlerMessageDao;
 
 //    @RequestMapping(value = "ocean/msg/product/search")
 //    public Page<OceanMessageProductVO> oceanMsgProductSearch(@RequestBody OceanMsgProductSearchRequest query,
@@ -207,12 +216,43 @@ public class OceanController {
         long syncMsgId = NumberUtils.toLong(query.getKeyword());
         if (syncMsgId > 0) {
             messageCondition.setId(syncMsgId);
+            // 找ai相关的车单
+            MaocheRobotCrawlerMessageSyncDO syncDO = maocheRobotCrawlerMessageSyncDao.getById(syncMsgId);
+            if (syncDO == null) {
+                return page;
+            }
+            MaocheRobotCrawlerMessageDO robotMsg = maocheRobotCrawlerMessageDao.getById(syncDO.getRobotMsgId());
+            if (robotMsg == null) {
+                return page;
+            }
+            Long relationId = robotMsg.getRelationId();
+            if (relationId != null) {
+                // 查询
+                List<MaocheRobotCrawlerMessageDO> robotMsgs = maocheRobotCrawlerMessageDao.listByRelationId(relationId);
+
+                // 获取到全部的机器人消息id
+                if (CollectionUtils.isNotEmpty(robotMsgs)) {
+                    List<Long> robotIds = robotMsgs.stream().map(MaocheRobotCrawlerMessageDO::getIid).toList();
+                    messageCondition.setId(null);
+                    messageCondition.setRobotMsgIds(robotIds);
+                }
+            }
+
         } else if (StringUtils.isNotBlank(query.getKeyword())) {
             keywords.add(query.getKeyword());
         }
 
         if (StringUtils.isNotBlank(query.getStatus())) {
-            messageCondition.setStatus(query.getStatus());
+
+            OceanStatusEnum status = OceanStatusEnum.getByStatus(query.getStatus());
+            if (status != null) {
+                if (status.getGroup().equals("ocean")) {
+                    messageCondition.setStatus(query.getStatus());
+                } else if (status.getGroup().equals("ai_ocean")) {
+                    messageCondition.setOceanStatus(Collections.singletonList(query.getStatus()));
+                }
+            }
+
         } else {
             List<String> oceanStatus = OceanStatusEnum.listGroup("ai_ocean");
             messageCondition.setOceanStatus(oceanStatus);
@@ -267,8 +307,11 @@ public class OceanController {
                 String name = chatMap.get(chatWxId).getName();
                 vo.setChatName(name);
             }
-            String status = Optional.ofNullable(vo.getAiStatus()).orElse(vo.getStatus());
-            vo.setStatusDesc(OceanStatusEnum.getStatusDesc(status));
+
+            String aiStatus = OceanStatusEnum.getStatusDesc(vo.getAiStatus());
+            String status = OceanStatusEnum.getStatusDesc(vo.getStatus());
+
+            vo.setStatusDesc(String.format("AI:[%s] NOR:[%s]", aiStatus, status));
         }
 
         // 对url加html <a>标签
