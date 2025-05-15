@@ -708,6 +708,7 @@ public class CommandService {
         return searchUrl.contains("t.q5url.cn/tkl.html") ||
                 searchUrl.contains("t.q5url.cn") ||
                 searchUrl.contains("i.kunq5.cn") ||
+                searchUrl.contains("qianwum.cn") ||
                 searchUrl.contains("suz039.kuaizhan.com") ||
                 searchUrl.contains("cyg888.cn");
     }
@@ -956,6 +957,7 @@ public class CommandService {
         list.add("m.cute-cat.cn");
         list.add("4kma.cn");
         list.add("i.kunq5.cn");
+        list.add("qianwum.cn");
 
 
         list.add("y-03.cn");
