@@ -51,6 +51,9 @@ public class OceanMessageCondition implements Serializable {
     @EsItemAspect
     private String status;
 
+    @EsItemAspect(queryType = "mustNotItemQuery", field = "status")
+    private String noStatus;
+
     @EsItemAspect(queryType = "itemsQuery")
     private List<String> oceanStatus;
 

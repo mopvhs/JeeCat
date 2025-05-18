@@ -48,12 +48,20 @@ public class ElasticSearch7Config {
 
         RestClientBuilder builder = RestClient.builder(new HttpHost(ip, port, scheme));
 
+        builder.setRequestConfigCallback(requestConfigBuilder ->
+                requestConfigBuilder
+                        .setConnectTimeout(10000)    // 连接超时（毫秒）
+                        .setSocketTimeout(120000)     // 读写超时（毫秒）
+                );
+
         if (credentialsProvider != null) {
             // 设置认证信息
             CredentialsProvider finalCredentialsProvider = credentialsProvider;
             builder.setHttpClientConfigCallback(new RestClientBuilder.HttpClientConfigCallback() {
                 @Override
                 public HttpAsyncClientBuilder customizeHttpClient(HttpAsyncClientBuilder httpClientBuilder) {
+                    httpClientBuilder.setMaxConnTotal(100);        // 最大连接数
+                    httpClientBuilder.setMaxConnPerRoute(50);     // 每路由最大连接数
                     return httpClientBuilder.setDefaultCredentialsProvider(finalCredentialsProvider);
                 }
             });
