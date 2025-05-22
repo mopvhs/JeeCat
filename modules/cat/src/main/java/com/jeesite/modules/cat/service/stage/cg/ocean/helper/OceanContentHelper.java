@@ -126,6 +126,7 @@ public class OceanContentHelper {
         deletions.add("WoWnjYcWSdj01es");
         deletions.add("小小独家");
         deletions.add("直接戳\uD83D\uDC49:");
+        deletions.add("猫车入口#COCO猫舍");
 //        deletions.add("猫车:mp://");
 
         for (String item : deletions) {
@@ -425,22 +426,6 @@ public class OceanContentHelper {
 
 
     public static void main(String[] args) {
-//        Pattern pattern = Pattern.compile("jd.q5url.cn/[a-z A-Z 0-9]+");
-//        String content = "https://jd.q5url.cn/1DWRe8";
-//
-//        String regex = "t.q5url.cn/[a-z 0-9]+";
-////        String urlRegex = "https?:\\/\\/[^\\s]+|[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}[\\/?]*[^\\s]*";
-////        String urlRegex = "https?:\\/\\/[^\\s]+|[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}\\/[^\\s]*";
-//
-//
-////        Pattern pattern = Pattern.compile(regex);
-////        Pattern pattern2 = Pattern.compile(urlRegex);
-//        String[] split = content.split("\n");
-//        for (String item : split) {
-//            String match = match(item, pattern);
-//            System.out.println(match);
-//        }
-
         String replace = "京喜抑菌除臭尿垫共10片?3.3\n" +
                 "https://u.jd.com/1g0sTi7\n" +
                 "京喜宠物免洗手套共12只?4.9\n" +

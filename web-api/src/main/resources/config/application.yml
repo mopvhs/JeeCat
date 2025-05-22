@@ -946,7 +946,7 @@ xxl:
     logRetentionDays: 30
 
 rpa:
-  domain: http://127.0.0.1:48080
+  domain: https://cat.zhizher.com/js/a
 
 jubo:
   domain: http://127.0.0.1:13086

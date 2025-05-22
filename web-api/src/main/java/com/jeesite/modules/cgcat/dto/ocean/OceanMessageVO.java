@@ -54,6 +54,8 @@ public class OceanMessageVO implements Serializable {
 
     private String statusDesc;
 
+    private String aiDesc;
+
     private String chatName;
 
     private String chatWxId;

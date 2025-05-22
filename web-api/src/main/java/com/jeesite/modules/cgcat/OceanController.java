@@ -1,5 +1,6 @@
 package com.jeesite.modules.cgcat;
 
+import com.alibaba.fastjson.JSONObject;
 import com.jeesite.common.entity.Page;
 import com.jeesite.common.lang.DateUtils;
 import com.jeesite.common.lang.NumberUtils;
@@ -32,13 +33,16 @@ import com.jeesite.modules.cat.service.cg.brand.BrandLibConvertService;
 import com.jeesite.modules.cat.service.cg.brand.BrandLibService;
 import com.jeesite.modules.cat.service.cg.ocean.OceanSearchService;
 import com.jeesite.modules.cat.service.cg.search.BrandLibSearchService;
+import com.jeesite.modules.cat.service.cg.third.RpaWechatMessageRuleAdapter;
 import com.jeesite.modules.cat.service.es.dto.MaocheMessageProductIndex;
 import com.jeesite.modules.cat.service.es.dto.MaocheMessageSyncIndex;
 import com.jeesite.modules.cgcat.dto.ProductCategoryVO;
+import com.jeesite.modules.cgcat.dto.WxMsgRule;
 import com.jeesite.modules.cgcat.dto.ocean.OceanMessageVO;
 import com.jeesite.modules.cgcat.dto.ocean.OceanMsgSearchRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
@@ -103,6 +107,9 @@ public class OceanController {
 
     @Resource
     private MaocheRobotCrawlerMessageDao maocheRobotCrawlerMessageDao;
+
+    @Resource
+    private RpaWechatMessageRuleAdapter rpaWechatMessageRuleAdapter;
 
 //    @RequestMapping(value = "ocean/msg/product/search")
 //    public Page<OceanMessageProductVO> oceanMsgProductSearch(@RequestBody OceanMsgProductSearchRequest query,
@@ -208,6 +215,12 @@ public class OceanController {
             }
         }
 
+        JSONObject messageRule = rpaWechatMessageRuleAdapter.getMsgRule(null);
+        WxMsgRule rule = null;
+        if (messageRule != null && messageRule.getString("rule") != null) {
+            rule = JSONObject.parseObject(messageRule.getString("rule"), WxMsgRule.class);
+        }
+
         // 获取3天前的开始时间
         long startTime = DateUtils.getOfDayFirst(DateUtils.addDays(new Date(), -3)).getTime();
 
@@ -301,6 +314,13 @@ public class OceanController {
 
         List<OceanMessageVO> vos = OceanMessageVO.toVOs(documents);
 
+        Map<String, WxMsgRule.AutoRelation> autoRelationMap = new HashMap<>();
+        if (rule != null && MapUtils.isNotEmpty(rule.getAutoRelationMap())) {
+            autoRelationMap = rule.getAutoRelationMap();
+        }
+
+        String aiDesc = "AI群：【%s】 ｜ 发单人：【%s】";
+
         for (OceanMessageVO vo : vos) {
             String chatWxId = vo.getChatWxId();
             if (StringUtils.isNotBlank(chatWxId) && chatMap.get(chatWxId) != null) {
@@ -312,6 +332,25 @@ public class OceanController {
             String status = OceanStatusEnum.getStatusDesc(vo.getStatus());
 
             vo.setStatusDesc(String.format("AI:[%s] NOR:[%s]", aiStatus, status));
+
+            // 群id
+            String chatroomId = vo.getChatWxId();
+            WxMsgRule.AutoRelation relation = autoRelationMap.get(chatroomId);
+            String aiChatroom = "否";
+            String aiSender = "不采集";
+            if (relation != null) {
+                aiChatroom = "是";
+                String fromId = relation.getFromId();
+                if (fromId.equals(vo.getRobotSendId())) {
+                    aiSender = "符合";
+                } else if (CollectionUtils.isNotEmpty(relation.getFromIds()) && relation.getFromIds().contains(vo.getRobotSendId())) {
+                    aiSender = "符合";
+                } else {
+                    aiChatroom = "是，群id：" + relation.getFriendId();
+                    aiSender = "新发单人：" + vo.getRobotSendId();
+                }
+            }
+            vo.setAiDesc(String.format(aiDesc, aiChatroom, aiSender));
         }
 
         // 对url加html <a>标签
