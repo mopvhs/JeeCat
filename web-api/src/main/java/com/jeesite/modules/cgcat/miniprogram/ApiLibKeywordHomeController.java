@@ -14,6 +14,7 @@ import com.jeesite.modules.cat.es.config.es7.ElasticSearch7Service;
 import com.jeesite.modules.cat.es.config.model.ElasticSearchData;
 import com.jeesite.modules.cat.helper.CatRobotHelper;
 import com.jeesite.modules.cat.model.BrandLibKeywordIndex;
+import com.jeesite.modules.cat.model.MemberUserRespVO;
 import com.jeesite.modules.cat.model.condition.BrandLibKeywordCondition;
 import com.jeesite.modules.cat.service.MaocheBrandMapper;
 import com.jeesite.modules.cat.service.MaocheTagService;
@@ -69,11 +70,11 @@ public class ApiLibKeywordHomeController {
 
         // todo 0. 查询用户信息是否正确
         String token = rpaUserAdapter.getToken(httpRequest);
-        JSONObject user = rpaUserAdapter.getUser(token);
+        MemberUserRespVO user = rpaUserAdapter.getUser(token);
         if (user == null) {
             return Result.ERROR(300, "用户未登录");
         }
-        String userId = String.valueOf(user.getLong("id"));
+        String userId = String.valueOf(user.getId());
         int from = 0;
         int size = 1;
         BrandLibKeywordCondition condition = new BrandLibKeywordCondition();

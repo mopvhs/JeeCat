@@ -3,6 +3,7 @@ package com.jeesite.modules.cgcat;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.RateLimiter;
 import com.jeesite.common.codec.Md5Utils;
@@ -26,6 +27,7 @@ import com.jeesite.modules.cat.service.MaocheRobotCrawlerMessageProductService;
 import com.jeesite.modules.cat.service.MaocheRobotCrawlerMessageService;
 import com.jeesite.modules.cat.service.MaocheRobotCrawlerMessageSyncService;
 import com.jeesite.modules.cat.service.MaocheSyncDataInfoService;
+import com.jeesite.modules.cat.service.OceanRuleService;
 import com.jeesite.modules.cat.service.cg.CgUnionProductService;
 import com.jeesite.modules.cat.service.cg.OceanSyncService;
 import com.jeesite.modules.cat.service.cg.inner.InnerApiService;
@@ -38,6 +40,7 @@ import com.jeesite.modules.cat.service.stage.cg.ocean.OceanContext;
 import com.jeesite.modules.cat.service.stage.cg.ocean.OceanStage;
 import com.jeesite.modules.cat.service.stage.cg.ocean.helper.OceanContentHelper;
 import com.jeesite.modules.cat.service.stage.cg.ocean.helper.OceanMonitorHelper;
+import com.jeesite.modules.cat.service.stage.cg.ocean.v2.AbstraUpOceanStage;
 import com.jeesite.modules.cat.service.stage.cg.ocean.v2.OceanUpContext;
 import com.jeesite.modules.cat.service.stage.cg.ocean.v2.OceanUpStage;
 import com.jeesite.modules.cat.service.toolbox.CommandService;
@@ -292,7 +295,7 @@ public class CgToolboxController {
      */
     @RequestMapping(value = "/maoche/robot/message/sync/v2")
     @ResponseBody
-    public Result<String> syncV2(String ids) {
+    public Result<Object> syncV2(String ids) {
         String[] split = StringUtils.split(ids, ",");
 
         List<Long> collect = Arrays.stream(split).map(NumberUtils::toLong).collect(Collectors.toList());
@@ -316,8 +319,10 @@ public class CgToolboxController {
             String affType = message.getAffType();
             if (affType.equals("tb")) {
                 tbUpOceanStage.process(context);
+                return Result.OK(context);
             } else if (affType.equals("jd")) {
                 jdUpOceanStage.process(context);
+                return Result.OK(context);
             }
         }
 
@@ -469,30 +474,41 @@ public class CgToolboxController {
     }
 
     public static void main(String[] args) {
-        long milliseconds = 1321312L;
+//        long milliseconds = 1321312L;
+//
+//        // 将毫秒转换为秒
+//        long ms = milliseconds % 1000;
+//        long totalSeconds = milliseconds / 1000;
+//
+//        // 计算小时、分钟和剩余秒数
+//        long hours = totalSeconds / 3600;
+//        long minutes = (totalSeconds % 3600) / 60;
+//        long seconds = totalSeconds % 60;
+//
+//
+//        // 格式化输出
+//        StringBuilder result = new StringBuilder();
+//        if (hours > 0) {
+//            result.append(hours).append("小时");
+//        }
+//        if (minutes > 0 || hours > 0) {
+//            result.append(minutes).append("分");
+//        }
+//        result.append(seconds).append("秒");
+//        result.append(ms).append("毫秒");
+//
+//        System.out.println(result.toString());
 
-        // 将毫秒转换为秒
-        long ms = milliseconds % 1000;
-        long totalSeconds = milliseconds / 1000;
+        String key = "[\"豪车\",\"❗\",\"速度❗❗✋慢无~\",\"✋慢无~\",\"✋慢无\",\"漏栋价\",\"漏栋\",\"随时无~\",\"超超豪车‼手慢无无无\",\"☞复制去桃宝弹出：\",\"☞复制去桃宝弹出:\",\"\uD83E\uDD86\",\"\\uD83E\\uDD86\",\"\uD83D\uDC31\",\"\\uD83D\\uDC31\",\"\uD83D\uDC14\",\"\\uD83D\\uDC14\",\"⚠\",\"\uD83D\uDC26\",\"\\uD83D\\uDC26\",\"\uD83D\uDC47\",\"\\uD83D\\uDC47\",\"✅\",\"\uD83D\uDC49复制去\uD83C\uDF51宝\",\"\\uD83D\\uDC49复制去\\uD83C\\uDF51宝\",\"--\",\"復zhi打开\uD835\uDE4F\uD835\uDE56\uD835\uDE64\uD835\uDE3D\uD835\uDE56\uD835\uDE64 \uD835\uDE3C\uD835\uDE4B\uD835\uDE4B\",\"復zhi打开\\uD835\\uDE4F\\uD835\\uDE56\\uD835\\uDE64\\uD835\\uDE3D\\uD835\\uDE56\\uD835\\uDE64 \\uD835\\uDE3C\\uD835\\uDE4B\\uD835\\uDE4B\",\"可可独家\",\"可可首发\",\"可可\",\"好价\",\"简单车\",\"速度\",\"速度手慢无\",\"活动稀少\",\"手慢无~\",\"手慢无\",\"\\uD83D\\uDC36\",\"☞复制去淘宝弹出：\",\"快冲‼\",\"‼\",\"！\",\"!\",\"进猫车群#COCO猫舍\",\"_________________\",\"@所有人\",\"\\uD83D\\uDC31车:https://s.q5url.cn/yA7U\",\"车:http://t.q5url.cn\",\"车:http://*.q5url.cn\",\"超级豪车\",\"超级豪车冲\",\"历史猫车\",\"历史猫车http://t.q5url.cn\",\"mp://BGW77rwneED50ap\",\"☞复制去淘宝弹出:\",\"猫车http://t.q5url.cn/o111p0\",\"http://t.q5url.cn/dh.html\",\"猫车 http://t.q5url.cn/1kVxzo\",\"直接戳\uD83D\uDC49：\",\"直接戳\uD83D\uDC49:\",\"对标绿十字\",\"对标许翠花\",\"史低随时无\",\"平台自营史低\uFE0F随时结束\",\"随时\uD83C\uDE1A\",\"速冲\",\"近期史低随时无\",\"近期史低\",\"近期最低\",\"近期最低价\",\"手漫无\",\"史低\",\"近期史低\",\"自营史低\",\"试吃～\",\"稀少活动\",\"旗舰店随时无\",\"高品质好粮\",\"史低，\",\"❶\",\"❷\",\"❸\",\"❹\",\"❺\",\"冲\",\"近期史.抵.\",\"史.抵.\",\"猫车:mp://WoWnjYcWSdj01es\",\"mp://WoWnjYcWSdj01es\",\"猫车:mp://WoWnjYcWSdj01es\",\"mp://WoWnjYcWSdj01es\",\"全网最低价\",\"WoWnjYcWSdj01es\",\"小小独家\",\"直接戳\\uD83D\\uDC49:\",\"猫车入口#COCO猫舍\"]";
+        List<String> referenceType = JsonUtils.toReferenceType(key, new TypeReference<List<String>>() {
+        });
 
-        // 计算小时、分钟和剩余秒数
-        long hours = totalSeconds / 3600;
-        long minutes = (totalSeconds % 3600) / 60;
-        long seconds = totalSeconds % 60;
-
-
-        // 格式化输出
-        StringBuilder result = new StringBuilder();
-        if (hours > 0) {
-            result.append(hours).append("小时");
+        Map<String, String> map = new HashMap<>();
+        for(String a : referenceType) {
+            map.put(a, "");
         }
-        if (minutes > 0 || hours > 0) {
-            result.append(minutes).append("分");
-        }
-        result.append(seconds).append("秒");
-        result.append(ms).append("毫秒");
 
-        System.out.println(result.toString());
+        System.out.println(JsonUtils.toJSONString(map));
     }
 
 
@@ -660,6 +676,32 @@ public class CgToolboxController {
 
         private String calMd5;
     }
+
+    @Resource
+    private OceanRuleService oceanRuleService;
+
+    @RequestMapping("/tb/jiexi/item/maoche/rule/get")
+    public Result<Object> getRule(String msg) {
+        Map<String, String> keywordReplacement = oceanRuleService.getKeywordReplacement();
+        List<AbstraUpOceanStage.TextBO> deletes = oceanRuleService.getKeywordDelete();
+        List<String> failTexts = oceanRuleService.getKeywordFailText();
+        // 机器人原始内容 - 消息内容干预
+        String msg1 = OceanContentHelper.interposeMsgWithRule(msg, keywordReplacement, deletes, failTexts);
+        String msg2 = OceanContentHelper.interposeMsg(msg);
+
+        boolean equals = msg1.equals(msg2);
+
+        return Result.OK(equals);
+    }
+
+
+    @RequestMapping("/tb/jiexi/item/maoche/del/key")
+    public Result<Object> delKey(String key) {
+        boolean delete = cacheService.delete(key);
+
+        return Result.OK(delete);
+    }
+
 
 
 }

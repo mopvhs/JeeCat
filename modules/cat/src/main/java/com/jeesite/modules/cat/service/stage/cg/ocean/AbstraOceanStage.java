@@ -91,7 +91,6 @@ public abstract class AbstraOceanStage implements OceanStage {
         deletions.add("可可独家");
         deletions.add("可可首发");
         deletions.add("可可");
-
         deletions.add("好价");
         deletions.add("简单车");
         deletions.add("速度");
@@ -107,6 +106,7 @@ public abstract class AbstraOceanStage implements OceanStage {
         deletions.add("!");
         deletions.add("进猫车群#COCO猫舍");
         deletions.add("_________________");
+        deletions.add("https://y-03.cn/4zbilN");
 
         for (String item : deletions) {
             TextBO textBO = new TextBO(item, item.length());

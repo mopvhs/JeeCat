@@ -25,8 +25,10 @@ public class FlameProxyHttpService {
     private static String proxyIp = "106.12.252.217"; // 代理服务器IP
     private static int proxyPort = 15818; // 端口号
     // 用户名密码认证(私密代理/独享代理)
-    private static String username = "t12677002118988";
-    private static String password = "Jtyb9DODw7vzYsO";
+//    private static String username = "t12677002118988";
+//    private static String password = "Jtyb9DODw7vzYsO";
+    private static String username = "t15608511728842";
+    private static String password = "bbui5s3f";
 
     /**
      * 代理https

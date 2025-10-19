@@ -94,7 +94,8 @@ public class CommandService {
 
     // 淘宝
 //    public static Pattern tb = Pattern.compile("\\((.*?)\\)\\/|\\/(.*?)\\/\\/");
-    public static Pattern tb = Pattern.compile("\\((.*?)\\)\\/|\\/(.*?)\\/\\/|\\$(.*?)\\$://|\\$(.*?)\\)|\\¥(.*?)\\¥");
+//    public static Pattern tb = Pattern.compile("\\((.*?)\\)\\/|\\/(.*?)\\/\\/|\\$(.*?)\\$://|\\$(.*?)\\)|\\¥(.*?)\\¥");
+    public static Pattern tb = Pattern.compile("\\((.*?)\\)\\/|\\/(.*?)\\/\\/|\\$(.*?)\\$://|\\$(.*?)\\)|\\¥(.*?)\\¥|/[a-z A-Z 0-9]{6,}/");
 
     // 京东
     public static Pattern jd = Pattern.compile("(http|https):\\/\\/[a-zA-Z0-9-\\.]+\\.[a-z]{2,}(\\/\\S*)");
@@ -709,7 +710,9 @@ public class CommandService {
                 searchUrl.contains("t.q5url.cn") ||
                 searchUrl.contains("i.kunq5.cn") ||
                 searchUrl.contains("qianwum.cn") ||
+                searchUrl.contains("gianwum.cn") ||
                 searchUrl.contains("suz039.kuaizhan.com") ||
+                searchUrl.contains("46v.cn") ||
                 searchUrl.contains("cyg888.cn");
     }
 
@@ -958,6 +961,7 @@ public class CommandService {
         list.add("4kma.cn");
         list.add("i.kunq5.cn");
         list.add("qianwum.cn");
+        list.add("gianwum.cn");
 
 
         list.add("y-03.cn");

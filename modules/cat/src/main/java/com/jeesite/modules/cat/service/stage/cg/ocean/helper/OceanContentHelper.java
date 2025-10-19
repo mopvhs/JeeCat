@@ -88,12 +88,13 @@ public class OceanContentHelper {
         deletions.add("超级豪车冲");
         deletions.add("历史猫车");
         deletions.add("历史猫车http://t.q5url.cn");
-        deletions.add("mp://BGW77rwneED50ap");
+        deletions.add("BGW77rwneED50ap");
         deletions.add("☞复制去淘宝弹出:");
         deletions.add("猫车http://t.q5url.cn/o111p0");
         deletions.add("http://t.q5url.cn/dh.html");
         deletions.add("猫车 http://t.q5url.cn/1kVxzo");
         deletions.add("直接戳👉：");
+        deletions.add("直接戳👉:");
         deletions.add("对标绿十字");
         deletions.add("对标许翠花");
         deletions.add("史低随时无");
@@ -116,6 +117,9 @@ public class OceanContentHelper {
         deletions.add("❶");
         deletions.add("❷");
         deletions.add("❸");
+        deletions.add("❹");
+        deletions.add("❺");
+        deletions.add("冲");
         deletions.add("近期史.抵.");
         deletions.add("史.抵.");
         deletions.add("猫车:mp://WoWnjYcWSdj01es");
@@ -127,6 +131,7 @@ public class OceanContentHelper {
         deletions.add("小小独家");
         deletions.add("直接戳\uD83D\uDC49:");
         deletions.add("猫车入口#COCO猫舍");
+        deletions.add("https://y-03.cn/4zbilN");
 //        deletions.add("猫车:mp://");
 
         for (String item : deletions) {
@@ -158,6 +163,9 @@ public class OceanContentHelper {
 
     static {
         regularDeletion.add("^(?=.*猫车)(?=.*mp:\\/\\/).+$");
+//        regularDeletion.add("^(?=.*mp:\\/\\/).+$");
+        regularDeletion.add("^(?=.*猫)(?=.*车).+$");
+        regularDeletion.add("^(?=.*车)(?=.*群).+$");
     }
 
     public static Map<String, List<Pattern>> groupWhiteUrlMap = new HashMap<>();
@@ -282,6 +290,27 @@ public class OceanContentHelper {
         replacements.put("國伋", "国际");
         replacements.put("凑単", "凑单");
         replacements.put("単", "单");
+        replacements.put("淘.金.币补.贴", "淘金币补贴");
+        replacements.put("国bu", "国补");
+        replacements.put("加车去小程序付款↓", "加车去小程序付");
+        replacements.put("如糖↓", "乳糖");
+        replacements.put("眇殺", "秒杀");
+        replacements.put("支fu", "支付");
+        replacements.put("更D", "更低");
+        replacements.put("凑掸", "凑单");
+        replacements.put("淘.金币", "淘金币");
+        replacements.put("页.面", "页面");
+        replacements.put("蕞.抵", "最低");
+        replacements.put("补.贴", "补贴");
+        replacements.put("⭕", "券");
+        replacements.put("漏\uD83D\uDD73\uFE0F", "漏洞");
+        replacements.put("掏宝", "淘宝");
+        replacements.put("秒殺", "秒杀");
+        replacements.put("兔单", "免单");
+        replacements.put("荭笣", "红包");
+        replacements.put("加杩", "加码");
+        replacements.put("更D\uFE0F", "更低");
+        replacements.put("更D", "更低");
 
         replacements.put("(KkkHVd6OmlS)/ AC00", "(KFUNVeHtLNC)/ CA21,)/ AC01");
         replacements.put("(ANKaVeHdXnO)/ AC00", "(KFUNVeHtLNC)/ CA21,)/ AC01");
@@ -424,26 +453,146 @@ public class OceanContentHelper {
         return builder.toString();
     }
 
+    public static String interposeMsgWithRule(String msg,
+                                              Map<String, String> keywordReplacement,
+                                              List<AbstraUpOceanStage.TextBO> deletes,
+                                              List<String> failTexts) {
+        if (StringUtils.isBlank(msg)) {
+            return msg;
+        }
 
-    public static void main(String[] args) {
-        String replace = "京喜抑菌除臭尿垫共10片?3.3\n" +
-                "https://u.jd.com/1g0sTi7\n" +
-                "京喜宠物免洗手套共12只?4.9\n" +
-                "https://u.jd.com/1G0snZ2\n" +
-                "眼部清洁湿巾200片*2罐?5.7\n" +
-                "https://u.jd.com/110sO6d\n" +
-                "纯水清洁湿巾80抽*10包?9.9\n" +
-                "https://u.jd.com/1r0sz7r\n" +
-                "✅默认规格全部买一赠一 !!!\n" +
-                "-\n" +
-                "→车群http://cyg888.cn/s/2y0zly\n";
+        // 规则
+        // 先做replace
+        // 遍历替换规则并进行替换
+        for (Map.Entry<String, String> entry : keywordReplacement.entrySet()) {
+            msg = msg.replaceAll(entry.getKey(), entry.getValue());
+        }
 
-        String[] split = replace.split("\n");
-        for (String item : split) {
-            if (item.equals("-")) {
-                System.out.println("1");
+        msg = msg.replaceAll("\u2028", "\n");
+        // 构建排序，长的文本需要先匹配做删除
+        String[] split = msg.split("\n");
+        StringBuilder builder = new StringBuilder();
+
+        // 特殊空格
+        byte[] bytes = new byte[]{-17, -72, -113};
+        String hexAscii = ByteUtils.toHexAscii(bytes);
+
+        for (String failText : failTexts) {
+            if (msg.contains(failText)) {
+                throw new IllegalArgumentException("messageSync contains fail . msg: " + msg + ", text " + failText);
             }
         }
+
+        for (String line : split) {
+            String replace = line;
+            // 处理@某某人
+            if (replace.contains("@") && replace.contains(" ")) {
+                int i = replace.indexOf("@");
+                if (i >= 0) {
+                    String a = replace.substring(i);
+                    if (a.contains(" ")) {
+                        int b = a.indexOf(" ");
+                        if (b > 0) {
+                            String substring = a.substring(0, b);
+                            replace = replace.replace(substring, "");
+                        }
+                    }
+                }
+            }
+
+            if (replace.equals("-")) {
+                continue;
+            }
+
+            // 是否包含 url
+            for (String url : deletionUrls) {
+                if (replace.contains(url)) {
+                    replace = null;
+                    break;
+                }
+            }
+            if (StringUtils.isBlank(replace)) {
+                continue;
+            }
+
+            for (String regular : regularDeletion) {
+                Pattern p = Pattern.compile(regular);
+                Matcher matcher = p.matcher(replace);
+                if (matcher.find()) {
+                    replace = null;
+                    break;
+                }
+            }
+            if (StringUtils.isBlank(replace)) {
+                continue;
+            }
+
+            String replaceAscii = ByteUtils.toHexAscii(replace.getBytes(StandardCharsets.UTF_8));
+
+            if (replace.equals("\n") || replace.equals("\uFE0F\uFE0F") || hexAscii.equals(replace) || hexAscii.equals(replaceAscii)) {
+                continue;
+            }
+
+            for (AbstraUpOceanStage.TextBO textBO : deletes) {
+                replace = replace.replaceAll(textBO.getText(), "");
+            }
+
+            if (StringUtils.isBlank(replace)) {
+                continue;
+            }
+
+            // 判断是否有特殊的url，是的话，只允许白名单的域名
+            for (Map.Entry<String, List<Pattern>> entry : groupWhiteUrlMap.entrySet()) {
+                String urlDomain = entry.getKey();
+                if (replace.contains(urlDomain)) {
+                    // 存在，提取出url
+                    Matcher matcher = CommandService.url.matcher(replace);
+                    boolean pass = false;
+                    if (matcher.find()) {
+                        String group = StringUtils.trim2(matcher.group());
+                        // 判断是否是白名单的 url
+                        for (Pattern whiteUrl : entry.getValue()) {
+                            Matcher m = whiteUrl.matcher(group);
+                            if (m.find()) {
+                                // 把一下其他的内容吃掉，例如url：https://y.q5url.cn/2Gd8j3 /  -> https://y.q5url.cn/2Gd8j3
+                                replace = group;
+                                pass = true;
+                                break;
+                            }
+                        }
+                    } else {
+                        // 匹配失败，先忽略
+                    }
+                    if (!pass) {
+                        replace = "";
+                        break;
+                    }
+                }
+            }
+
+            replaceAscii = ByteUtils.toHexAscii(replace.getBytes(StandardCharsets.UTF_8));
+            if (replace.equals("\n") || replace.equals("\uFE0F\uFE0F") || hexAscii.equals(replaceAscii)) {
+                continue;
+            }
+
+            Matcher matcher = CommandService.tb.matcher(replace);
+            if (matcher.find()) {
+                replace = StringUtils.trim2(replace);
+            }
+
+            builder.append(replace).append("\n");
+        }
+
+        return builder.toString();
+    }
+
+
+    public static void main(String[] args) {
+        Map<String, String> map = new HashMap<>();
+        for (String d : deletions) {
+            map.put(d, "");
+        }
+        System.out.println(JsonUtils.toJSONString(map));
 
     }
 

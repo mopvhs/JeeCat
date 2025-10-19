@@ -20,10 +20,10 @@ public class OkHttpService {
     private static final OkHttpClient client = new OkHttpClient();
 
     // 用户名密码, 若已添加白名单则不需要添加
-    private static final String username = "t12465579219035";
-    private static final String password = "9uulmf3g";
+    private static final String username = "t15608511728842";
+    private static final String password = "bbui5s3f";
 
-    private static String ip = "e670.kdltps.com";   // 代理服务器IP
+    private static String ip = "z236.kdltps.com";   // 代理服务器IP
     private static int port = 15818;
 
 

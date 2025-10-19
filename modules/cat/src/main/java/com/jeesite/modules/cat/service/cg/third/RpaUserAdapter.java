@@ -1,7 +1,10 @@
 package com.jeesite.modules.cat.service.cg.third;
 
 import com.alibaba.fastjson.JSONObject;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.jeesite.common.lang.StringUtils;
+import com.jeesite.common.utils.JsonUtils;
+import com.jeesite.modules.cat.model.MemberUserRespVO;
 import com.jeesite.modules.cat.service.FlameHttpService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -24,7 +27,7 @@ public class RpaUserAdapter {
         return request.getHeader("Authorization");
     }
 
-    public JSONObject getUser(String token) {
+    public MemberUserRespVO getUser(String token) {
         // 判断token是否带固定前缀
         if (StringUtils.isBlank(token) || !token.contains("Bearer ")) {
             return null;
@@ -32,9 +35,9 @@ public class RpaUserAdapter {
 
         // 模拟登录
         if (token.equalsIgnoreCase("Bearer yhq")) {
-            JSONObject object = new JSONObject();
-            object.put("id", 1L);
-            return object;
+            MemberUserRespVO mock = new MemberUserRespVO();
+            mock.setId(1L);
+            return mock;
         }
 
 //        String postUrl = "http://127.0.0.1:48080/app-api/api/member/auth/user/get";
@@ -56,6 +59,9 @@ public class RpaUserAdapter {
             return null;
         }
 
-        return user;
+        MemberUserRespVO respVO = JsonUtils.toReferenceType(JsonUtils.toJSONString(user), new TypeReference<MemberUserRespVO>() {
+        });
+
+        return respVO;
     }
 }

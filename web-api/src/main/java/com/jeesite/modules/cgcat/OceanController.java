@@ -5,6 +5,7 @@ import com.jeesite.common.entity.Page;
 import com.jeesite.common.lang.DateUtils;
 import com.jeesite.common.lang.NumberUtils;
 import com.jeesite.common.lang.StringUtils;
+import com.jeesite.common.utils.JsonUtils;
 import com.jeesite.common.web.Result;
 import com.jeesite.modules.cat.BrandLibCondition;
 import com.jeesite.modules.cat.dao.MaocheRobotCrawlerMessageDao;
@@ -37,6 +38,7 @@ import com.jeesite.modules.cat.service.cg.third.RpaWechatMessageRuleAdapter;
 import com.jeesite.modules.cat.service.es.dto.MaocheMessageProductIndex;
 import com.jeesite.modules.cat.service.es.dto.MaocheMessageSyncIndex;
 import com.jeesite.modules.cgcat.dto.ProductCategoryVO;
+import com.jeesite.modules.cgcat.dto.UpdateRuleVO;
 import com.jeesite.modules.cgcat.dto.WxMsgRule;
 import com.jeesite.modules.cgcat.dto.ocean.OceanMessageVO;
 import com.jeesite.modules.cgcat.dto.ocean.OceanMsgSearchRequest;
@@ -348,6 +350,9 @@ public class OceanController {
                 } else {
                     aiChatroom = "是，群id：" + relation.getFriendId();
                     aiSender = "新发单人：" + vo.getRobotSendId();
+
+                    vo.setAiChatroomId(relation.getFriendId());
+                    vo.setSenderId(vo.getRobotSendId());
                 }
             }
             vo.setAiDesc(String.format(aiDesc, aiChatroom, aiSender));
@@ -422,7 +427,6 @@ public class OceanController {
         return aggregations;
     }
 
-
     @RequestMapping(value = "/ocean/msg/product/category/tab")
     @ResponseBody
     public Result<ProductCategoryVO> msgProductCategoryTab(HttpServletRequest request, HttpServletResponse response) {
@@ -462,6 +466,36 @@ public class OceanController {
         categoryVO.setTotal(searchData.getTotal());
 
         return Result.OK(categoryVO);
+    }
+
+    @RequestMapping(value = "/ocean/msg/update/ai/rule")
+    @ResponseBody
+    public Result<Boolean> updateRule(@RequestBody UpdateRuleVO ruleVO) {
+
+        JSONObject messageRule = rpaWechatMessageRuleAdapter.getMsgRule(null);
+        WxMsgRule rule = null;
+        if (messageRule != null && messageRule.getString("rule") != null) {
+            rule = JSONObject.parseObject(messageRule.getString("rule"), WxMsgRule.class);
+        }
+
+        if (rule == null || rule.getAutoRelationMap() == null) {
+            return Result.OK(false);
+        }
+        WxMsgRule.AutoRelation relationMap = rule.getAutoRelationMap().get(ruleVO.getChatWxId());
+
+        List<String> ids = relationMap.getFromIds();
+        if (CollectionUtils.isEmpty(ids)) {
+            ids = new ArrayList<>();
+        }
+
+        ids.add(ruleVO.getRobotSendId());
+        ids = ids.stream().distinct().collect(Collectors.toList());
+        relationMap.setFromIds(ids);
+
+        String ruleStr = JsonUtils.toJSONString(rule);
+
+        boolean b = rpaWechatMessageRuleAdapter.updateFriendRule(null, ruleStr);
+        return Result.OK(b);
     }
 
     /**

@@ -42,4 +42,29 @@ public class RpaWechatMessageRuleAdapter {
 
         return res;
     }
+
+    public boolean updateFriendRule(Long ruleId, String rule) {
+        // 判断token是否带固定前缀
+        if (ruleId == null || ruleId <= 0 || StringUtils.isBlank(rule)) {
+            return false;
+        }
+
+//        String postUrl = "http://127.0.0.1:48080/app-api/api/member/auth/user/get";
+        String postUrl = domain + "/app-api/tbl/api/message/rule/set";
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("id", ruleId);
+        data.put("rule", rule);
+        String response = FlameHttpService.doPostWithHeaders(postUrl, JsonUtils.toJSONString(data), null);
+        if (StringUtils.isBlank(response)) {
+            return false;
+        }
+        JSONObject jsonObject = JSONObject.parseObject(response);
+        if (jsonObject.getJSONObject("data") == null) {
+            return false;
+        }
+        JSONObject res = jsonObject.getJSONObject("data");
+
+        return true;
+    }
 }

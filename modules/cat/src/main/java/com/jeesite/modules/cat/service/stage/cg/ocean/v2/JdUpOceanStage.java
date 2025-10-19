@@ -106,6 +106,9 @@ public class JdUpOceanStage extends AbstraUpOceanStage {
         CommandContext command = new CommandContext();
         command.setContent(content);
         command.setRelationId(messageSync.getId());
+
+        context.setCommandContext(command);
+
         Result<CommandDTO> doDwz = commandService.doDwz(command);
         if (doDwz == null || !doDwz.isSuccess()) {
             throw new QueryThirdApiException(QueryThirdApiException.QUERY_FAIL, "转换异常");
@@ -144,7 +147,6 @@ public class JdUpOceanStage extends AbstraUpOceanStage {
             }
         }
 
-        context.setCommandContext(command);
         context.setJdProducts(promotions);
         context.setTbProductMap(tbProductMap);
 

@@ -15,10 +15,13 @@ import com.jeesite.modules.cat.entity.MaocheSubscribeDO;
 import com.jeesite.modules.cat.enums.subscribe.SubscribeOpenSwitchEnum;
 import com.jeesite.modules.cat.enums.subscribe.SubscribeStatusEnum;
 import com.jeesite.modules.cat.enums.subscribe.SubscribeTypeEnum;
+import com.jeesite.modules.cat.model.MemberUserRespVO;
 import com.jeesite.modules.cat.service.MaocheBrandLibMapper;
 import com.jeesite.modules.cat.service.MaocheBrandMapper;
 import com.jeesite.modules.cat.service.MaocheSubscribeService;
 import com.jeesite.modules.cat.service.cg.third.RpaUserAdapter;
+import com.jeesite.modules.cat.service.tracer.TraceInfo;
+import com.jeesite.modules.cat.service.tracer.Tracer;
 import com.jeesite.modules.cgcat.dto.subscribe.SubscribeDetailVO;
 import com.jeesite.modules.cgcat.dto.subscribe.SubscribeHomeDetailVO;
 import com.jeesite.modules.cgcat.dto.subscribe.SubscribeHomeRequest;
@@ -69,15 +72,14 @@ public class ApiSubscribeController {
      * @return
      */
     @RequestMapping(value = "/api/maoche/lib/subscribe")
-    public Result<String> subscribe(@RequestBody SubscribeRequest request, HttpServletRequest httpRequest) {
+    public Result<String> subscribe(@RequestBody SubscribeRequest request) {
 
         if (request == null || request.getSubId() == null || request.getSubId() <= 0) {
             return Result.ERROR(500, "参数错误");
         }
 
-        // todo 0. 查询用户信息是否正确
-        String token = rpaUserAdapter.getToken(httpRequest);
-        JSONObject user = rpaUserAdapter.getUser(token);
+        // 查询用户信息是否正确
+        MemberUserRespVO user = Tracer.getUser();
         if (user == null) {
             return Result.ERROR(300, "用户未登录");
         }
@@ -87,7 +89,7 @@ public class ApiSubscribeController {
         if (keywordDO == null || !keywordDO.getStatus().equalsIgnoreCase("NORMAL")) {
             return Result.ERROR(404, "品牌库不存在");
         }
-        Long userId = user.getLong("id");
+        Long userId = user.getId();
         boolean isSubscribe = request.isSubscribe();
         SubscribeStatusEnum statusEnum = SubscribeStatusEnum.isSubscribe(isSubscribe);
         // 2. 查询是否已经有订阅记录
@@ -152,7 +154,7 @@ public class ApiSubscribeController {
     // 猫粮 猫砂 猫用品 驱虫保健
     // 我的订阅列表
     @RequestMapping(value = "/api/maoche/lib/subscribe/home")
-    public Result<SubscribeHomeVO> subscribeHome(@RequestBody SubscribeHomeRequest request, HttpServletRequest httpRequest) {
+    public Result<SubscribeHomeVO> subscribeHome(@RequestBody SubscribeHomeRequest request) {
         // 猫粮 猫砂 猫用品 驱虫保健
         // 获取我得全部订阅列表
         if (request == null) {
@@ -160,17 +162,16 @@ public class ApiSubscribeController {
         }
         SubscribeHomeVO homeVO = new SubscribeHomeVO();
         // 推荐订阅
-        // todo 0. 查询用户信息是否正确
-        String token = rpaUserAdapter.getToken(httpRequest);
-        JSONObject user = rpaUserAdapter.getUser(token);
+        // 0. 查询用户信息是否正确
+        MemberUserRespVO user = Tracer.getUser();
         if (user == null) {
             return Result.ERROR(300, "用户未登录");
         }
-        String userId = String.valueOf(user.getLong("id"));
+        String userId = String.valueOf(user.getId());
 
         List<MaocheSubscribeDO> list = maocheSubscribeDao.listUserSubscribes(userId, SubscribeTypeEnum.BRAND_LIB_KEYWORD.getType());
         if (CollectionUtils.isEmpty(list)) {
-            // todo 获取推荐订阅
+            // 获取推荐订阅
             return Result.OK(homeVO);
         }
         // 关键词id

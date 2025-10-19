@@ -19,6 +19,7 @@ import com.jeesite.modules.cat.model.CatProductBucketTO;
 import com.jeesite.modules.cat.model.ocean.OceanMessageCondition;
 import com.jeesite.modules.cat.model.ocean.OceanMessageProductCondition;
 import com.jeesite.modules.cat.service.MaocheRobotCrawlerMessageSyncService;
+import com.jeesite.modules.cat.service.OceanRuleService;
 import com.jeesite.modules.cat.service.SimHashService;
 import com.jeesite.modules.cat.service.cg.OceanSyncService;
 import com.jeesite.modules.cat.service.cg.ocean.OceanSearchService;
@@ -45,6 +46,7 @@ import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.BooleanUtils;
 
 import javax.annotation.Resource;
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -79,6 +81,9 @@ public abstract class AbstraUpOceanStage implements OceanUpStage {
 
     @Resource
     private CacheService cacheService;
+
+    @Resource
+    private OceanRuleService oceanRuleService;
 
 //    @Resource
 //    private OceanSyncService oceanSyncService;
@@ -142,13 +147,15 @@ public abstract class AbstraUpOceanStage implements OceanUpStage {
                     if (syncDO == null) {
                         return;
                     }
+                    updateFailQueryProduct(context, OceanStatusEnum.getByStatus(syncDO.getStatus()));
+
                     String affType = syncDO.getAffType();
                     OceanUpContext retryContext = new OceanUpContext(syncDO);
                     process(retryContext);
                     return;
                 }
 
-                updateFailQueryProduct(context);
+                updateFailQueryProduct(context, OceanStatusEnum.FAIL);
 
                 // 需要写索引
                 List<Map<String, Object>> messageSyncIndex = OceanContentHelper.getMessageSyncIndex(Collections.singletonList(context.getMessageSync()), Collections.singletonList(context.getRobotMsg()));
@@ -159,7 +166,7 @@ public abstract class AbstraUpOceanStage implements OceanUpStage {
             log.error("查询第三方接口获取商品数据失败 message :{}", JsonUtils.toJSONString(context.getMessageSync()), e);
         } catch (Exception e) {
             log.error("公海流程处理异常 message :{}", JsonUtils.toJSONString(context.getMessageSync()), e);
-            updateFailQueryProduct(context);
+            updateFailQueryProduct(context, OceanStatusEnum.FAIL);
             DingDingService.sendParseDingDingMsg("公海流程处理异常 message :{}, e:{}", JsonUtils.toJSONString(context.getMessageSync()), e.getMessage());
         }
     }
@@ -226,9 +233,13 @@ public abstract class AbstraUpOceanStage implements OceanUpStage {
     public void buildBaseMessageSync(OceanUpContext context) {
 
         MaocheRobotCrawlerMessageSyncDO message = context.getMessageSync();
-        //
+
+        Map<String, String> keywordReplacement = oceanRuleService.getKeywordReplacement();
+        List<AbstraUpOceanStage.TextBO> deletes = oceanRuleService.getKeywordDelete();
+        List<String> failTexts = oceanRuleService.getKeywordFailText();
+
         // 机器人原始内容 - 消息内容干预
-        String msg = OceanContentHelper.interposeMsg(message.getMsg());
+        String msg = OceanContentHelper.interposeMsgWithRule(message.getMsg(), keywordReplacement, deletes, failTexts);
         message.setMsg(msg);
 
         // 写入到context中
@@ -288,13 +299,17 @@ public abstract class AbstraUpOceanStage implements OceanUpStage {
 //
 //    }
 
-    public void updateFailQueryProduct(OceanUpContext context) {
+    public void updateFailQueryProduct(OceanUpContext context, OceanStatusEnum status) {
         MaocheRobotCrawlerMessageSyncDO messageSync = context.getMessageSync();
         if (messageSync == null) {
             log.error("保存失败的查询商品数据失败, messageSync is null");
             return;
         }
-        messageSync.setStatus(OceanStatusEnum.FAIL.name());
+        if (status == null) {
+            status = OceanStatusEnum.FAIL;
+        }
+        messageSync.addCommandContext(context.getCommandContext());
+        messageSync.setStatus(status.name());
         // remarks在流程各个流程上设置
 //        messageSync.setRemarks(context.getFailRemarks());
         maocheRobotCrawlerMessageSyncService.updateById(messageSync);
@@ -483,11 +498,16 @@ public abstract class AbstraUpOceanStage implements OceanUpStage {
 
     @Data
     @AllArgsConstructor
-    public static class TextBO {
+    public static class TextBO implements Serializable {
+
+        private static final long serialVersionUID = 1L;
 
         private String text;
 
         private Integer size;
+
+        public TextBO() {
+        }
     }
 
     @Override
