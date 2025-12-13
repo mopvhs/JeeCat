@@ -949,4 +949,5 @@ rpa:
   domain: https://cat.zhizher.com/js/a
 
 jubo:
-  domain: http://127.0.0.1:13086
+#  domain: http://127.0.0.1:13086
+  domain: http://wx-ju.mtxtool.com:13086

@@ -33,25 +33,37 @@ import com.jeesite.modules.cat.service.cg.task.dto.TaskDetail;
 import com.jeesite.modules.cat.service.cg.task.dto.TaskInfo;
 import com.jeesite.modules.cat.service.cg.third.tb.TbApiService;
 import com.jeesite.modules.cat.service.es.TaskEsService;
+import com.jeesite.modules.cat.xxl.job.ocean.AIOceanXxlJob;
 import com.jeesite.modules.cat.xxl.job.ocean.OceanRelationXxlJob;
 import com.jeesite.modules.cat.xxl.job.task.PushTaskIndexXxlJob;
 import com.jeesite.modules.cgcat.dto.task.BelongLibReq;
 import com.jeesite.modules.cgcat.dto.task.SourceTaskCreateReq;
 import com.jeesite.modules.cgcat.dto.task.TaskDetailGetReq;
 import com.jeesite.modules.cgcat.dto.task.TaskDetailHelper;
+import jakarta.json.Json;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Controller
@@ -390,4 +402,77 @@ public class TaskController {
         return Result.OK("处理完成");
     }
 
+    @Resource
+    private AIOceanXxlJob aiOceanXxlJob;
+
+    @RequestMapping(value = "/source/ocean/aiOceanXxlJob/xxl/job")
+    public Result<?> aiOceanXxlJob(@RequestParam(value = "ids") String ids) {
+
+        try {
+            String[] split = ids.split(",");
+            List<Long> list = Arrays.stream(split).map(NumberUtils::toLong).toList();
+            aiOceanXxlJob.testApi(list);
+        } catch (Exception e) {
+            return Result.ERROR(500, "处理失败");
+        }
+
+        return Result.OK("处理完成");
+    }
+
+    public static void main(String[] args) throws Exception{
+        File file1 = new File("/Users/yhq/Downloads/图片/list1");
+        File file2 = new File("/Users/yhq/Downloads/图片/list2");
+
+        List<String> fileContents1 = getFileContents(file1);
+        List<String> fileContents2 = getFileContents(file2);
+        Map<String, String> map = fileContents2.stream().collect(Collectors.toMap(Function.identity(), Function.identity()));
+
+        List<String> same = new ArrayList<>();
+        for (String s : fileContents1) {
+            if (map.containsKey(s)) {
+                same.add(s);
+            }
+        }
+
+        System.out.println(JsonUtils.toJSONString(same));
+    }
+
+    public static List<String> getFileContents(File file) {
+        List<String> list = new ArrayList<>();
+
+        BufferedReader br = null;
+        InputStreamReader isr = null;
+        // 从本地文件中读取信息
+        try {
+            // 组装数据信息
+            isr = new InputStreamReader(new FileInputStream(file));
+            br = new BufferedReader(isr);
+            String readLineContent = null;
+
+            while ((readLineContent = br.readLine()) != null) {
+
+                list.add(readLineContent);
+            }
+
+        } catch (Exception e) {
+            log.error("getFileContents error exception is {}", e);
+        } finally {
+            try {
+                if (br != null) {
+                    br.close();
+                }
+            } catch (Exception e) {
+                log.error("getFileContents file br close error exception is {}", e);
+            }
+            try {
+                if (isr != null) {
+                    isr.close();
+                }
+            } catch (Exception e) {
+                log.error("getFileContents file isr close error exception is {}", e);
+            }
+
+        }
+        return list;
+    }
 }

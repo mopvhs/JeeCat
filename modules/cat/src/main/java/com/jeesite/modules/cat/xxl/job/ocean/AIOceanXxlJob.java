@@ -90,8 +90,22 @@ public class AIOceanXxlJob extends IJobHandler {
 
         // 发消息给ai
         dispatchMessage(group);
+    }
 
+    public void testApi(List<Long> ids) throws Exception {
 
+        // 拉取最近的100条 status = finished 按照 time倒序
+        List<MaocheRobotCrawlerMessageDO> dos = maocheRobotCrawlerMessageDao.listByIds(ids);
+        if (CollectionUtils.isEmpty(dos)) {
+            return;
+        }
+
+        // 分桶 <关联id, <List<消息>>
+        Map<Long, List<MaocheRobotCrawlerMessageDO>> group = new HashMap<>();
+        dispatchGroup(group, dos);
+
+        // 发消息给ai
+        dispatchMessage(group);
     }
 
     private void dispatchMessage(Map<Long, List<MaocheRobotCrawlerMessageDO>> group) {
@@ -186,10 +200,10 @@ public class AIOceanXxlJob extends IJobHandler {
                 msg.setContentType(2);
                 String img = getImg(message.getMsg());
                 // 如果没有md5直接忽略图片
-                String md5 = getImgMd5(message.getMsg());
-                if (StringUtils.isBlank(md5)) {
-                    continue;
-                }
+//                String md5 = getImgMd5(message.getMsg());
+//                if (StringUtils.isBlank(md5)) {
+//                    continue;
+//                }
                 // todo 查询原图是否下载完成
                 JSONObject messageDetail = wechatRobotAdapter.getMessageDetail(message.getToid(), message.getMsgsvrid());
                 if (messageDetail == null || StringUtils.isBlank(messageDetail.getString("ext"))) {
@@ -309,6 +323,8 @@ public class AIOceanXxlJob extends IJobHandler {
         AIMessageInfo info = new AIMessageInfo();
         info.setTaskId(UUID.randomUUID().toString());
         info.setContents(aiMessages);
+
+        log.info("send to ai info {}", JsonUtils.toJSONString(info));
 
         // todo 发送给Ai，并且标记状态为新的状态
         String s = FlameHttpService.doPost("https://wx.mtxtool.com/maoche/enqueue_task.html", JsonUtils.toJSONString(info));

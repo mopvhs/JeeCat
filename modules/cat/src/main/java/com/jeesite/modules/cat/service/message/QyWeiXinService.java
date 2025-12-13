@@ -83,7 +83,7 @@ public class QyWeiXinService {
             params.put("image", imageMap);
             String doPost = FlameHttpService.doPost(url, JsonUtils.toJSONString(params));
 
-            log.info("企微发图: param:{}, result:{}", JsonUtils.toJSONString(params), doPost);
+            log.info("企微发图: param:{}, result:{}", img, doPost);
             // 解析错误信息
             try {
                 JSONObject res = JSONObject.parseObject(doPost);

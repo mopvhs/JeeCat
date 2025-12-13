@@ -498,10 +498,27 @@ public class CommandService {
                             URL urlObj = new URL(EncodeUtils.decodeUrl(redirectUrl));
 //                                Map<String, String> parameters = extractParameters(urlObj);
                             Map<String, Param> parameterMap = extractParameterMap(urlObj);
-                            if (MapUtils.isNotEmpty(parameterMap)) {
 
+                            // todo
+                            String scyg888CnCommand = getScyg888CnCommand(redirectUrl, parameterMap);
+                            if (StringUtils.isNotBlank(scyg888CnCommand)) {
+                                Result<GeneralConvertResp> response = apiTbWithTvCommand(scyg888CnCommand);
+                                String tbkPwd = null;
+                                if (Result.isOK(response)) {
+                                    GeneralConvertResp tbProduct = response.getResult();
+                                    tbkPwd = tbProduct.getTbkPwd();
+                                    detail.setApiRes(true);
+                                    if (tbkPwd != null) {
+                                        detail.setReplaceUrl(tbkPwd);
+                                        detail.addExchangeLog(tbkPwd);
+                                    }
+                                    detail.setTbProduct(tbProduct);
+                                    content = content.replace(url, tbProduct.getTbkPwd());
+                                    match = true;
+                                    isReplace = false;
+                                }
+                            } else if (MapUtils.isNotEmpty(parameterMap)) {
                                 Param param = Optional.ofNullable(parameterMap.get("taowords")).orElse(parameterMap.get("word"));
-
                                 if (param != null && CollectionUtils.isNotEmpty(param.getValues())) {
                                     // 如果只有一个值，保持和以前一样
                                     if (param.getValues().size() == 1) {
@@ -690,6 +707,18 @@ public class CommandService {
 
     private Result<GeneralConvertResp> apiTb(String tbk) {
         String tbCommand = "7(" + tbk + ")/ CA1500";
+
+        // 整个内容直接请求维易接口，做替换
+        // https://www.veapi.cn/apidoc/taobaolianmeng/283
+        Map<String, Object> objectMap = new HashMap<>();
+        objectMap.put("detail", 2);
+        objectMap.put("deepcoupon", 1);
+        objectMap.put("couponId", 1);
+        // https://www.veapi.cn/apidoc/taobaolianmeng/283
+        return tbApiService.generalConvert(tbCommand, objectMap);
+    }
+
+    private Result<GeneralConvertResp> apiTbWithTvCommand(String tbCommand) {
 
         // 整个内容直接请求维易接口，做替换
         // https://www.veapi.cn/apidoc/taobaolianmeng/283
@@ -1024,25 +1053,49 @@ public class CommandService {
     }
 
 
-    public static void main(String[] args) {
-//        String content = "weixin://dl/business/?appid=wx91d27dbf599dff74&path=pages/union/proxy/proxy&query=spreadUrl=https%3A%2F%2Fu.jd.com%2FqaLkcfv";
-//        Map<String, String> parameters = UrlUtils.getWeixinParameters(content);
+    private String getScyg888CnCommand(String url, Map<String, Param> parameterMap) {
+        if (!url.contains("s.cyg888.cn") || MapUtils.isEmpty(parameterMap) || parameterMap.get("sn") == null || CollectionUtils.isEmpty(parameterMap.get("sn").getValues())) {
+            return null;
+        }
+        String sn = parameterMap.get("sn").getValues().get(0);
 
-        String html = "<!DOCTYPE html>\n" +
-                "<html>\n" +
-                "<head>\n" +
-                "  <title>loading...</title>\n" +
-                "  <meta http-equiv=\"refresh\" content=\"0.1;url=weixin://dl/business/?appid=wx91d27dbf599dff74&path=pages/union/proxy/proxy&query=spreadUrl%3Dhttps%3A%2F%2Fu.jd.com%2F16pIi5P\">\n" +
-                "</head>\n" +
-                "<body>\n" +
-                "</body>";
+        String target = "http://s.cyg888.cn/api_v3/middle.php?sn=%s&type=get_page_detail&password=";
+        target = String.format(target, sn);
+        Map<String, String> headerMap = new HashMap<>();
+        headerMap.put("Referer", url);
 
-        if (html.contains("weixin://dl") && html.contains("spreadUrl")) {
-
-
+        String response = OkHttpService.doGetHtmlWithProxyHeaders(target, headerMap);
+        if (StringUtils.isBlank(response)) {
+            return null;
+        }
+        JSONObject object = JSONObject.parseObject(response);
+        if (object == null || !(object.get("data") instanceof JSONArray)) {
+            return null;
         }
 
+        JSONArray array = object.getJSONArray("data");
+        if (array.size() <= 0) {
+            return null;
+        }
 
-        System.out.println(1);
+        String content = array.getJSONObject(0).getString("content");
+        if (StringUtils.isBlank(content)) {
+            return null;
+        }
+
+        return StringUtils.replace(content, "<br>", "");
     }
+
+//    public static void main(String[] args) throws Exception {
+//        String content = "weixin://dl/business/?appid=wx91d27dbf599dff74&path=pages/union/proxy/proxy&query=spreadUrl=https%3A%2F%2Fu.jd.com%2FqaLkcfv";
+//        Map<String, String> parameters = UrlUtils.getWeixinParameters(content);
+//
+//        String url = "http://s.cyg888.cn/v3/middle/pattern1.php?sn=mTAtrk&apikey=BS75X0GF0RH&Q93v=axpgtSh1yaflueYx";
+//        URL urlObj = new URL(EncodeUtils.decodeUrl(url));
+//        Map<String, Param> parameterMap = extractParameterMap(urlObj);
+//
+//
+//
+//        System.out.println(reponse);
+//    }
 }

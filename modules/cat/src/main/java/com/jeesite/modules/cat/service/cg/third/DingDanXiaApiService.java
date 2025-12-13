@@ -179,6 +179,9 @@ public class DingDanXiaApiService {
                 if (data == null) {
                     return Result.ERROR(500, "转换失败");
                 }
+                if (data.isEmpty()) {
+                    return Result.ERROR(404, "无优惠券");
+                }
                 // 获取第一个sku的商品的券
                 JSONObject couponInfo = data.getJSONObject(0).getJSONObject("couponInfo");
                 if (couponInfo == null || couponInfo.get("couponList") == null) {
