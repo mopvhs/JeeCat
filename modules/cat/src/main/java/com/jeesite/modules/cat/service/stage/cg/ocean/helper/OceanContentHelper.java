@@ -166,6 +166,7 @@ public class OceanContentHelper {
 //        regularDeletion.add("^(?=.*mp:\\/\\/).+$");
         regularDeletion.add("^(?=.*猫)(?=.*车).+$");
         regularDeletion.add("^(?=.*车)(?=.*群).+$");
+        regularDeletion.add( "\\p{InTransportandMapSymbols}+群.*");
     }
 
     public static Map<String, List<Pattern>> groupWhiteUrlMap = new HashMap<>();
@@ -588,12 +589,20 @@ public class OceanContentHelper {
 
 
     public static void main(String[] args) {
-        Map<String, String> map = new HashMap<>();
-        for (String d : deletions) {
-            map.put(d, "");
-        }
-        System.out.println(JsonUtils.toJSONString(map));
+//        String msg = "\uD83D\uDE972ddd2群y-02.com/2s3zjS";
+        String msg = "\uD83D\uDE97群y-02.com/2s3zjS";
 
+//        String c = OceanContentHelper.interposeMsg(msg);
+        for (String regular : regularDeletion) {
+            Pattern p = Pattern.compile(regular);
+            Matcher matcher = p.matcher(msg);
+            if (matcher.find()) {
+                msg = null;
+                break;
+            }
+        }
+
+        System.out.println(msg);
     }
 
     public static String match(String content, Pattern pattern) {

@@ -794,7 +794,7 @@ web:
   
   # 在线API文档工具
   swagger: 
-    enabled: true
+    enabled: false
 
 # 错误页面500.html是否输出错误信息（正式环境，为提供安全性可设置为false）
 error:

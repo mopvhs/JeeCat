@@ -815,20 +815,6 @@ public abstract class AbstraUpOceanStage implements OceanUpStage {
         return simHash;
     }
 
-    public static void main(String[] args) {
-        String msg = "✨有好价✨\n" +
-                "@\uD83C\uDF5F 朗诺宠物鸡肉冻干300g\n" +
-                "+赠猫粮试吃8g*4\n" +
-                "\uD83D\uDCB0105，88vip\uD83D\uDCB099.7\n" +
-                "(2wr1VXY4Pur)/ CA21,)/ AC01\n" +
-                "---------------------\n" +
-                "自助查车 dwz.cn/qveM26UV";
-
-        String c = OceanContentHelper.interposeMsg(msg);
-
-        System.out.println(c);
-    }
-
     public void checkSimilar(OceanUpContext context) {
         // 获取转链详情
         SimilarContext similar = context.getSimilar();

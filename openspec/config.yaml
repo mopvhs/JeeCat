@@ -1,0 +1,85 @@
+schema: spec-driven
+
+# Project context
+context: |
+  ## 项目概述
+  这是一个基于 JeeSite 5.3 快速开发平台的电商营销管理系统（猫车/Cat）。
+  主要用于淘宝联盟产品管理、优惠信息推送、聊天室管理等电商运营场景。
+  
+  ## 技术栈
+  - **后端框架**: Spring Boot 2.7, Spring Framework 5.3
+  - **安全框架**: Apache Shiro 1.11
+  - **持久层**: MyBatis 3.5, Hibernate Validator 6.2, Alibaba Druid 1.2
+  - **缓存**: J2Cache, Redis
+  - **视图层**: Beetl 3.10, Bootstrap 3.3, AdminLTE 2.4
+  - **任务调度**: XXL-Job
+  - **搜索引擎**: Elasticsearch
+  - **数据库**: MySQL (支持多种数据库)
+  - **构建工具**: Maven
+  - **Java版本**: JDK 1.8/11/17
+  
+  ## 项目结构
+  ```
+  cat/
+  ├── modules/cat/          # 核心业务模块 - 猫车功能
+  │   ├── entity/           # 实体类 (DO)
+  │   ├── dao/              # 数据访问层
+  │   ├── service/          # 服务层
+  │   ├── web/              # Controller层
+  │   ├── es/               # Elasticsearch相关
+  │   ├── xxl/              # XXL-Job任务调度
+  │   └── model/            # 业务模型
+  ├── modules/core/         # 核心基础模块
+  ├── modules/cms/          # CMS内容管理模块
+  ├── modules/api-sdk/      # API SDK模块
+  ├── common/               # 公共组件
+  ├── web-api/              # API服务入口
+  └── web/web-fast/         # Web服务入口
+  ```
+  
+  ## 核心业务领域
+  - **产品管理**: MaocheProduct, MaocheAlimamaUnionProduct (淘宝联盟产品)
+  - **推送任务**: MaochePushTask, MaocheSenderTask (消息推送)
+  - **聊天室管理**: MaocheChatroomInfo, QwChatroomInfo (企微聊天室)
+  - **分类与品牌**: MaocheCategory, MaocheBrand, MaocheBrandLib
+  - **订阅管理**: MaocheSubscribe
+  - **爬虫消息**: MaocheRobotCrawlerMessage
+  - **数据同步**: MaocheSyncDataInfo
+  
+  ## 开发规范
+  - 遵循 JeeSite 开发规范: https://jeesite.com/docs/standard/
+  - 实体类命名: XxxDO.java (Data Object)
+  - DAO层命名: XxxDao.java
+  - Service层命名: XxxService.java
+  - Controller层命名: XxxController.java
+  - MyBatis映射文件: resources/mappings/modules/cat/XxxDao.xml
+  - 视图文件: resources/views/modules/cat/xxxList.html, xxxForm.html
+  
+  ## 代码风格
+  - 使用 Chinese 注释
+  - 遵循阿里巴巴Java开发手册
+  - 使用 Lombok 简化代码 (@Data, @Getter, @Setter等)
+  - 日志使用 SLF4J
+  
+  ## 外部集成
+  - 淘宝联盟 API (Alimama Union)
+  - 大淘客 API (Dataoke)
+  - 企业微信 API (QW)
+  - XXL-Job 分布式任务调度中心
+
+# Per-artifact rules
+rules:
+  proposal:
+    - 提案需说明业务背景和目标
+    - 明确影响的模块和文件范围
+    - 列出非目标（明确不做什么）
+  tasks:
+    - 任务拆分粒度控制在2小时以内
+    - 遵循 JeeSite 分层架构顺序：Entity → DAO → Service → Controller → View
+    - 包含数据库变更说明（如有）
+  specs:
+    - 使用 WHEN/THEN/AND 格式描述场景
+    - 明确边界条件和异常处理
+  design:
+    - 说明技术方案选型理由
+    - 考虑与现有模块的兼容性

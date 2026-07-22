@@ -42,6 +42,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static com.jeesite.modules.cat.enums.OceanStatusEnum.AI_FAILED_TIMEOUT;
@@ -217,8 +219,12 @@ public class AIOceanXxlJob extends IJobHandler {
                         cacheService.expire(imgKey, 86400);
                         log.info("大图获取为空 getMsgsvrid {}", message.getMsgsvrid());
                         imgMatch = false;
+                        // wxid_xzyl8uv7peea12:{"Thumb":"http://b1.wcr222.top/ff386c874d9d22eb/2026/04/18/f8261889d16249d8ab711329cc0d35df.jpg","Md5":"b8edbaefd3584f4803e3bf16183c4da7","length":35981, "hdlen":72312}
+                        String imgContent = messageDetail.getString("content");
+                        String md5 = extractMd5(imgContent);
+
                         // 调用一次接口，获取大图
-                        wechatRobotAdapter.getImageDetail(message.getToid(), message.getFromgid(), message.getMsgsvrid());
+                        wechatRobotAdapter.getImageDetail(message.getToid(), message.getFromgid(), message.getMsgsvrid(), md5);
                         break;
                     } else {
                         continue;
@@ -334,6 +340,27 @@ public class AIOceanXxlJob extends IJobHandler {
         maocheRobotCrawlerMessageDao.updateStatus(msgIds, "OCEAN");
 
         return true;
+    }
+
+
+    // 示例用法
+    public static void main(String[] args) {
+        String raw = "wxid_xzyl8uv7peea12:{\"Thumb\":\"http://b1.wcr222.top/ff386c874d9d22eb/2026/04/18/f8261889d16249d8ab711329cc0d35df.jpg\",\"Md5\":\"b8edbaefd3584f4803e3bf16183c4da7\",\"length\":35981, \"hdlen\":72312}";
+        String md5 = extractMd5(raw);
+        System.out.println("提取的 Md5: " + md5);  // 输出：b8edbaefd3584f4803e3bf16183c4da7
+    }
+
+    public static String extractMd5(String input) {
+        if (input == null || input.isEmpty()) {
+            return null;
+        }
+        // 正则匹配 "Md5":"任意非引号字符"
+        Pattern pattern = Pattern.compile("\"Md5\"\\s*:\\s*\"([^\"]+)\"");
+        Matcher matcher = pattern.matcher(input);
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+        return null;
     }
 
 

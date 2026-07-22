@@ -60,7 +60,7 @@ public class WechatRobotAdapter {
      * @param wechatId
      * @param msgSvrId
      */
-    public void getImageDetail(String wechatId, String convId, String msgSvrId) {
+    public void getImageDetail(String wechatId, String convId, String msgSvrId, String md5) {
         if (StringUtils.isBlank(wechatId) || StringUtils.isBlank(convId) || StringUtils.isBlank(msgSvrId)) {
             return;
         }
@@ -71,6 +71,7 @@ public class WechatRobotAdapter {
         data.put("wechatId", wechatId);
         data.put("msgSrvId", msgSvrId);
         data.put("friendId", convId);
+        data.put("md5", md5);
         Map<String, String> headers = new HashMap<>();
         headers.put("token", "33DD94BBF49356583E460D1FA2907EDB");
         try {
